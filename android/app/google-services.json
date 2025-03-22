@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "194922134187",
+    "firebase_url": "https://reseller-form-a616f-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "reseller-form-a616f",
+    "storage_bucket": "reseller-form-a616f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:194922134187:android:4150a56d15062d8e0195ee",
+        "android_client_info": {
+          "package_name": "com.example.resellerapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRmJYaRljG2C4xTWdOOfJtB94NEPiYTtY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

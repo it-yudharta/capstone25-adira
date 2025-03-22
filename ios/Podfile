@@ -1,0 +1,25 @@
+# Set minimum iOS version
+platform :ios, '12.0'
+
+# Inhibit CocoaPods from warning about deprecations
+inhibit_all_warnings!
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  # Add Firebase dependencies
+  pod 'Firebase/Core'
+  pod 'Firebase/Auth'
+  pod 'Firebase/Database'
+  pod 'Firebase/Firestore'
+  pod 'Firebase/Storage'
+
+  # Enable Firebase distributable binaries for faster builds
+  $RNFirebaseAsStaticFramework = true
+
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+
+end
