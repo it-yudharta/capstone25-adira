@@ -2,7 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:gal/gal.dart'; // Ganti gallery_saver dengan gal
+import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:io';
@@ -15,21 +15,31 @@ class GenerateQRPengajuan extends StatefulWidget {
 
 class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
   TextEditingController resellerNameController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+  TextEditingController phoneController = TextEditingController();
   GlobalKey globalKey = GlobalKey();
-  String currentResellerName = "";
+  String currentResellerData = "";
+
+  bool isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+
+  bool isValidPhoneNumber(String phone) {
+    final phoneRegex = RegExp(r'^[0-9]+$');
+    return phoneRegex.hasMatch(phone);
+  }
 
   Future<void> _saveQRCode() async {
     try {
-      if (currentResellerName.isEmpty) {
+      if (currentResellerData.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Silakan generate QR terlebih dahulu")),
         );
         return;
       }
 
-      await Future.delayed(
-        Duration(milliseconds: 500),
-      ); // Delay agar gambar terbentuk
+      await Future.delayed(Duration(milliseconds: 500));
 
       RenderRepaintBoundary? boundary =
           globalKey.currentContext?.findRenderObject()
@@ -50,7 +60,6 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
 
       Uint8List pngBytes = byteData.buffer.asUint8List();
 
-      // Simpan ke galeri
       final success = await saveImageToGallery(pngBytes);
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -71,7 +80,6 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
 
   Future<bool> saveImageToGallery(Uint8List bytes) async {
     try {
-      // Minta izin penyimpanan (hanya diperlukan untuk Android versi lama)
       if (await Permission.storage.request().isDenied) {
         ScaffoldMessenger.of(
           context,
@@ -79,14 +87,12 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
         return false;
       }
 
-      // Simpan gambar ke file sementara
       Directory tempDir = await getTemporaryDirectory();
       String filePath =
           '${tempDir.path}/QR_${DateTime.now().millisecondsSinceEpoch}.png';
       File file = File(filePath);
       await file.writeAsBytes(bytes);
 
-      // Simpan ke galeri dengan gal
       await Gal.putImage(file.path, album: "QR Codes");
 
       return true;
@@ -101,7 +107,6 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
     return Scaffold(
       appBar: AppBar(title: Text('Generate QR for Pengajuan')),
       body: SingleChildScrollView(
-        // Tambahkan scroll agar tidak overflow
         child: Padding(
           padding: EdgeInsets.all(20),
           child: Column(
@@ -114,37 +119,71 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
                   border: OutlineInputBorder(),
                 ),
               ),
+              SizedBox(height: 10),
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  labelText: "Masukkan Email Reseller",
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: phoneController,
+                decoration: InputDecoration(
+                  labelText: "Masukkan Nomor Telepon Reseller",
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
+                  String name = resellerNameController.text.trim();
+                  String email = emailController.text.trim();
+                  String phone = phoneController.text.trim();
+
+                  if (!isValidEmail(email)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Masukkan email yang valid")),
+                    );
+                    return;
+                  }
+
+                  if (!isValidPhoneNumber(phone)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Nomor telepon hanya boleh berisi angka"),
+                      ),
+                    );
+                    return;
+                  }
+
                   setState(() {
-                    currentResellerName = resellerNameController.text.trim();
+                    currentResellerData =
+                        "https://rionasari.github.io/reseller-form/?resellerName=$name&resellerEmail=$email&resellerPhone=$phone";
                   });
                 },
                 child: Text("Generate QR Code"),
               ),
               SizedBox(height: 20),
-              if (currentResellerName.isNotEmpty)
+              if (currentResellerData.isNotEmpty)
                 RepaintBoundary(
                   key: globalKey,
                   child: Container(
-                    color: Colors.white, // Background putih agar tidak hitam
+                    color: Colors.white,
                     padding: EdgeInsets.all(10),
                     child: QrImageView(
-                      data:
-                          "https://rionasari.github.io/reseller-form/?resellerName=$currentResellerName",
+                      data: currentResellerData,
                       size: 200,
-                      backgroundColor:
-                          Colors.white, // Pastikan QR punya background
+                      backgroundColor: Colors.white,
                     ),
                   ),
                 ),
               SizedBox(height: 20),
               ElevatedButton(
-                onPressed:
-                    currentResellerName.isEmpty
-                        ? null
-                        : _saveQRCode, // Tombol dinonaktifkan jika QR belum dibuat
+                onPressed: currentResellerData.isEmpty ? null : _saveQRCode,
                 child: Text("Simpan ke Galeri"),
               ),
             ],
