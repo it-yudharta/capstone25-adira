@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
-import 'status_pengajuan_screen.dart';
 
-class PengajuanScreen extends StatefulWidget {
+class StatusPengajuanScreen extends StatefulWidget {
+  final String status;
+
+  const StatusPengajuanScreen({required this.status});
+
   @override
-  _PengajuanScreenState createState() => _PengajuanScreenState();
+  State<StatusPengajuanScreen> createState() => _StatusPengajuanScreenState();
 }
 
-class _PengajuanScreenState extends State<PengajuanScreen> {
+class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
   final DatabaseReference _database = FirebaseDatabase.instance.ref().child(
     'orders',
   );
-  List<Map<dynamic, dynamic>> _orders = [];
+  List<Map<dynamic, dynamic>> _filteredOrders = [];
   final List<String> _statusList = [
     'disetujui',
     'ditolak',
@@ -24,45 +27,38 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchOrders();
+    _fetchFilteredOrders();
   }
 
-  void _fetchOrders() async {
+  void _fetchFilteredOrders() async {
     final snapshot = await _database.get();
     if (snapshot.exists) {
       final Map<dynamic, dynamic> data =
           snapshot.value as Map<dynamic, dynamic>;
-      final List<Map<dynamic, dynamic>> loadedOrders = [];
+      final List<Map<dynamic, dynamic>> filtered = [];
 
       data.forEach((key, value) {
         final status = value['status']?.toString().toLowerCase() ?? '';
-        if (status.isEmpty || status == 'belum diproses') {
+        if (status == widget.status.toLowerCase()) {
           if (value['timestamp'] != null && value['timestamp'] is int) {
-            value['timestamp'] = _convertTimestamp(value['timestamp']);
+            value['timestamp'] = DateFormat(
+              'dd MMM yyyy',
+            ).format(DateTime.fromMillisecondsSinceEpoch(value['timestamp']));
           }
           value['key'] = key;
-          loadedOrders.add(value);
+          filtered.add(value);
         }
       });
 
       setState(() {
-        _orders = loadedOrders;
-      });
-    } else {
-      setState(() {
-        _orders = [];
+        _filteredOrders = filtered;
       });
     }
   }
 
-  String _convertTimestamp(int timestamp) {
-    DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    return DateFormat('dd MMM yyyy').format(dateTime);
-  }
-
   void _updateStatus(String key, String newStatus) async {
     await _database.child(key).update({'status': newStatus});
-    _fetchOrders();
+    _fetchFilteredOrders();
   }
 
   void _showStatusSelector(String key) {
@@ -75,7 +71,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                 _statusList.map((status) {
                   return ListTile(
                     title: Text(
-                      'Setel ke: ${status[0].toUpperCase()}${status.substring(1)}',
+                      'Rubah ke: ${status[0].toUpperCase()}${status.substring(1)}',
                     ),
                     onTap: () {
                       Navigator.pop(context);
@@ -87,68 +83,32 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     );
   }
 
-  void _navigateToStatusScreen(String status) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => StatusPengajuanScreen(status: status)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final TextStyle? baseStyle = Theme.of(context).textTheme.bodyMedium;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Pengajuan')),
-      body: Column(
-        children: [
-          Expanded(
-            child:
-                _orders.isEmpty
-                    ? Center(child: Text("Tidak ada pengajuan baru"))
-                    : ListView.builder(
-                      itemCount: _orders.length,
-                      itemBuilder: (context, index) {
-                        final order = _orders[index];
-                        final orderKey = order['key'];
-                        return _buildOrderCard(order, orderKey, baseStyle);
-                      },
-                    ),
-          ),
-          Container(
-            color: Colors.grey.shade100,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-            child: Wrap(
-              alignment: WrapAlignment.spaceEvenly,
-              spacing: 8,
-              runSpacing: 8,
-              children:
-                  _statusList.map((status) {
-                    return _buildMenuButton(
-                      status[0].toUpperCase() + status.substring(1),
-                      Colors.white,
-                    );
-                  }).toList(),
-            ),
-          ),
-        ],
+      appBar: AppBar(
+        title: Text(
+          'Pengajuan ${widget.status[0].toUpperCase()}${widget.status.substring(1)}',
+        ),
       ),
+      body:
+          _filteredOrders.isEmpty
+              ? Center(child: Text("Belum ada data pengajuan untuk status ini"))
+              : ListView.builder(
+                itemCount: _filteredOrders.length,
+                itemBuilder: (context, index) {
+                  final order = _filteredOrders[index];
+                  return _buildOrderCard(order, baseStyle);
+                },
+              ),
     );
   }
 
-  Widget _buildMenuButton(String label, Color color) {
-    return ElevatedButton(
-      onPressed: () => _navigateToStatusScreen(label.toLowerCase()),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: Text('Pengajuan $label'),
-    );
-  }
+  Widget _buildOrderCard(Map order, TextStyle? baseStyle) {
+    final orderKey = order['key'];
 
-  Widget _buildOrderCard(Map order, String orderKey, TextStyle? baseStyle) {
     return Card(
       margin: EdgeInsets.all(10),
       elevation: 3,
@@ -166,7 +126,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                 Text("Nama Agent: ${order['agentName'] ?? '-'}"),
                 Text("Email Agent: ${order['agentEmail'] ?? '-'}"),
                 Text("No. Telepon Agent: ${order['agentPhone'] ?? '-'}"),
-                Text("Status: ${order['status'] ?? 'Belum diproses'}"),
+                Text("Status: ${order['status'] ?? '-'}"),
               ],
             ),
           ),

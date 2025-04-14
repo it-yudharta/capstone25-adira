@@ -49,7 +49,7 @@ class _MainScreenState extends State<MainScreen> {
           children: [
             MenuButton(
               icon: Icons.assignment,
-              label: "Ajukan Pesanan",
+              label: "Pengajuan",
               onTap: () {
                 Navigator.push(
                   context,

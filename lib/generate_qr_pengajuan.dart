@@ -14,11 +14,11 @@ class GenerateQRPengajuan extends StatefulWidget {
 }
 
 class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
-  TextEditingController resellerNameController = TextEditingController();
+  TextEditingController agentNameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
   TextEditingController phoneController = TextEditingController();
   GlobalKey globalKey = GlobalKey();
-  String currentResellerData = "";
+  String currentAgentData = "";
 
   bool isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
@@ -32,7 +32,7 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
 
   Future<void> _saveQRCode() async {
     try {
-      if (currentResellerData.isEmpty) {
+      if (currentAgentData.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Silakan generate QR terlebih dahulu")),
         );
@@ -113,9 +113,9 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextField(
-                controller: resellerNameController,
+                controller: agentNameController,
                 decoration: InputDecoration(
-                  labelText: "Masukkan Nama Reseller",
+                  labelText: "Masukkan Nama Agent",
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -123,7 +123,7 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
               TextField(
                 controller: emailController,
                 decoration: InputDecoration(
-                  labelText: "Masukkan Email Reseller",
+                  labelText: "Masukkan Email Agent",
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
@@ -132,7 +132,7 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
               TextField(
                 controller: phoneController,
                 decoration: InputDecoration(
-                  labelText: "Masukkan Nomor Telepon Reseller",
+                  labelText: "Masukkan Nomor Telepon Agent",
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.phone,
@@ -140,7 +140,7 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  String name = resellerNameController.text.trim();
+                  String name = agentNameController.text.trim();
                   String email = emailController.text.trim();
                   String phone = phoneController.text.trim();
 
@@ -161,21 +161,21 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
                   }
 
                   setState(() {
-                    currentResellerData =
-                        "https://rionasari.github.io/reseller-form/?resellerName=$name&resellerEmail=$email&resellerPhone=$phone";
+                    currentAgentData =
+                        "https://rionasari.github.io/reseller-form/?agentName=$name&agentEmail=$email&agentPhone=$phone";
                   });
                 },
                 child: Text("Generate QR Code"),
               ),
               SizedBox(height: 20),
-              if (currentResellerData.isNotEmpty)
+              if (currentAgentData.isNotEmpty)
                 RepaintBoundary(
                   key: globalKey,
                   child: Container(
                     color: Colors.white,
                     padding: EdgeInsets.all(10),
                     child: QrImageView(
-                      data: currentResellerData,
+                      data: currentAgentData,
                       size: 200,
                       backgroundColor: Colors.white,
                     ),
@@ -183,7 +183,7 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
                 ),
               SizedBox(height: 20),
               ElevatedButton(
-                onPressed: currentResellerData.isEmpty ? null : _saveQRCode,
+                onPressed: currentAgentData.isEmpty ? null : _saveQRCode,
                 child: Text("Simpan ke Galeri"),
               ),
             ],
