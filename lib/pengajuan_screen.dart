@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'status_pengajuan_screen.dart';
+import 'trash_screen.dart'; // ✅ Tambahkan import
 
 class PengajuanScreen extends StatefulWidget {
   @override
@@ -13,6 +14,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     'orders',
   );
   List<Map<dynamic, dynamic>> _orders = [];
+
   final List<String> _statusList = [
     'disetujui',
     'ditolak',
@@ -94,12 +96,25 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     );
   }
 
+  void _navigateToTrashScreen() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => TrashScreen()));
+  }
+
   @override
   Widget build(BuildContext context) {
     final TextStyle? baseStyle = Theme.of(context).textTheme.bodyMedium;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Pengajuan')),
+      appBar: AppBar(
+        title: Text('Pengajuan'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.delete),
+            tooltip: "Lihat Trash",
+            onPressed: _navigateToTrashScreen,
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(

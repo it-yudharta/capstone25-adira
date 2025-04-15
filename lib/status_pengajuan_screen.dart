@@ -15,6 +15,10 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
   final DatabaseReference _database = FirebaseDatabase.instance.ref().child(
     'orders',
   );
+  final DatabaseReference _trashRef = FirebaseDatabase.instance.ref().child(
+    'trash',
+  );
+
   List<Map<dynamic, dynamic>> _filteredOrders = [];
   final List<String> _statusList = [
     'disetujui',
@@ -24,22 +28,36 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
     'dipending',
   ];
 
+  Set<String> _trashKeys = {};
+
   @override
   void initState() {
     super.initState();
     _fetchFilteredOrders();
   }
 
-  void _fetchFilteredOrders() async {
+  Future<void> _fetchFilteredOrders() async {
+    final trashSnapshot = await _trashRef.get();
+
+    // Kumpulkan semua key yang ada di trash
+    if (trashSnapshot.exists) {
+      final trashData = trashSnapshot.value as Map<dynamic, dynamic>;
+      _trashKeys = trashData.keys.map((e) => e.toString()).toSet();
+    } else {
+      _trashKeys.clear();
+    }
+
     final snapshot = await _database.get();
     if (snapshot.exists) {
-      final Map<dynamic, dynamic> data =
-          snapshot.value as Map<dynamic, dynamic>;
+      final data = snapshot.value as Map<dynamic, dynamic>;
       final List<Map<dynamic, dynamic>> filtered = [];
 
       data.forEach((key, value) {
         final status = value['status']?.toString().toLowerCase() ?? '';
-        if (status == widget.status.toLowerCase()) {
+
+        // Hanya tampilkan jika status cocok dan tidak termasuk yang sudah di-trash
+        if (status == widget.status.toLowerCase() &&
+            !_trashKeys.contains(key)) {
           if (value['timestamp'] != null && value['timestamp'] is int) {
             value['timestamp'] = DateFormat(
               'dd MMM yyyy',
@@ -52,6 +70,10 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
 
       setState(() {
         _filteredOrders = filtered;
+      });
+    } else {
+      setState(() {
+        _filteredOrders = [];
       });
     }
   }
@@ -83,6 +105,74 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
     );
   }
 
+  void _confirmDelete(String key, Map order) {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: Text("Pindahkan ke Trash"),
+            content: Text(
+              "Yakin ingin menghapus data ini? Data akan dipindahkan ke trash.",
+            ),
+            actions: [
+              TextButton(
+                child: Text("Batal"),
+                onPressed: () => Navigator.pop(context),
+              ),
+              ElevatedButton(
+                child: Text("Ya, Hapus"),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final updatedOrder = Map<String, dynamic>.from(order);
+                  updatedOrder['key'] = key;
+
+                  await _trashRef.child(key).set(updatedOrder);
+                  await _database.child(key).remove();
+
+                  _fetchFilteredOrders();
+                },
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _confirmDeleteAll() {
+    if (_filteredOrders.isEmpty) return;
+
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: Text("Hapus Semua"),
+            content: Text(
+              "Yakin ingin memindahkan semua pengajuan berstatus '${widget.status}' ke trash?",
+            ),
+            actions: [
+              TextButton(
+                child: Text("Batal"),
+                onPressed: () => Navigator.pop(context),
+              ),
+              ElevatedButton(
+                child: Text("Ya, Hapus Semua"),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  for (final order in _filteredOrders) {
+                    final key = order['key'];
+                    final updatedOrder = Map<String, dynamic>.from(order);
+                    updatedOrder['key'] = key;
+
+                    await _trashRef.child(key).set(updatedOrder);
+                    await _database.child(key).remove();
+                  }
+                  _fetchFilteredOrders();
+                },
+              ),
+            ],
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final TextStyle? baseStyle = Theme.of(context).textTheme.bodyMedium;
@@ -92,6 +182,14 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
         title: Text(
           'Pengajuan ${widget.status[0].toUpperCase()}${widget.status.substring(1)}',
         ),
+        actions: [
+          if (_filteredOrders.isNotEmpty)
+            IconButton(
+              icon: Icon(Icons.delete_sweep),
+              tooltip: "Hapus Semua",
+              onPressed: _confirmDeleteAll,
+            ),
+        ],
       ),
       body:
           _filteredOrders.isEmpty
@@ -146,10 +244,23 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                     Text("Jenis Pinjaman: ${order['item'] ?? '-'}"),
                     Text("Tanggal Pengajuan: ${order['timestamp'] ?? '-'}"),
                     const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: () => _showStatusSelector(orderKey),
-                      icon: Icon(Icons.edit),
-                      label: Text("Ubah Status"),
+                    Row(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => _showStatusSelector(orderKey),
+                          icon: Icon(Icons.edit),
+                          label: Text("Ubah Status"),
+                        ),
+                        SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () => _confirmDelete(orderKey, order),
+                          icon: Icon(Icons.delete),
+                          label: Text("Hapus"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
