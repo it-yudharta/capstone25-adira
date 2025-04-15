@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'status_pengajuan_screen.dart';
-import 'trash_screen.dart'; // ✅ Tambahkan import
+import 'trash_screen.dart';
 
 class PengajuanScreen extends StatefulWidget {
   @override
@@ -13,7 +13,12 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   final DatabaseReference _database = FirebaseDatabase.instance.ref().child(
     'orders',
   );
+  final TextEditingController _searchController = TextEditingController();
+
   List<Map<dynamic, dynamic>> _orders = [];
+  List<Map<dynamic, dynamic>> _filteredOrders = [];
+  String _searchQuery = '';
+  bool _isLoading = false; // ✅ Tambahkan indikator loading
 
   final List<String> _statusList = [
     'disetujui',
@@ -30,7 +35,10 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   }
 
   void _fetchOrders() async {
+    setState(() => _isLoading = true); // ✅ Mulai loading
+
     final snapshot = await _database.get();
+
     if (snapshot.exists) {
       final Map<dynamic, dynamic> data =
           snapshot.value as Map<dynamic, dynamic>;
@@ -49,11 +57,33 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
       setState(() {
         _orders = loadedOrders;
+        _applySearch();
+        _isLoading = false; // ✅ Selesai loading
       });
     } else {
       setState(() {
         _orders = [];
+        _filteredOrders = [];
+        _isLoading = false; // ✅ Selesai loading walau kosong
       });
+    }
+  }
+
+  void _applySearch() {
+    if (_searchQuery.isEmpty) {
+      _filteredOrders = List.from(_orders);
+    } else {
+      _filteredOrders =
+          _orders.where((order) {
+            final name = (order['name'] ?? '').toString().toLowerCase();
+            final email = (order['email'] ?? '').toString().toLowerCase();
+            final agentName =
+                (order['agentName'] ?? '').toString().toLowerCase();
+            final query = _searchQuery.toLowerCase();
+            return name.contains(query) ||
+                email.contains(query) ||
+                agentName.contains(query);
+          }).toList();
     }
   }
 
@@ -100,6 +130,14 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     Navigator.push(context, MaterialPageRoute(builder: (_) => TrashScreen()));
   }
 
+  void _clearSearch() {
+    setState(() {
+      _searchController.clear();
+      _searchQuery = '';
+      _applySearch();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final TextStyle? baseStyle = Theme.of(context).textTheme.bodyMedium;
@@ -108,6 +146,40 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
       appBar: AppBar(
         title: Text('Pengajuan'),
         actions: [
+          Container(
+            width: 200,
+            padding: EdgeInsets.symmetric(vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                  _applySearch();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Cari...',
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 0,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+                fillColor: Colors.white,
+                filled: true,
+                suffixIcon:
+                    _searchQuery.isNotEmpty
+                        ? IconButton(
+                          icon: Icon(Icons.clear),
+                          onPressed: _clearSearch,
+                        )
+                        : null,
+              ),
+              style: TextStyle(fontSize: 14),
+            ),
+          ),
           IconButton(
             icon: Icon(Icons.delete),
             tooltip: "Lihat Trash",
@@ -119,12 +191,22 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         children: [
           Expanded(
             child:
-                _orders.isEmpty
+                _isLoading
+                    ? Center(
+                      child: CircularProgressIndicator(),
+                    ) // ✅ Loading saat fetch data
+                    : _orders.isEmpty
                     ? Center(child: Text("Tidak ada pengajuan baru"))
+                    : _filteredOrders.isEmpty
+                    ? Center(
+                      child: Text(
+                        "Tidak ada pengajuan yang cocok dengan pencarian ini",
+                      ),
+                    )
                     : ListView.builder(
-                      itemCount: _orders.length,
+                      itemCount: _filteredOrders.length,
                       itemBuilder: (context, index) {
-                        final order = _orders[index];
+                        final order = _filteredOrders[index];
                         final orderKey = order['key'];
                         return _buildOrderCard(order, orderKey, baseStyle);
                       },

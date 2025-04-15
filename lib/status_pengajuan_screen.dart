@@ -20,6 +20,7 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
   );
 
   List<Map<dynamic, dynamic>> _filteredOrders = [];
+  List<Map<dynamic, dynamic>> _allOrders = [];
   final List<String> _statusList = [
     'disetujui',
     'ditolak',
@@ -29,6 +30,10 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
   ];
 
   Set<String> _trashKeys = {};
+  bool _isLoading = true;
+
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -37,9 +42,12 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
   }
 
   Future<void> _fetchFilteredOrders() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     final trashSnapshot = await _trashRef.get();
 
-    // Kumpulkan semua key yang ada di trash
     if (trashSnapshot.exists) {
       final trashData = trashSnapshot.value as Map<dynamic, dynamic>;
       _trashKeys = trashData.keys.map((e) => e.toString()).toSet();
@@ -54,8 +62,6 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
 
       data.forEach((key, value) {
         final status = value['status']?.toString().toLowerCase() ?? '';
-
-        // Hanya tampilkan jika status cocok dan tidak termasuk yang sudah di-trash
         if (status == widget.status.toLowerCase() &&
             !_trashKeys.contains(key)) {
           if (value['timestamp'] != null && value['timestamp'] is int) {
@@ -69,12 +75,34 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
       });
 
       setState(() {
-        _filteredOrders = filtered;
+        _allOrders = filtered;
+        _applySearch();
+        _isLoading = false;
       });
     } else {
       setState(() {
+        _allOrders = [];
         _filteredOrders = [];
+        _isLoading = false;
       });
+    }
+  }
+
+  void _applySearch() {
+    if (_searchQuery.isEmpty) {
+      _filteredOrders = List.from(_allOrders);
+    } else {
+      final query = _searchQuery.toLowerCase();
+      _filteredOrders =
+          _allOrders.where((order) {
+            final name = (order['name'] ?? '').toString().toLowerCase();
+            final email = (order['email'] ?? '').toString().toLowerCase();
+            final agentName =
+                (order['agentName'] ?? '').toString().toLowerCase();
+            return name.contains(query) ||
+                email.contains(query) ||
+                agentName.contains(query);
+          }).toList();
     }
   }
 
@@ -125,10 +153,8 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                   Navigator.pop(context);
                   final updatedOrder = Map<String, dynamic>.from(order);
                   updatedOrder['key'] = key;
-
                   await _trashRef.child(key).set(updatedOrder);
                   await _database.child(key).remove();
-
                   _fetchFilteredOrders();
                 },
               ),
@@ -161,7 +187,6 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                     final key = order['key'];
                     final updatedOrder = Map<String, dynamic>.from(order);
                     updatedOrder['key'] = key;
-
                     await _trashRef.child(key).set(updatedOrder);
                     await _database.child(key).remove();
                   }
@@ -191,16 +216,59 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
             ),
         ],
       ),
-      body:
-          _filteredOrders.isEmpty
-              ? Center(child: Text("Belum ada data pengajuan untuk status ini"))
-              : ListView.builder(
-                itemCount: _filteredOrders.length,
-                itemBuilder: (context, index) {
-                  final order = _filteredOrders[index];
-                  return _buildOrderCard(order, baseStyle);
-                },
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                  _applySearch();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Cari nama/email/agent...',
+                prefixIcon: Icon(Icons.search),
+                suffixIcon:
+                    _searchQuery.isNotEmpty
+                        ? IconButton(
+                          icon: Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              _searchController.clear();
+                              _searchQuery = '';
+                              _applySearch();
+                            });
+                          },
+                        )
+                        : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                contentPadding: EdgeInsets.symmetric(horizontal: 16),
               ),
+            ),
+          ),
+          Expanded(
+            child:
+                _isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : _filteredOrders.isEmpty
+                    ? Center(
+                      child: Text("Belum ada data pengajuan untuk status ini"),
+                    )
+                    : ListView.builder(
+                      itemCount: _filteredOrders.length,
+                      itemBuilder: (context, index) {
+                        final order = _filteredOrders[index];
+                        return _buildOrderCard(order, baseStyle);
+                      },
+                    ),
+          ),
+        ],
+      ),
     );
   }
 
