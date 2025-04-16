@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'status_pengajuan_screen.dart';
 import 'trash_screen.dart';
+import 'saved_orders_screen.dart';
+import 'generate_qr_screen.dart';
+import 'pendaftaran_screen.dart';
+import 'login_screen.dart';
+import 'order_detail_screen.dart';
 
 class PengajuanScreen extends StatefulWidget {
   @override
@@ -10,6 +16,9 @@ class PengajuanScreen extends StatefulWidget {
 }
 
 class _PengajuanScreenState extends State<PengajuanScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
   final DatabaseReference _database = FirebaseDatabase.instance.ref().child(
     'orders',
   );
@@ -18,7 +27,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   List<Map<dynamic, dynamic>> _orders = [];
   List<Map<dynamic, dynamic>> _filteredOrders = [];
   String _searchQuery = '';
-  bool _isLoading = false; // ✅ Tambahkan indikator loading
+  bool _isLoading = false;
 
   final List<String> _statusList = [
     'disetujui',
@@ -35,14 +44,11 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   }
 
   void _fetchOrders() async {
-    setState(() => _isLoading = true); // ✅ Mulai loading
-
+    setState(() => _isLoading = true);
     final snapshot = await _database.get();
-
     if (snapshot.exists) {
-      final Map<dynamic, dynamic> data =
-          snapshot.value as Map<dynamic, dynamic>;
-      final List<Map<dynamic, dynamic>> loadedOrders = [];
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      final loadedOrders = <Map<dynamic, dynamic>>[];
 
       data.forEach((key, value) {
         final status = value['status']?.toString().toLowerCase() ?? '';
@@ -58,13 +64,13 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
       setState(() {
         _orders = loadedOrders;
         _applySearch();
-        _isLoading = false; // ✅ Selesai loading
+        _isLoading = false;
       });
     } else {
       setState(() {
         _orders = [];
         _filteredOrders = [];
-        _isLoading = false; // ✅ Selesai loading walau kosong
+        _isLoading = false;
       });
     }
   }
@@ -73,13 +79,13 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     if (_searchQuery.isEmpty) {
       _filteredOrders = List.from(_orders);
     } else {
+      final query = _searchQuery.toLowerCase();
       _filteredOrders =
           _orders.where((order) {
             final name = (order['name'] ?? '').toString().toLowerCase();
             final email = (order['email'] ?? '').toString().toLowerCase();
             final agentName =
                 (order['agentName'] ?? '').toString().toLowerCase();
-            final query = _searchQuery.toLowerCase();
             return name.contains(query) ||
                 email.contains(query) ||
                 agentName.contains(query);
@@ -88,7 +94,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   }
 
   String _convertTimestamp(int timestamp) {
-    DateTime dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
     return DateFormat('dd MMM yyyy').format(dateTime);
   }
 
@@ -101,7 +107,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     showModalBottomSheet(
       context: context,
       builder:
-          (context) => Column(
+          (_) => Column(
             mainAxisSize: MainAxisSize.min,
             children:
                 _statusList.map((status) {
@@ -138,17 +144,132 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final TextStyle? baseStyle = Theme.of(context).textTheme.bodyMedium;
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.of(
+      context,
+    ).pushReplacement(MaterialPageRoute(builder: (_) => LoginScreen()));
+  }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Pengajuan'),
-        actions: [
-          Container(
-            width: 200,
-            padding: EdgeInsets.symmetric(vertical: 8),
+  Widget _buildOrderCard(Map order, String orderKey, TextStyle? baseStyle) {
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => OrderDetailScreen(orderData: order, orderKey: orderKey),
+          ),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.all(10),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: DefaultTextStyle.merge(
+          style: baseStyle,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Agent         : ${order['agentName'] ?? '-'}",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 4),
+              Text("Nama         : ${order['name'] ?? '-'}"),
+              Text("Alamat       : ${order['domicile'] ?? '-'}"),
+              Text("No. Telp     : ${order['phone'] ?? '-'}"),
+              Text("Pekerjaan  : ${order['job'] ?? '-'}"),
+              Text("Pengajuan : ${order['installment'] ?? '-'}"),
+              SizedBox(height: 8),
+              Text("Status        : ${order['status'] ?? 'Belum diproses'}"),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusMenu() {
+    final List<Map<String, dynamic>> statusButtons = [
+      {'label': 'batal', 'status': 'dibatalkan', 'icon': Icons.cancel},
+      {'label': 'proses', 'status': 'diproses', 'icon': Icons.hourglass_bottom},
+      {'label': 'pending', 'status': 'dipending', 'icon': Icons.pause_circle},
+      {'label': 'tolak', 'status': 'ditolak', 'icon': Icons.block},
+      {'label': 'setuju', 'status': 'disetujui', 'icon': Icons.check_circle},
+      {'label': 'trash', 'status': 'trash', 'icon': Icons.delete},
+    ];
+
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 11),
+      padding: EdgeInsets.symmetric(horizontal: 29, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 5)],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: List.generate(statusButtons.length * 2 - 1, (index) {
+            if (index.isOdd) return SizedBox(width: 16);
+
+            final item = statusButtons[index ~/ 2];
+            return InkWell(
+              onTap: () {
+                if (item['status'] == 'trash') {
+                  _navigateToTrashScreen();
+                } else {
+                  _navigateToStatusScreen(item['status']);
+                }
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(color: Colors.grey.shade300, blurRadius: 4),
+                      ],
+                    ),
+                    child: Icon(
+                      item['icon'],
+                      size: 21,
+                      color: Color(0xFFE67D13),
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(item['label'], style: TextStyle(fontSize: 12)),
+                ],
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainPage() {
+    final baseStyle = Theme.of(context).textTheme.bodyMedium;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: Container(
+            width: 250,
             child: TextField(
               controller: _searchController,
               onChanged: (value) {
@@ -158,142 +279,142 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                 });
               },
               decoration: InputDecoration(
-                hintText: 'Cari...',
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 0,
-                ),
+                hintText: 'Cari Data',
+                contentPadding: EdgeInsets.symmetric(horizontal: 8),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.black),
                 ),
                 fillColor: Colors.white,
                 filled: true,
-                suffixIcon:
-                    _searchQuery.isNotEmpty
-                        ? IconButton(
-                          icon: Icon(Icons.clear),
-                          onPressed: _clearSearch,
-                        )
-                        : null,
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.search),
+                  onPressed: () {},
+                ),
               ),
               style: TextStyle(fontSize: 14),
             ),
           ),
-          IconButton(
-            icon: Icon(Icons.delete),
-            tooltip: "Lihat Trash",
-            onPressed: _navigateToTrashScreen,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child:
-                _isLoading
-                    ? Center(
-                      child: CircularProgressIndicator(),
-                    ) // ✅ Loading saat fetch data
-                    : _orders.isEmpty
-                    ? Center(child: Text("Tidak ada pengajuan baru"))
-                    : _filteredOrders.isEmpty
-                    ? Center(
-                      child: Text(
-                        "Tidak ada pengajuan yang cocok dengan pencarian ini",
-                      ),
-                    )
-                    : ListView.builder(
-                      itemCount: _filteredOrders.length,
-                      itemBuilder: (context, index) {
-                        final order = _filteredOrders[index];
-                        final orderKey = order['key'];
-                        return _buildOrderCard(order, orderKey, baseStyle);
-                      },
-                    ),
-          ),
-          Container(
-            color: Colors.grey.shade100,
-            padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-            child: Wrap(
-              alignment: WrapAlignment.spaceEvenly,
-              spacing: 8,
-              runSpacing: 8,
-              children:
-                  _statusList.map((status) {
-                    return _buildMenuButton(
-                      status[0].toUpperCase() + status.substring(1),
-                      Colors.white,
-                    );
-                  }).toList(),
-            ),
-          ),
-        ],
-      ),
+        ),
+        SizedBox(height: 8),
+        _buildStatusMenu(),
+        Expanded(
+          child:
+              _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : _orders.isEmpty
+                  ? Center(child: Text("Tidak ada pengajuan baru"))
+                  : _filteredOrders.isEmpty
+                  ? Center(child: Text("Tidak ada hasil pencarian"))
+                  : ListView.builder(
+                    itemCount: _filteredOrders.length,
+                    itemBuilder: (context, index) {
+                      final order = _filteredOrders[index];
+                      final orderKey = order['key'];
+                      return _buildOrderCard(order, orderKey, baseStyle);
+                    },
+                  ),
+        ),
+      ],
     );
   }
 
-  Widget _buildMenuButton(String label, Color color) {
-    return ElevatedButton(
-      onPressed: () => _navigateToStatusScreen(label.toLowerCase()),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      child: Text('Pengajuan $label'),
+  Widget _buildOutlinedIcon(IconData iconData, bool isSelected) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Text(
+          String.fromCharCode(iconData.codePoint),
+          style: TextStyle(
+            inherit: false,
+            fontSize: 24,
+            fontFamily: iconData.fontFamily,
+            package: iconData.fontPackage,
+            foreground:
+                Paint()
+                  ..style = PaintingStyle.stroke
+                  ..strokeWidth = 1.8
+                  ..color = Colors.black,
+          ),
+        ),
+        Icon(
+          iconData,
+          size: 24,
+          color: isSelected ? Colors.blue : Colors.white,
+        ),
+      ],
     );
   }
 
-  Widget _buildOrderCard(Map order, String orderKey, TextStyle? baseStyle) {
-    return Card(
-      margin: EdgeInsets.all(10),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: ExpansionTile(
-          title: DefaultTextStyle.merge(
-            style: baseStyle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("Nama Pengaju: ${order['name'] ?? '-'}"),
-                Text("Email Pengaju: ${order['email'] ?? '-'}"),
-                Text("No. Telepon Pengaju: ${order['phone'] ?? '-'}"),
-                Text("Nama Agent: ${order['agentName'] ?? '-'}"),
-                Text("Email Agent: ${order['agentEmail'] ?? '-'}"),
-                Text("No. Telepon Agent: ${order['agentPhone'] ?? '-'}"),
-                Text("Status: ${order['status'] ?? 'Belum diproses'}"),
-              ],
-            ),
-          ),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        elevation: 2,
+        title: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: DefaultTextStyle.merge(
-                style: baseStyle,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Domisili: ${order['domicile'] ?? '-'}"),
-                    Text("Kode Pos: ${order['postalCode'] ?? '-'}"),
-                    Text("Pekerjaan: ${order['job'] ?? '-'}"),
-                    Text("Penghasilan: ${order['income'] ?? '-'}"),
-                    Text("Cicilan: ${order['installment'] ?? '-'}"),
-                    Text("Jenis Pinjaman: ${order['item'] ?? '-'}"),
-                    Text("Tanggal Pengajuan: ${order['timestamp'] ?? '-'}"),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: () => _showStatusSelector(orderKey),
-                      icon: Icon(Icons.edit),
-                      label: Text("Ubah Status"),
-                    ),
-                  ],
-                ),
+            RichText(
+              text: TextSpan(
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                children: [
+                  TextSpan(
+                    text: 'Fundra',
+                    style: TextStyle(color: Color(0xFFEA7D10)),
+                  ),
+                  TextSpan(
+                    text: 'IN',
+                    style: TextStyle(color: Color(0xFF0C2BC5)),
+                  ),
+                ],
               ),
+            ),
+            Spacer(),
+            IconButton(
+              icon: Icon(Icons.logout, color: Color(0xFFE67D13)),
+              onPressed: _logout,
             ),
           ],
         ),
+      ),
+
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) => setState(() => _currentPage = index),
+        children: [
+          _buildMainPage(),
+          GenerateQRScreen(),
+          PendaftaranScreen(),
+          SavedOrdersScreen(), // Lead
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentPage,
+        onTap: (index) {
+          _pageController.animateToPage(
+            index,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        },
+        backgroundColor: Colors.white,
+        selectedItemColor: Color(0xFFE67D13),
+        unselectedItemColor: Colors.black,
+        selectedLabelStyle: TextStyle(fontSize: 12, color: Color(0xFFE67D13)),
+        unselectedLabelStyle: TextStyle(fontSize: 12, color: Colors.black),
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.insert_drive_file),
+            label: 'Pengajuan',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'QR Code'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment),
+            label: 'Pendaftaran Agent',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Lead'),
+        ],
       ),
     );
   }
