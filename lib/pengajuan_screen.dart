@@ -9,6 +9,7 @@ import 'generate_qr_screen.dart';
 import 'pendaftaran_screen.dart';
 import 'login_screen.dart';
 import 'order_detail_screen.dart';
+import 'package:flutter/services.dart';
 
 class PengajuanScreen extends StatefulWidget {
   @override
@@ -37,10 +38,37 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     'dipending',
   ];
 
+  final FocusNode _focusNode = FocusNode();
+
+  List<String> get orderedDates {
+    final grouped = groupedOrders;
+    final dates = grouped.keys.toList();
+    dates.sort((a, b) {
+      final dateA = DateFormat('d-M-yyyy').parse(a);
+      final dateB = DateFormat('d-M-yyyy').parse(b);
+      return dateB.compareTo(dateA);
+    });
+    return dates;
+  }
+
+  Map<String, List<Map>> get groupedOrders {
+    return _groupOrdersByDate(_filteredOrders);
+  }
+
   @override
   void initState() {
     super.initState();
+    _focusNode.addListener(() {
+      setState(() {});
+    });
     _fetchOrders();
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _fetchOrders() async {
@@ -95,7 +123,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
   String _convertTimestamp(int timestamp) {
     final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    return DateFormat('dd MMM yyyy').format(dateTime);
+    return DateFormat('d-M-yyyy').format(dateTime);
   }
 
   void _updateStatus(String key, String newStatus) async {
@@ -163,7 +191,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         );
       },
       child: Container(
-        margin: EdgeInsets.all(10),
+        margin: EdgeInsets.only(left: 10, right: 10, top: 4, bottom: 10),
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -202,17 +230,17 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
-      {'label': 'batal', 'status': 'dibatalkan', 'icon': Icons.cancel},
-      {'label': 'proses', 'status': 'diproses', 'icon': Icons.hourglass_bottom},
-      {'label': 'pending', 'status': 'dipending', 'icon': Icons.pause_circle},
-      {'label': 'tolak', 'status': 'ditolak', 'icon': Icons.block},
-      {'label': 'setuju', 'status': 'disetujui', 'icon': Icons.check_circle},
-      {'label': 'trash', 'status': 'trash', 'icon': Icons.delete},
+      {'label': 'Batal', 'status': 'dibatalkan', 'icon': Icons.cancel},
+      {'label': 'Proses', 'status': 'diproses', 'icon': Icons.hourglass_bottom},
+      {'label': 'Pending', 'status': 'dipending', 'icon': Icons.pause_circle},
+      {'label': 'Tolak', 'status': 'ditolak', 'icon': Icons.block},
+      {'label': 'Setuju', 'status': 'disetujui', 'icon': Icons.check_circle},
+      {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
     ];
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 11),
-      padding: EdgeInsets.symmetric(horizontal: 29, vertical: 8),
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+      padding: EdgeInsets.symmetric(horizontal: 19, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 5)],
@@ -262,16 +290,33 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     );
   }
 
+  bool isPressed = false;
+
+  Map<String, List<Map>> _groupOrdersByDate(List<Map> orders) {
+    final Map<String, List<Map>> grouped = {};
+    for (var order in orders) {
+      final date = order['timestamp'] ?? 'Tanggal tidak diketahui';
+      if (!grouped.containsKey(date)) {
+        grouped[date] = [];
+      }
+      grouped[date]!.add(order);
+    }
+    return grouped;
+  }
+
   Widget _buildMainPage() {
     final baseStyle = Theme.of(context).textTheme.bodyMedium;
+
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
           child: Container(
             width: 250,
+            height: 40,
             child: TextField(
               controller: _searchController,
+              focusNode: _focusNode,
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
@@ -279,17 +324,40 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                 });
               },
               decoration: InputDecoration(
-                hintText: 'Cari Data',
-                contentPadding: EdgeInsets.symmetric(horizontal: 8),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Colors.black),
+                hintText: 'Search data',
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
                 ),
-                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.black, width: 1.2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.grey.shade500,
+                    width: 1.2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Color(0xFFE67D13), width: 1.5),
+                ),
                 filled: true,
+                fillColor: Colors.white,
                 suffixIcon: IconButton(
-                  icon: Icon(Icons.search),
-                  onPressed: () {},
+                  icon: Icon(
+                    Icons.search,
+                    color:
+                        _focusNode.hasFocus
+                            ? Color(0xFFE67D13)
+                            : Colors.grey.shade600,
+                  ),
+                  onPressed: () {
+                    FocusScope.of(context).requestFocus(_focusNode);
+                    _applySearch();
+                  },
                 ),
               ),
               style: TextStyle(fontSize: 14),
@@ -307,11 +375,39 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                   : _filteredOrders.isEmpty
                   ? Center(child: Text("Tidak ada hasil pencarian"))
                   : ListView.builder(
-                    itemCount: _filteredOrders.length,
+                    itemCount: orderedDates.fold<int>(
+                      0,
+                      (sum, date) => sum + groupedOrders[date]!.length + 1,
+                    ),
                     itemBuilder: (context, index) {
-                      final order = _filteredOrders[index];
-                      final orderKey = order['key'];
-                      return _buildOrderCard(order, orderKey, baseStyle);
+                      int currentIndex = 0;
+
+                      for (final date in orderedDates) {
+                        if (index == currentIndex) {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                            child: Text(
+                              'Date: $date',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          );
+                        }
+                        currentIndex++;
+
+                        final orders = groupedOrders[date]!;
+                        if (index - currentIndex < orders.length) {
+                          final order = orders[index - currentIndex];
+                          final orderKey = order['key'];
+                          return _buildOrderCard(order, orderKey, baseStyle);
+                        }
+                        currentIndex += orders.length;
+                      }
+
+                      return SizedBox.shrink();
                     },
                   ),
         ),
@@ -349,10 +445,17 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFFF0F4F5),
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Colors.white,
-        elevation: 2,
+        backgroundColor: Color(0xFFF0F4F5),
+        elevation: 0,
+        foregroundColor: Colors.black,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Color(0xFFF0F4F5),
+          statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
+        ),
         title: Row(
           children: [
             RichText(
@@ -386,35 +489,47 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
           _buildMainPage(),
           GenerateQRScreen(),
           PendaftaranScreen(),
-          SavedOrdersScreen(), // Lead
+          SavedOrdersScreen(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentPage,
-        onTap: (index) {
-          _pageController.animateToPage(
-            index,
-            duration: Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        },
-        backgroundColor: Colors.white,
-        selectedItemColor: Color(0xFFE67D13),
-        unselectedItemColor: Colors.black,
-        selectedLabelStyle: TextStyle(fontSize: 12, color: Color(0xFFE67D13)),
-        unselectedLabelStyle: TextStyle(fontSize: 12, color: Colors.black),
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insert_drive_file),
-            label: 'Pengajuan',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'QR Code'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: 'Pendaftaran Agent',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Lead'),
-        ],
+
+      bottomNavigationBar: Theme(
+        data: Theme.of(context).copyWith(
+          canvasColor: Colors.white,
+          shadowColor: Colors.transparent,
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+        ),
+        child: BottomNavigationBar(
+          elevation: 0,
+          currentIndex: _currentPage,
+          onTap: (index) {
+            _pageController.animateToPage(
+              index,
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          },
+          selectedItemColor: Color(0xFFE67D13),
+          unselectedItemColor: Colors.black,
+          selectedLabelStyle: TextStyle(fontSize: 12),
+          unselectedLabelStyle: TextStyle(fontSize: 12),
+          items: [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.insert_drive_file),
+              label: 'Pengajuan',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.qr_code),
+              label: 'QR Code',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.assignment),
+              label: 'Pendaftaran Agent',
+            ),
+            BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Lead'),
+          ],
+        ),
       ),
     );
   }
