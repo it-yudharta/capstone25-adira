@@ -29,15 +29,6 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   List<Map<dynamic, dynamic>> _filteredOrders = [];
   String _searchQuery = '';
   bool _isLoading = false;
-
-  final List<String> _statusList = [
-    'disetujui',
-    'ditolak',
-    'dibatalkan',
-    'diproses',
-    'dipending',
-  ];
-
   final FocusNode _focusNode = FocusNode();
 
   List<String> get orderedDates {
@@ -58,9 +49,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   @override
   void initState() {
     super.initState();
-    _focusNode.addListener(() {
-      setState(() {});
-    });
+    _focusNode.addListener(() => setState(() {}));
     _fetchOrders();
   }
 
@@ -79,14 +68,11 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
       final loadedOrders = <Map<dynamic, dynamic>>[];
 
       data.forEach((key, value) {
-        final status = value['status']?.toString().toLowerCase() ?? '';
-        if (status.isEmpty || status == 'belum diproses') {
-          if (value['timestamp'] != null && value['timestamp'] is int) {
-            value['timestamp'] = _convertTimestamp(value['timestamp']);
-          }
-          value['key'] = key;
-          loadedOrders.add(value);
+        if (value['timestamp'] != null && value['timestamp'] is int) {
+          value['timestamp'] = _convertTimestamp(value['timestamp']);
         }
+        value['key'] = key;
+        loadedOrders.add(value);
       });
 
       setState(() {
@@ -104,72 +90,25 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   }
 
   void _applySearch() {
-    if (_searchQuery.isEmpty) {
-      _filteredOrders = List.from(_orders);
-    } else {
-      final query = _searchQuery.toLowerCase();
-      _filteredOrders =
-          _orders.where((order) {
-            final name = (order['name'] ?? '').toString().toLowerCase();
-            final email = (order['email'] ?? '').toString().toLowerCase();
-            final agentName =
-                (order['agentName'] ?? '').toString().toLowerCase();
-            return name.contains(query) ||
-                email.contains(query) ||
-                agentName.contains(query);
-          }).toList();
-    }
+    _filteredOrders =
+        _searchQuery.isEmpty
+            ? List.from(_orders)
+            : _orders.where((order) {
+              final query = _searchQuery.toLowerCase();
+              final name = (order['name'] ?? '').toString().toLowerCase();
+              final email = (order['email'] ?? '').toString().toLowerCase();
+              final agentName =
+                  (order['agentName'] ?? '').toString().toLowerCase();
+              return name.contains(query) ||
+                  email.contains(query) ||
+                  agentName.contains(query);
+            }).toList();
   }
 
   String _convertTimestamp(int timestamp) {
-    final dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    return DateFormat('d-M-yyyy').format(dateTime);
-  }
-
-  void _updateStatus(String key, String newStatus) async {
-    await _database.child(key).update({'status': newStatus});
-    _fetchOrders();
-  }
-
-  void _showStatusSelector(String key) {
-    showModalBottomSheet(
-      context: context,
-      builder:
-          (_) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children:
-                _statusList.map((status) {
-                  return ListTile(
-                    title: Text(
-                      'Setel ke: ${status[0].toUpperCase()}${status.substring(1)}',
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _updateStatus(key, status);
-                    },
-                  );
-                }).toList(),
-          ),
-    );
-  }
-
-  void _navigateToStatusScreen(String status) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => StatusPengajuanScreen(status: status)),
-    );
-  }
-
-  void _navigateToTrashScreen() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => TrashScreen()));
-  }
-
-  void _clearSearch() {
-    setState(() {
-      _searchController.clear();
-      _searchQuery = '';
-      _applySearch();
-    });
+    return DateFormat(
+      'd-M-yyyy',
+    ).format(DateTime.fromMillisecondsSinceEpoch(timestamp));
   }
 
   void _logout() async {
@@ -179,7 +118,18 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     ).pushReplacement(MaterialPageRoute(builder: (_) => LoginScreen()));
   }
 
+  void _updateLeadStatus(String orderKey, bool isLead) async {
+    final orderRef = _database.child(orderKey);
+    try {
+      await orderRef.update({'lead': isLead});
+    } catch (error) {
+      print("Failed to update lead status: $error");
+    }
+  }
+
   Widget _buildOrderCard(Map order, String orderKey, TextStyle? baseStyle) {
+    final isLead = order['lead'] == true;
+
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -204,25 +154,72 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
             ),
           ],
         ),
-        child: DefaultTextStyle.merge(
-          style: baseStyle,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Agent         : ${order['agentName'] ?? '-'}",
-                style: TextStyle(fontWeight: FontWeight.bold),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 32),
+              child: DefaultTextStyle.merge(
+                style: baseStyle,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Agent         : ${order['agentName'] ?? '-'}",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 4),
+                    Text("Nama         : ${order['name'] ?? '-'}"),
+                    Text("Alamat       : ${order['domicile'] ?? '-'}"),
+                    Text("No. Telp     : ${order['phone'] ?? '-'}"),
+                    Text("Pekerjaan  : ${order['job'] ?? '-'}"),
+                    Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                    SizedBox(height: 8),
+                    Text(
+                      "Status        : ${order['status'] ?? 'Belum diproses'}",
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(height: 4),
-              Text("Nama         : ${order['name'] ?? '-'}"),
-              Text("Alamat       : ${order['domicile'] ?? '-'}"),
-              Text("No. Telp     : ${order['phone'] ?? '-'}"),
-              Text("Pekerjaan  : ${order['job'] ?? '-'}"),
-              Text("Pengajuan : ${order['installment'] ?? '-'}"),
-              SizedBox(height: 8),
-              Text("Status        : ${order['status'] ?? 'Belum diproses'}"),
-            ],
-          ),
+            ),
+            if (isLead)
+              Positioned(
+                top: 4,
+                left: 260,
+                child: Transform.scale(
+                  scaleY: 1.3,
+                  scaleX: 1.0,
+                  child: Icon(Icons.bookmark, size: 24, color: Colors.orange),
+                ),
+              ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'lead') {
+                    setState(() => order['lead'] = true);
+                    _updateLeadStatus(orderKey, true);
+                  } else if (value == 'unlead') {
+                    setState(() => order['lead'] = false);
+                    _updateLeadStatus(orderKey, false);
+                  }
+                },
+                itemBuilder:
+                    (BuildContext context) => [
+                      if (!isLead)
+                        PopupMenuItem<String>(
+                          value: 'lead',
+                          child: Text('Tandai sebagai Lead'),
+                        ),
+                      if (isLead)
+                        PopupMenuItem<String>(
+                          value: 'unlead',
+                          child: Text('Batalkan Lead'),
+                        ),
+                    ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -230,11 +227,12 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
-      {'label': 'Batal', 'status': 'dibatalkan', 'icon': Icons.cancel},
-      {'label': 'Proses', 'status': 'diproses', 'icon': Icons.hourglass_bottom},
-      {'label': 'Pending', 'status': 'dipending', 'icon': Icons.pause_circle},
-      {'label': 'Tolak', 'status': 'ditolak', 'icon': Icons.block},
-      {'label': 'Setuju', 'status': 'disetujui', 'icon': Icons.check_circle},
+      {'label': 'Batal', 'status': 'batal', 'icon': Icons.cancel},
+      {'label': 'Proses', 'status': 'proses', 'icon': Icons.hourglass_bottom},
+      {'label': 'Pending', 'status': 'pending', 'icon': Icons.pause_circle},
+      {'label': 'Tolak', 'status': 'tolak', 'icon': Icons.block},
+      {'label': 'Setuju', 'status': 'setuju', 'icon': Icons.check_circle},
+      {'label': 'Lead', 'status': 'lead', 'icon': Icons.bookmark},
       {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
     ];
 
@@ -251,14 +249,25 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         child: Row(
           children: List.generate(statusButtons.length * 2 - 1, (index) {
             if (index.isOdd) return SizedBox(width: 16);
-
             final item = statusButtons[index ~/ 2];
             return InkWell(
               onTap: () {
-                if (item['status'] == 'trash') {
-                  _navigateToTrashScreen();
+                if (item['status'] == 'lead') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => SavedOrdersScreen()),
+                  );
                 } else {
-                  _navigateToStatusScreen(item['status']);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => StatusPengajuanScreen(
+                            status: item['status'],
+                            title: item['label'],
+                          ),
+                    ),
+                  );
                 }
               },
               child: Column(
@@ -290,16 +299,11 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     );
   }
 
-  bool isPressed = false;
-
   Map<String, List<Map>> _groupOrdersByDate(List<Map> orders) {
     final Map<String, List<Map>> grouped = {};
     for (var order in orders) {
       final date = order['timestamp'] ?? 'Tanggal tidak diketahui';
-      if (!grouped.containsKey(date)) {
-        grouped[date] = [];
-      }
-      grouped[date]!.add(order);
+      grouped.putIfAbsent(date, () => []).add(order);
     }
     return grouped;
   }
@@ -354,10 +358,8 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                             ? Color(0xFFE67D13)
                             : Colors.grey.shade600,
                   ),
-                  onPressed: () {
-                    FocusScope.of(context).requestFocus(_focusNode);
-                    _applySearch();
-                  },
+                  onPressed:
+                      () => FocusScope.of(context).requestFocus(_focusNode),
                 ),
               ),
               style: TextStyle(fontSize: 14),
@@ -366,6 +368,26 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         ),
         SizedBox(height: 8),
         _buildStatusMenu(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  backgroundColor: Color(0xFFE67D13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text('Export All', style: TextStyle(fontSize: 14)),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 12),
         Expanded(
           child:
               _isLoading
@@ -381,7 +403,6 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                     ),
                     itemBuilder: (context, index) {
                       int currentIndex = 0;
-
                       for (final date in orderedDates) {
                         if (index == currentIndex) {
                           return Padding(
@@ -401,42 +422,17 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                         final orders = groupedOrders[date]!;
                         if (index - currentIndex < orders.length) {
                           final order = orders[index - currentIndex];
-                          final orderKey = order['key'];
-                          return _buildOrderCard(order, orderKey, baseStyle);
+                          return _buildOrderCard(
+                            order,
+                            order['key'],
+                            baseStyle,
+                          );
                         }
                         currentIndex += orders.length;
                       }
-
                       return SizedBox.shrink();
                     },
                   ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOutlinedIcon(IconData iconData, bool isSelected) {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Text(
-          String.fromCharCode(iconData.codePoint),
-          style: TextStyle(
-            inherit: false,
-            fontSize: 24,
-            fontFamily: iconData.fontFamily,
-            package: iconData.fontPackage,
-            foreground:
-                Paint()
-                  ..style = PaintingStyle.stroke
-                  ..strokeWidth = 1.8
-                  ..color = Colors.black,
-          ),
-        ),
-        Icon(
-          iconData,
-          size: 24,
-          color: isSelected ? Colors.blue : Colors.white,
         ),
       ],
     );
@@ -481,7 +477,6 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
           ],
         ),
       ),
-
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) => setState(() => _currentPage = index),
@@ -492,44 +487,31 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
           SavedOrdersScreen(),
         ],
       ),
-
-      bottomNavigationBar: Theme(
-        data: Theme.of(context).copyWith(
-          canvasColor: Colors.white,
-          shadowColor: Colors.transparent,
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-        ),
-        child: BottomNavigationBar(
-          elevation: 0,
-          currentIndex: _currentPage,
-          onTap: (index) {
-            _pageController.animateToPage(
+      bottomNavigationBar: BottomNavigationBar(
+        elevation: 0,
+        currentIndex: _currentPage,
+        onTap:
+            (index) => _pageController.animateToPage(
               index,
               duration: Duration(milliseconds: 300),
               curve: Curves.easeInOut,
-            );
-          },
-          selectedItemColor: Color(0xFFE67D13),
-          unselectedItemColor: Colors.black,
-          selectedLabelStyle: TextStyle(fontSize: 12),
-          unselectedLabelStyle: TextStyle(fontSize: 12),
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.insert_drive_file),
-              label: 'Pengajuan',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.qr_code),
-              label: 'QR Code',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.assignment),
-              label: 'Pendaftaran Agent',
-            ),
-            BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Lead'),
-          ],
-        ),
+        selectedItemColor: Color(0xFFE67D13),
+        unselectedItemColor: Colors.black,
+        selectedLabelStyle: TextStyle(fontSize: 12),
+        unselectedLabelStyle: TextStyle(fontSize: 12),
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.insert_drive_file),
+            label: 'Pengajuan',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'QR Code'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment),
+            label: 'Pendaftaran Agent',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Lead'),
+        ],
       ),
     );
   }
