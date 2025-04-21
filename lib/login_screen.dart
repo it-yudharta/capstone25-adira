@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'main_screen.dart';
 import 'change_password_screen.dart';
+import 'pengajuan_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -36,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => MainScreen()),
+          MaterialPageRoute(builder: (context) => PengajuanScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {

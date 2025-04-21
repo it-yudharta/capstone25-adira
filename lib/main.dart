@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
-import 'main_screen.dart';
+import 'pengajuan_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +34,7 @@ class AuthWrapper extends StatelessWidget {
         if (user == null) {
           return LoginScreen();
         } else {
-          return MainScreen();
+          return PengajuanScreen();
         }
       },
     );
