@@ -10,6 +10,7 @@ import 'pendaftaran_screen.dart';
 import 'login_screen.dart';
 import 'order_detail_screen.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PengajuanScreen extends StatefulWidget {
   @override
@@ -127,9 +128,30 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     }
   }
 
+  String normalizePhoneNumber(String phone) {
+    if (phone.startsWith('0')) {
+      return '62${phone.substring(1)}';
+    }
+    return phone;
+  }
+
+  Future<void> _launchWhatsApp(String phoneNumber) async {
+    final normalizedPhone = normalizePhoneNumber(phoneNumber);
+    final url = 'https://wa.me/$normalizedPhone';
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+    }
+  }
+
   Widget _buildOrderCard(Map order, String orderKey, TextStyle? baseStyle) {
     final isLead = order['lead'] == true;
-
+    final String phoneNumber = order['phone'] ?? '-';
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -170,7 +192,24 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                     SizedBox(height: 4),
                     Text("Nama         : ${order['name'] ?? '-'}"),
                     Text("Alamat       : ${order['domicile'] ?? '-'}"),
-                    Text("No. Telp     : ${order['phone'] ?? '-'}"),
+                    GestureDetector(
+                      onTap: () async {
+                        try {
+                          await _launchWhatsApp(phoneNumber);
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error launching WhatsApp: $e'),
+                            ),
+                          );
+                        }
+                      },
+                      child: Text(
+                        "No. Telp     : $phoneNumber",
+                        style: TextStyle(color: Colors.blue),
+                      ),
+                    ),
+
                     Text("Pekerjaan  : ${order['job'] ?? '-'}"),
                     Text("Pengajuan : ${order['installment'] ?? '-'}"),
                     SizedBox(height: 8),
@@ -229,7 +268,6 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     final List<Map<String, dynamic>> statusButtons = [
       {'label': 'Batal', 'status': 'batal', 'icon': Icons.cancel},
       {'label': 'Proses', 'status': 'proses', 'icon': Icons.hourglass_bottom},
-      {'label': 'Pending', 'status': 'pending', 'icon': Icons.pause_circle},
       {'label': 'Tolak', 'status': 'tolak', 'icon': Icons.block},
       {'label': 'Setuju', 'status': 'setuju', 'icon': Icons.check_circle},
       {'label': 'Lead', 'status': 'lead', 'icon': Icons.bookmark},
@@ -289,7 +327,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                     ),
                   ),
                   SizedBox(height: 4),
-                  Text(item['label'], style: TextStyle(fontSize: 12)),
+                  Text(item['label'], style: TextStyle(fontSize: 10)),
                 ],
               ),
             );
@@ -477,30 +515,46 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
           ],
         ),
       ),
-      body: PageView(
+      body: PageView.builder(
         controller: _pageController,
-        onPageChanged: (index) => setState(() => _currentPage = index),
-        children: [
-          _buildMainPage(),
-          GenerateQRScreen(),
-          PendaftaranScreen(),
-          SavedOrdersScreen(),
-        ],
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        itemCount: 4,
+        onPageChanged: (index) {
+          setState(() => _currentPage = index);
+        },
+        itemBuilder: (context, index) {
+          switch (index) {
+            case 0:
+              return _buildMainPage();
+            case 1:
+              return GenerateQRScreen();
+            case 2:
+              return PendaftaranScreen();
+            case 3:
+              return SavedOrdersScreen();
+            default:
+              return const SizedBox();
+          }
+        },
       ),
+
       bottomNavigationBar: BottomNavigationBar(
         elevation: 0,
         currentIndex: _currentPage,
-        onTap:
-            (index) => _pageController.animateToPage(
-              index,
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            ),
-        selectedItemColor: Color(0xFFE67D13),
+        onTap: (index) {
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutCubic,
+          );
+        },
+        selectedItemColor: const Color(0xFFE67D13),
         unselectedItemColor: Colors.black,
-        selectedLabelStyle: TextStyle(fontSize: 12),
-        unselectedLabelStyle: TextStyle(fontSize: 12),
-        items: [
+        selectedLabelStyle: const TextStyle(fontSize: 12),
+        unselectedLabelStyle: const TextStyle(fontSize: 12),
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.insert_drive_file),
             label: 'Pengajuan',

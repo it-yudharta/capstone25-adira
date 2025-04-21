@@ -112,29 +112,36 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Text(
-              "Agent         : ${order['agentName'] ?? '-'}",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 4),
-            Text("Nama         : ${order['name'] ?? '-'}"),
-            Text("Alamat       : ${order['domicile'] ?? '-'}"),
-            Text("No. Telp     : ${order['phone'] ?? '-'}"),
-            Text("Pekerjaan    : ${order['job'] ?? '-'}"),
-            Text("Pengajuan    : ${order['installment'] ?? '-'}"),
-            SizedBox(height: 8),
-            Text("Status        : ${order['status'] ?? 'Belum diproses'}"),
-            Positioned(
-              top: 4,
-              left: 260,
-              child: Transform.scale(
-                scaleY: 1.3,
-                scaleX: 1.0,
-                child: Icon(Icons.bookmark, size: 24, color: Colors.orange),
+            Padding(
+              padding: const EdgeInsets.only(
+                right: 32.0,
+              ), // supaya ga ketabrak icon
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Agent         : ${order['agentName'] ?? '-'}",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 4),
+                  Text("Nama         : ${order['name'] ?? '-'}"),
+                  Text("Alamat       : ${order['domicile'] ?? '-'}"),
+                  Text("No. Telp     : ${order['phone'] ?? '-'}"),
+                  Text("Pekerjaan    : ${order['job'] ?? '-'}"),
+                  Text("Pengajuan    : ${order['installment'] ?? '-'}"),
+                  SizedBox(height: 8),
+                  Text(
+                    "Status        : ${order['status'] ?? 'Belum diproses'}",
+                  ),
+                ],
               ),
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: Icon(Icons.bookmark, size: 24, color: Colors.orange),
             ),
           ],
         ),
