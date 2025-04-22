@@ -77,7 +77,11 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
       });
 
       setState(() {
-        _orders = loadedOrders;
+        _orders =
+            loadedOrders.where((order) {
+              return order['status'] == null ||
+                  order['status'] == 'Belum diproses';
+            }).toList();
         _applySearch();
         _isLoading = false;
       });
@@ -149,6 +153,24 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     }
   }
 
+  void _updateOrderStatus(String orderKey, String newStatus) async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('d-M-yyyy').format(now);
+
+    try {
+      await _database.child(orderKey).update({
+        'status': newStatus,
+        'statusUpdatedAt': formattedDate,
+      });
+      _fetchOrders(); // refresh data
+    } catch (e) {
+      print("Gagal memperbarui status: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal memperbarui status')));
+    }
+  }
+
   Widget _buildOrderCard(Map order, String orderKey, TextStyle? baseStyle) {
     final isLead = order['lead'] == true;
     final String phoneNumber = order['phone'] ?? '-';
@@ -213,9 +235,10 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                     Text("Pekerjaan  : ${order['job'] ?? '-'}"),
                     Text("Pengajuan : ${order['installment'] ?? '-'}"),
                     SizedBox(height: 8),
-                    Text(
-                      "Status        : ${order['status'] ?? 'Belum diproses'}",
-                    ),
+                    if (!(isLead && (order['status'] == 'lead')))
+                      Text(
+                        "Status        : ${order['status'] ?? 'Belum diproses'}",
+                      ),
                   ],
                 ),
               ),
@@ -256,6 +279,35 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                           child: Text('Batalkan Lead'),
                         ),
                     ],
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: () => _updateOrderStatus(order['key'], 'proses'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text('Proses', style: TextStyle(fontSize: 12)),
+                  ),
+                  SizedBox(width: 6),
+                  ElevatedButton(
+                    onPressed: () => _updateOrderStatus(order['key'], 'batal'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text('Batalkan', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
               ),
             ),
           ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:intl/intl.dart';
 
 class StatusPengajuanScreen extends StatelessWidget {
   final String status;
@@ -11,10 +12,22 @@ class StatusPengajuanScreen extends StatelessWidget {
     required this.title,
   }) : super(key: key);
 
+  // 🔁 Fungsi konversi timestamp ke format tanggal
+  String formatTimestamp(dynamic timestamp) {
+    if (timestamp is int) {
+      final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      return DateFormat('d-M-yyyy').format(date);
+    } else if (timestamp is String) {
+      return timestamp;
+    } else {
+      return '';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final DatabaseReference dbRef = FirebaseDatabase.instance.ref().child(
-      'pengajuan',
+      'orders',
     );
 
     return Scaffold(
@@ -40,12 +53,21 @@ class StatusPengajuanScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final pengajuan = items[index];
                 return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   child: ListTile(
-                    title: Text(pengajuan['nama'] ?? 'Tanpa Nama'),
-                    subtitle: Text('Status: ${pengajuan['status']}'),
-                    trailing: Text(pengajuan['tanggal'] ?? ''),
+                    title: Text(pengajuan['name'] ?? 'Tanpa Nama'),
+                    subtitle: Text(
+                      'Status: ${pengajuan['status'] ?? 'Tidak diketahui'}',
+                    ),
+                    trailing: Text(
+                      formatTimestamp(pengajuan['timestamp']),
+                      style: const TextStyle(fontSize: 12),
+                    ),
                     onTap: () {
-                      // Aksi ketika item diklik, bisa tambahkan navigasi ke detail
+                      // Navigasi ke detail bisa ditambahkan di sini
                     },
                   ),
                 );
