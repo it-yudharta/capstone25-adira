@@ -1,16 +1,39 @@
+import java.util.Properties
+import java.io.File
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    // Apply the Google services plugin here
-    id("com.google.gms.google-services") // Firebase Plugin
+    id("com.google.gms.google-services") 
 }
 
 android {
+    val keystoreProperties = Properties()
+    val keystorePropertiesFile = File("C:/Users/USER/resellerapp/android/key.properties")
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(keystorePropertiesFile.inputStream())
+    } else {
+        throw GradleException("Keystore properties file not found!")
+    }
+
+    val keystoreFilePath = keystoreProperties["storeFile"] as String?
+    if (keystoreFilePath.isNullOrEmpty()) {
+        throw GradleException("Keystore file path is empty or null!")
+    }
+
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties["keyAlias"] as String?
+            keyPassword = keystoreProperties["keyPassword"] as String?
+            storeFile = file("C:/Users/USER/resellerapp/android/app/release-key.keystore")
+            storePassword = keystoreProperties["storePassword"] as String?
+        }
+    }
+
     namespace = "com.example.resellerapp"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "29.0.13113456"  // Ganti dengan versi NDK yang kamu inginkan
+    ndkVersion = "29.0.13113456"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -22,21 +45,18 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.resellerapp"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+    applicationId = "com.fundrain.resellerapp"
+    minSdk = flutter.minSdkVersion
+    targetSdk = flutter.targetSdkVersion
+    versionCode = flutter.versionCode
+    versionName = flutter.versionName
     }
 
     buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+            isShrinkResources = false
+            isMinifyEnabled = false
         }
     }
 }

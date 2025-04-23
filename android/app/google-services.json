@@ -8,9 +8,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:194922134187:android:4150a56d15062d8e0195ee",
+        "mobilesdk_app_id": "1:194922134187:android:368f40e4ec1a39380195ee",
         "android_client_info": {
-          "package_name": "com.example.resellerapp"
+          "package_name": "com.fundrain.resellerapp"
         }
       },
       "oauth_client": [],

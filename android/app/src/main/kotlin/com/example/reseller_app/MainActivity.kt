@@ -1,4 +1,4 @@
-package com.example.reseller_app
+package com.fundrain.resellerapp
 
 import io.flutter.embedding.android.FlutterActivity
 

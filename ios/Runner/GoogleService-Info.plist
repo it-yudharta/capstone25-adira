@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.resellerapp</string>
+	<string>com.fundrain.resellerapp</string>
 	<key>PROJECT_ID</key>
 	<string>reseller-form-a616f</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,7 +25,7 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:194922134187:ios:73773cdc9f71512e0195ee</string>
+	<string>1:194922134187:ios:ba14a52d9611e8ed0195ee</string>
 	<key>DATABASE_URL</key>
 	<string>https://reseller-form-a616f-default-rtdb.asia-southeast1.firebasedatabase.app</string>
 </dict>
