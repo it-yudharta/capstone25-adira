@@ -12,7 +12,6 @@ class StatusPengajuanScreen extends StatelessWidget {
     required this.title,
   }) : super(key: key);
 
-  // 🔁 Fungsi konversi timestamp ke format tanggal
   String formatTimestamp(dynamic timestamp) {
     if (timestamp is int) {
       final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
@@ -66,9 +65,7 @@ class StatusPengajuanScreen extends StatelessWidget {
                       formatTimestamp(pengajuan['timestamp']),
                       style: const TextStyle(fontSize: 12),
                     ),
-                    onTap: () {
-                      // Navigasi ke detail bisa ditambahkan di sini
-                    },
+                    onTap: () {},
                   ),
                 );
               },

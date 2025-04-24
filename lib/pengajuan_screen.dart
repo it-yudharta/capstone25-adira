@@ -174,6 +174,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   Widget _buildOrderCard(Map order, String orderKey, TextStyle? baseStyle) {
     final isLead = order['lead'] == true;
     final String phoneNumber = order['phone'] ?? '-';
+
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -200,47 +201,113 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         ),
         child: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 32),
-              child: DefaultTextStyle.merge(
-                style: baseStyle,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+            DefaultTextStyle.merge(
+              style: baseStyle,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Agent         : ${order['agentName'] ?? '-'}",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 4),
+                  Text("Nama         : ${order['name'] ?? '-'}"),
+                  Text("Alamat       : ${order['domicile'] ?? '-'}"),
+                  GestureDetector(
+                    onTap: () async {
+                      try {
+                        await _launchWhatsApp(phoneNumber);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error launching WhatsApp: $e'),
+                          ),
+                        );
+                      }
+                    },
+                    child: Text(
+                      "No. Telp     : $phoneNumber",
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                  ),
+                  Text("Pekerjaan  : ${order['job'] ?? '-'}"),
+                  Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                  SizedBox(height: 8),
+                  if (!(isLead && (order['status'] == 'lead')))
                     Text(
-                      "Agent         : ${order['agentName'] ?? '-'}",
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      "Status        : ${order['status'] ?? 'Belum diproses'}",
                     ),
-                    SizedBox(height: 4),
-                    Text("Nama         : ${order['name'] ?? '-'}"),
-                    Text("Alamat       : ${order['domicile'] ?? '-'}"),
-                    GestureDetector(
-                      onTap: () async {
-                        try {
-                          await _launchWhatsApp(phoneNumber);
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error launching WhatsApp: $e'),
+                  SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton(
+                          onPressed:
+                              () => _updateOrderStatus(order['key'], 'cancel'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                          );
-                        }
-                      },
-                      child: Text(
-                        "No. Telp     : $phoneNumber",
-                        style: TextStyle(color: Colors.blue),
-                      ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.cancel, size: 16, color: Colors.white),
+                              SizedBox(height: 4),
+                              Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        ElevatedButton(
+                          onPressed:
+                              () => _updateOrderStatus(order['key'], 'process'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.hourglass_bottom,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                'Process',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-
-                    Text("Pekerjaan  : ${order['job'] ?? '-'}"),
-                    Text("Pengajuan : ${order['installment'] ?? '-'}"),
-                    SizedBox(height: 8),
-                    if (!(isLead && (order['status'] == 'lead')))
-                      Text(
-                        "Status        : ${order['status'] ?? 'Belum diproses'}",
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             if (isLead)
@@ -250,9 +317,14 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                 child: Transform.scale(
                   scaleY: 1.3,
                   scaleX: 1.0,
-                  child: Icon(Icons.bookmark, size: 24, color: Colors.orange),
+                  child: Icon(
+                    Icons.bookmark,
+                    size: 24,
+                    color: Color(0xFF0E5C36),
+                  ),
                 ),
               ),
+
             Positioned(
               top: 0,
               right: 0,
@@ -281,35 +353,6 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                     ],
               ),
             ),
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: () => _updateOrderStatus(order['key'], 'proses'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text('Proses', style: TextStyle(fontSize: 12)),
-                  ),
-                  SizedBox(width: 6),
-                  ElevatedButton(
-                    onPressed: () => _updateOrderStatus(order['key'], 'batal'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text('Batalkan', style: TextStyle(fontSize: 12)),
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -318,11 +361,10 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
-      {'label': 'Batal', 'status': 'batal', 'icon': Icons.cancel},
-      {'label': 'Proses', 'status': 'proses', 'icon': Icons.hourglass_bottom},
-      {'label': 'Tolak', 'status': 'tolak', 'icon': Icons.block},
-      {'label': 'Setuju', 'status': 'setuju', 'icon': Icons.check_circle},
-      {'label': 'Lead', 'status': 'lead', 'icon': Icons.bookmark},
+      {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
+      {'label': 'Process', 'status': 'process', 'icon': Icons.hourglass_bottom},
+      {'label': 'Reject', 'status': 'reject', 'icon': Icons.block},
+      {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
       {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
     ];
 
@@ -342,23 +384,16 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
             final item = statusButtons[index ~/ 2];
             return InkWell(
               onTap: () {
-                if (item['status'] == 'lead') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => SavedOrdersScreen()),
-                  );
-                } else {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (_) => StatusPengajuanScreen(
-                            status: item['status'],
-                            title: item['label'],
-                          ),
-                    ),
-                  );
-                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => StatusPengajuanScreen(
+                          status: item['status'],
+                          title: item['label'],
+                        ),
+                  ),
+                );
               },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -375,7 +410,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                     child: Icon(
                       item['icon'],
                       size: 21,
-                      color: Color(0xFFE67D13),
+                      color: Color(0xFF0E5C36),
                     ),
                   ),
                   SizedBox(height: 4),
@@ -436,7 +471,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: Color(0xFFE67D13), width: 1.5),
+                  borderSide: BorderSide(color: Color(0xFF0E5C36), width: 1.5),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -445,7 +480,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                     Icons.search,
                     color:
                         _focusNode.hasFocus
-                            ? Color(0xFFE67D13)
+                            ? Color(0xFF0E5C36)
                             : Colors.grey.shade600,
                   ),
                   onPressed:
@@ -467,7 +502,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  backgroundColor: Color(0xFFE67D13),
+                  backgroundColor: Color(0xFF0E5C36),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -550,18 +585,18 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                 children: [
                   TextSpan(
                     text: 'Fundra',
-                    style: TextStyle(color: Color(0xFFEA7D10)),
+                    style: TextStyle(color: Color(0xFF0E5C36)),
                   ),
                   TextSpan(
                     text: 'IN',
-                    style: TextStyle(color: Color(0xFF0C2BC5)),
+                    style: TextStyle(color: Color(0xFFE67D13)),
                   ),
                 ],
               ),
             ),
             Spacer(),
             IconButton(
-              icon: Icon(Icons.logout, color: Color(0xFFE67D13)),
+              icon: Icon(Icons.logout, color: Color.fromARGB(255, 0, 0, 0)),
               onPressed: _logout,
             ),
           ],
@@ -602,7 +637,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
             curve: Curves.easeOutCubic,
           );
         },
-        selectedItemColor: const Color(0xFFE67D13),
+        selectedItemColor: const Color(0xFF0E5C36),
         unselectedItemColor: Colors.black,
         selectedLabelStyle: const TextStyle(fontSize: 12),
         unselectedLabelStyle: const TextStyle(fontSize: 12),
