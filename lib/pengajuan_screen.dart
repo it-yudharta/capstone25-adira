@@ -162,7 +162,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         'status': newStatus,
         'statusUpdatedAt': formattedDate,
       });
-      _fetchOrders(); // refresh data
+      _fetchOrders();
     } catch (e) {
       print("Gagal memperbarui status: $e");
       ScaffoldMessenger.of(
