@@ -1,5 +1,5 @@
-// lib/screens/pendaftaran_screen.dart
 import 'package:flutter/material.dart';
+import 'custom_bottom_nav_bar.dart';
 
 class PendaftaranScreen extends StatelessWidget {
   @override

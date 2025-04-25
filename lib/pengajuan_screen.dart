@@ -3,14 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'status_pengajuan_screen.dart';
-import 'trash_screen.dart';
-import 'saved_orders_screen.dart';
-import 'generate_qr_screen.dart';
-import 'pendaftaran_screen.dart';
+import 'custom_bottom_nav_bar.dart';
 import 'login_screen.dart';
 import 'order_detail_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'generate_qr_screen.dart';
+import 'saved_orders_screen.dart';
+import 'pendaftaran_screen.dart';
 
 class PengajuanScreen extends StatefulWidget {
   @override
@@ -566,7 +566,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF0F4F5),
+      backgroundColor: Color(0xFFF0F4F5), // Set background color
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Color(0xFFF0F4F5),
@@ -596,8 +596,8 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
             ),
             Spacer(),
             IconButton(
-              icon: Icon(Icons.logout, color: Color.fromARGB(255, 0, 0, 0)),
-              onPressed: _logout,
+              icon: Icon(Icons.logout, color: Colors.black),
+              onPressed: _logout, // Add your logout function here
             ),
           ],
         ),
@@ -614,28 +614,30 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         itemBuilder: (context, index) {
           switch (index) {
             case 0:
-              return _buildMainPage();
+              return _buildMainPage(); // Pengajuan
             case 1:
-              return GenerateQRScreen();
+              return GenerateQRScreen(); // QR Code
             case 2:
-              return PendaftaranScreen();
+              return PendaftaranScreen(); // Pendaftaran Agent
             case 3:
-              return SavedOrdersScreen();
+              return SavedOrdersScreen(); // Saved
             default:
               return const SizedBox();
           }
         },
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         elevation: 0,
         currentIndex: _currentPage,
         onTap: (index) {
-          _pageController.animateToPage(
-            index,
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeOutCubic,
-          );
+          setState(() {
+            _currentPage = index;
+            _pageController.animateToPage(
+              index,
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOutCubic,
+            );
+          });
         },
         selectedItemColor: const Color(0xFF0E5C36),
         unselectedItemColor: Colors.black,

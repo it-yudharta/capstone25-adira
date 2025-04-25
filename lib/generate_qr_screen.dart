@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'generate_qr_pengajuan.dart';
 import 'generate_qr_pendaftaran.dart';
+import 'custom_bottom_nav_bar.dart';
 
 class GenerateQRScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Generate QR Code'),
-      ),
+      appBar: AppBar(title: Text('Generate QR Code')),
       body: Center(
         child: ListView(
           padding: EdgeInsets.all(20),
@@ -19,7 +18,9 @@ class GenerateQRScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => GenerateQRPengajuan()),
+                  MaterialPageRoute(
+                    builder: (context) => GenerateQRPengajuan(),
+                  ),
                 );
               },
             ),
@@ -29,7 +30,9 @@ class GenerateQRScreen extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => GenerateQRPendaftaran()),
+                  MaterialPageRoute(
+                    builder: (context) => GenerateQRPendaftaran(),
+                  ),
                 );
               },
             ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'custom_bottom_nav_bar.dart';
 
 class StatusPengajuanScreen extends StatefulWidget {
   String status;
@@ -546,6 +547,7 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: const CustomBottomNavBar(currentRoute: 'other'),
     );
   }
 }
