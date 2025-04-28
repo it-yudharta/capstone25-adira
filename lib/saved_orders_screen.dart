@@ -116,9 +116,7 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.only(
-                right: 32.0,
-              ), // supaya ga ketabrak icon
+              padding: const EdgeInsets.only(right: 32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

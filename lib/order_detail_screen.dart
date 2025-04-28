@@ -154,8 +154,7 @@ class OrderDetailScreen extends StatelessWidget {
                     Text("Angsuran Lain: ${orderData['installment'] ?? '-'}"),
                     Text("Tanggal Pengajuan: ${orderData['timestamp'] ?? '-'}"),
 
-                    // Status Text
-                    SizedBox(height: 16), // Adds space above the status section
+                    SizedBox(height: 16),
                     Text(
                       "Status: ${orderData['status'] ?? '-'}",
                       style: TextStyle(fontWeight: FontWeight.bold),

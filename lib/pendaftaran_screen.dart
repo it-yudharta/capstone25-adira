@@ -89,9 +89,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
 
   Widget _buildAgentCard(Map agent) {
     return InkWell(
-      onTap: () {
-        // Action kalau card ditekan
-      },
+      onTap: () {},
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         padding: EdgeInsets.all(12),
@@ -129,9 +127,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         ElevatedButton(
-                          onPressed: () {
-                            // Handle cancel
-                          },
+                          onPressed: () {},
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
@@ -159,9 +155,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                         ),
                         SizedBox(width: 6),
                         ElevatedButton(
-                          onPressed: () {
-                            // Handle approve
-                          },
+                          onPressed: () {},
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
@@ -244,9 +238,12 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
 
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
-      {'label': 'Pending', 'status': 'pending', 'icon': Icons.pending},
-      {'label': 'Approved', 'status': 'approved', 'icon': Icons.check_circle},
-      {'label': 'Rejected', 'status': 'rejected', 'icon': Icons.block},
+      {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
+      {'label': 'Process', 'status': 'process', 'icon': Icons.hourglass_top},
+      {'label': 'Reject', 'status': 'reject', 'icon': Icons.block},
+      {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
+      {'label': 'QR Given', 'status': 'qr_given', 'icon': Icons.qr_code},
+      {'label': 'Trash Bin', 'status': 'trash_bin', 'icon': Icons.delete},
     ];
 
     return Container(
@@ -265,7 +262,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
             final item = statusButtons[index ~/ 2];
             return InkWell(
               onTap: () {
-                // Handle status action here
+                // TODO: Tambahkan fungsi saat tombol diklik, misalnya filter berdasarkan status
               },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
