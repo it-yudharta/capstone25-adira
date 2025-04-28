@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'main_page.dart'; // Jangan lupa import
 
 class CustomBottomNavBar extends StatelessWidget {
   final String currentRoute;
+  final Function(int)? onTapIndex;
+  final double pageOffset; // <--- Tambahin ini!
 
-  const CustomBottomNavBar({required this.currentRoute, super.key});
+  const CustomBottomNavBar({
+    required this.currentRoute,
+    this.onTapIndex,
+    this.pageOffset = 0.0, // <--- Default supaya backward compatible
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +32,7 @@ class CustomBottomNavBar extends StatelessWidget {
 
     final routes = ['/pengajuan', '/qr', '/pendaftaran', '/saved'];
     final activeIndex = getIndexFromRoute(currentRoute);
-
-    // Check if the current route is one of the main navbar screens
-    bool isMainScreen = routes.contains(currentRoute);
+    final bool isMainScreen = routes.contains(currentRoute);
 
     return BottomNavigationBar(
       currentIndex: activeIndex ?? 0,
@@ -34,94 +40,72 @@ class CustomBottomNavBar extends StatelessWidget {
       unselectedItemColor: Colors.black,
       type: BottomNavigationBarType.fixed,
       onTap: (index) {
-        if (activeIndex != index) {
-          Navigator.pushNamedAndRemoveUntil(
+        if (onTapIndex != null) {
+          onTapIndex!(index);
+        } else if (activeIndex != index) {
+          Navigator.pushAndRemoveUntil(
             context,
-            routes[index],
+            MaterialPageRoute(
+              builder: (context) => MainPage(initialPage: index),
+            ),
             (route) => false,
           );
         }
       },
       items: [
-        BottomNavigationBarItem(
-          icon: Transform.translate(
-            offset: Offset(
-              0,
-              isMainScreen
-                  ? (activeIndex == 0
-                      ? 0
-                      : 15) // More drop for inactive icons on main screens
-                  : (activeIndex == 0
-                      ? 0
-                      : 5), // Less drop for inactive icons on other screens
-            ),
-            child: Icon(
-              Icons.insert_drive_file,
-              color: activeIndex == 0 ? const Color(0xFF0E5C36) : Colors.black,
-            ),
-          ),
-          label: activeIndex == 0 ? 'Pengajuan' : '',
+        _buildNavItem(
+          icon: Icons.insert_drive_file,
+          label: 'Pengajuan',
+          isSelected: activeIndex == 0 && isMainScreen,
+          isMainScreen: isMainScreen,
+          itemIndex: 0,
         ),
-        BottomNavigationBarItem(
-          icon: Transform.translate(
-            offset: Offset(
-              0,
-              isMainScreen
-                  ? (activeIndex == 1
-                      ? 0
-                      : 15) // More drop for inactive icons on main screens
-                  : (activeIndex == 1
-                      ? 0
-                      : 5), // Less drop for inactive icons on other screens
-            ),
-            child: Icon(
-              Icons.qr_code,
-              color: activeIndex == 1 ? const Color(0xFF0E5C36) : Colors.black,
-            ),
-          ),
-          label: activeIndex == 1 ? 'QR Code' : '',
+        _buildNavItem(
+          icon: Icons.qr_code,
+          label: 'QR Code',
+          isSelected: activeIndex == 1 && isMainScreen,
+          isMainScreen: isMainScreen,
+          itemIndex: 1,
         ),
-        BottomNavigationBarItem(
-          icon: Transform.translate(
-            offset: Offset(
-              0,
-              isMainScreen
-                  ? (activeIndex == 2
-                      ? 0
-                      : 15) // More drop for inactive icons on main screens
-                  : (activeIndex == 2
-                      ? 0
-                      : 5), // Less drop for inactive icons on other screens
-            ),
-            child: Icon(
-              Icons.assignment,
-              color: activeIndex == 2 ? const Color(0xFF0E5C36) : Colors.black,
-            ),
-          ),
-          label: activeIndex == 2 ? 'Pendaftaran' : '',
+        _buildNavItem(
+          icon: Icons.assignment,
+          label: 'Pendaftaran',
+          isSelected: activeIndex == 2 && isMainScreen,
+          isMainScreen: isMainScreen,
+          itemIndex: 2,
         ),
-        BottomNavigationBarItem(
-          icon: Transform.translate(
-            offset: Offset(
-              0,
-              isMainScreen
-                  ? (activeIndex == 3
-                      ? 0
-                      : 15) // More drop for inactive icons on main screens
-                  : (activeIndex == 3
-                      ? 0
-                      : 5), // Less drop for inactive icons on other screens
-            ),
-            child: Icon(
-              Icons.bookmark,
-              color: activeIndex == 3 ? const Color(0xFF0E5C36) : Colors.black,
-            ),
-          ),
-          label: activeIndex == 3 ? 'Lead' : '',
+        _buildNavItem(
+          icon: Icons.bookmark,
+          label: 'Lead',
+          isSelected: activeIndex == 3 && isMainScreen,
+          isMainScreen: isMainScreen,
+          itemIndex: 3,
         ),
       ],
-      selectedFontSize: activeIndex != null ? 14 : 0,
+      selectedFontSize: 14,
       unselectedFontSize: 14,
+    );
+  }
+
+  BottomNavigationBarItem _buildNavItem({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required bool isMainScreen,
+    required int itemIndex, // <--- Tambah ini
+  }) {
+    final double distance = (pageOffset - itemIndex).abs().clamp(0.0, 1.0);
+    final double verticalOffset = isMainScreen ? (15 * distance) : 5;
+
+    return BottomNavigationBarItem(
+      icon: Transform.translate(
+        offset: Offset(0, verticalOffset),
+        child: Icon(
+          icon,
+          color: isSelected ? const Color(0xFF0E5C36) : Colors.black,
+        ),
+      ),
+      label: isSelected ? label : '',
     );
   }
 }

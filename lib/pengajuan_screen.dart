@@ -566,96 +566,20 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF0F4F5), // Set background color
+      backgroundColor: const Color(0xFFF0F4F5),
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Color(0xFFF0F4F5),
+        backgroundColor: const Color(0xFFF0F4F5),
         elevation: 0,
         foregroundColor: Colors.black,
-        systemOverlayStyle: SystemUiOverlayStyle(
+        systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Color(0xFFF0F4F5),
           statusBarIconBrightness: Brightness.dark,
           statusBarBrightness: Brightness.light,
         ),
-        title: Row(
-          children: [
-            RichText(
-              text: TextSpan(
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                children: [
-                  TextSpan(
-                    text: 'Fundra',
-                    style: TextStyle(color: Color(0xFF0E5C36)),
-                  ),
-                  TextSpan(
-                    text: 'IN',
-                    style: TextStyle(color: Color(0xFFE67D13)),
-                  ),
-                ],
-              ),
-            ),
-            Spacer(),
-            IconButton(
-              icon: Icon(Icons.logout, color: Colors.black),
-              onPressed: _logout, // Add your logout function here
-            ),
-          ],
-        ),
+        title: const SizedBox(),
       ),
-      body: PageView.builder(
-        controller: _pageController,
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        itemCount: 4,
-        onPageChanged: (index) {
-          setState(() => _currentPage = index);
-        },
-        itemBuilder: (context, index) {
-          switch (index) {
-            case 0:
-              return _buildMainPage(); // Pengajuan
-            case 1:
-              return GenerateQRScreen(); // QR Code
-            case 2:
-              return PendaftaranScreen(); // Pendaftaran Agent
-            case 3:
-              return SavedOrdersScreen(); // Saved
-            default:
-              return const SizedBox();
-          }
-        },
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        elevation: 0,
-        currentIndex: _currentPage,
-        onTap: (index) {
-          setState(() {
-            _currentPage = index;
-            _pageController.animateToPage(
-              index,
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeOutCubic,
-            );
-          });
-        },
-        selectedItemColor: const Color(0xFF0E5C36),
-        unselectedItemColor: Colors.black,
-        selectedLabelStyle: const TextStyle(fontSize: 12),
-        unselectedLabelStyle: const TextStyle(fontSize: 12),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.insert_drive_file),
-            label: 'Pengajuan',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.qr_code), label: 'QR Code'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: 'Pendaftaran Agent',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.bookmark), label: 'Lead'),
-        ],
-      ),
+      body: _buildMainPage(),
     );
   }
 }
