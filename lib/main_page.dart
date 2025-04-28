@@ -4,7 +4,7 @@ import 'pengajuan_screen.dart';
 import 'generate_qr_screen.dart';
 import 'saved_orders_screen.dart';
 import 'pendaftaran_screen.dart';
-import 'custom_bottom_nav_bar.dart'; // jangan lupa import
+import 'custom_bottom_nav_bar.dart';
 
 class MainPage extends StatefulWidget {
   final int initialPage;
@@ -39,9 +39,7 @@ class _MainPageState extends State<MainPage> {
     super.dispose();
   }
 
-  void _logout() {
-    // TODO: implement logout logic
-  }
+  void _logout() {}
 
   @override
   Widget build(BuildContext context) {

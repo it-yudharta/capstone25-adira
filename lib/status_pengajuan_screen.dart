@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'custom_bottom_nav_bar.dart';
+import 'order_detail_screen.dart';
 
 class StatusPengajuanScreen extends StatefulWidget {
   String status;
@@ -194,7 +195,16 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
     final String phoneNumber = order['phone'] ?? '-';
 
     return InkWell(
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) =>
+                    OrderDetailScreen(orderData: order, orderKey: order['key']),
+          ),
+        );
+      },
       child: Container(
         margin: EdgeInsets.only(left: 10, right: 10, top: 4, bottom: 10),
         padding: EdgeInsets.all(12),

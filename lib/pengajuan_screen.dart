@@ -3,14 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'status_pengajuan_screen.dart';
-import 'custom_bottom_nav_bar.dart';
 import 'login_screen.dart';
 import 'order_detail_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'generate_qr_screen.dart';
-import 'saved_orders_screen.dart';
-import 'pendaftaran_screen.dart';
 
 class PengajuanScreen extends StatefulWidget {
   @override
@@ -369,8 +365,8 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     ];
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
-      padding: EdgeInsets.symmetric(horizontal: 19, vertical: 8),
+      margin: EdgeInsets.symmetric(vertical: 6, horizontal: 5),
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 5)],
@@ -439,10 +435,10 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          padding: const EdgeInsets.fromLTRB(24, 10, 24, 12),
           child: Container(
             width: 250,
-            height: 40,
+            height: 36,
             child: TextField(
               controller: _searchController,
               focusNode: _focusNode,
@@ -491,7 +487,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
             ),
           ),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: 4),
         _buildStatusMenu(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -512,7 +508,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
             ],
           ),
         ),
-        SizedBox(height: 12),
+        SizedBox(height: 6),
         Expanded(
           child:
               _isLoading
@@ -567,18 +563,6 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F5),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: const Color(0xFFF0F4F5),
-        elevation: 0,
-        foregroundColor: Colors.black,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Color(0xFFF0F4F5),
-          statusBarIconBrightness: Brightness.dark,
-          statusBarBrightness: Brightness.light,
-        ),
-        title: const SizedBox(),
-      ),
       body: _buildMainPage(),
     );
   }
