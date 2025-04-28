@@ -90,7 +90,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
   Widget _buildAgentCard(Map agent) {
     return InkWell(
       onTap: () {
-        // You can add any action when the card is tapped, like navigating to another screen
+        // Action kalau card ditekan
       },
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -108,92 +108,90 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         ),
         child: Stack(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Nama Lengkap: ${agent['fullName'] ?? '-'}",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 4),
-                Text("Alamat: ${agent['address'] ?? '-'}"),
-                Text("Email: ${agent['email'] ?? '-'}"),
-                Text("Nomor Telepon: ${agent['phone'] ?? '-'}"),
-                Text("Kode Pos: ${agent['postalCode'] ?? '-'}"),
-                SizedBox(height: 8),
-                Text(
-                  "Tanggal Daftar: ${agent['timestampFormatted'] ?? '-'}",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          // Handle the cancel action
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF0E5C36),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.cancel, size: 16, color: Colors.white),
-                            SizedBox(height: 4),
-                            Text(
-                              'Cancel',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Handle the approve action
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF0E5C36),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check, size: 16, color: Colors.white),
-                            SizedBox(height: 4),
-                            Text(
-                              'Approve',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+            DefaultTextStyle.merge(
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Nama        : ${agent['fullName'] ?? '-'}",
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                ),
-              ],
+                  SizedBox(height: 4),
+                  Text("Alamat      : ${agent['address'] ?? '-'}"),
+                  Text("Email         : ${agent['email'] ?? '-'}"),
+                  Text("No. Telp    : ${agent['phone'] ?? '-'}"),
+                  Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
+                  SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            // Handle cancel
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.cancel, size: 16, color: Colors.white),
+                              SizedBox(height: 4),
+                              Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Handle approve
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check, size: 16, color: Colors.white),
+                              SizedBox(height: 4),
+                              Text(
+                                'Approve',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
