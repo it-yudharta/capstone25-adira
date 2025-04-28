@@ -104,17 +104,38 @@ class CustomBottomNavBar extends StatelessWidget {
     required int itemIndex,
   }) {
     final double distance = (pageOffset - itemIndex).abs().clamp(0.0, 1.0);
-    final double verticalOffset = isMainScreen ? (15 * distance) : 5;
+    final double verticalOffset =
+        isMainScreen ? (8 * distance) : 0; // <-- Jarak lebih pas
 
     return BottomNavigationBarItem(
-      icon: Transform.translate(
-        offset: Offset(0, verticalOffset),
-        child: Icon(
-          icon,
-          color: isSelected ? const Color(0xFF0E5C36) : Colors.black,
-        ),
+      icon: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center, // <-- Biar center
+        children: [
+          Transform.translate(
+            offset: Offset(0, verticalOffset),
+            child: Icon(
+              icon,
+              size: 24,
+              color: isSelected ? const Color(0xFF0E5C36) : Colors.black,
+            ),
+          ),
+          const SizedBox(height: 2), // <-- Jarak kecil saja antar icon dan text
+          AnimatedOpacity(
+            opacity: isSelected ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected ? const Color(0xFF0E5C36) : Colors.black,
+              ),
+            ),
+          ),
+        ],
       ),
-      label: isSelected ? label : '',
+      label: '',
     );
   }
 }
