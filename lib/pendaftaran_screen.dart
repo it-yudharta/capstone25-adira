@@ -169,10 +169,14 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.check, size: 16, color: Colors.white),
+                              Icon(
+                                Icons.hourglass_top,
+                                size: 16,
+                                color: Colors.white,
+                              ),
                               SizedBox(height: 4),
                               Text(
-                                'Approve',
+                                'Process',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.white,
