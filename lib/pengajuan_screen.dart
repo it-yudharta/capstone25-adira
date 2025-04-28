@@ -100,9 +100,12 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
               final email = (order['email'] ?? '').toString().toLowerCase();
               final agentName =
                   (order['agentName'] ?? '').toString().toLowerCase();
+              final timestamp =
+                  (order['timestamp'] ?? '').toString().toLowerCase();
               return name.contains(query) ||
                   email.contains(query) ||
-                  agentName.contains(query);
+                  agentName.contains(query) ||
+                  timestamp.contains(query);
             }).toList();
   }
 
@@ -365,8 +368,8 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     ];
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 6, horizontal: 5),
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+      padding: EdgeInsets.symmetric(horizontal: 19, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 5)],
@@ -435,10 +438,10 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(24, 10, 24, 12),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
           child: Container(
             width: 250,
-            height: 36,
+            height: 40,
             child: TextField(
               controller: _searchController,
               focusNode: _focusNode,
@@ -487,7 +490,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
             ),
           ),
         ),
-        SizedBox(height: 4),
+        SizedBox(height: 8),
         _buildStatusMenu(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -508,7 +511,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
             ],
           ),
         ),
-        SizedBox(height: 6),
+        SizedBox(height: 12),
         Expanded(
           child:
               _isLoading
