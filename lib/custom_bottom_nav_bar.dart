@@ -104,13 +104,12 @@ class CustomBottomNavBar extends StatelessWidget {
     required int itemIndex,
   }) {
     final double distance = (pageOffset - itemIndex).abs().clamp(0.0, 1.0);
-    final double verticalOffset =
-        isMainScreen ? (8 * distance) : 0; // <-- Jarak lebih pas
+    final double verticalOffset = isMainScreen ? (8 * distance) : 0;
 
     return BottomNavigationBarItem(
       icon: Column(
         mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center, // <-- Biar center
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Transform.translate(
             offset: Offset(0, verticalOffset),
@@ -120,7 +119,7 @@ class CustomBottomNavBar extends StatelessWidget {
               color: isSelected ? const Color(0xFF0E5C36) : Colors.black,
             ),
           ),
-          const SizedBox(height: 2), // <-- Jarak kecil saja antar icon dan text
+          const SizedBox(height: 2),
           AnimatedOpacity(
             opacity: isSelected ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 300),

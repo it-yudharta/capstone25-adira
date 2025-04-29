@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
-import 'main_page.dart'; // <- Import MainPage, jangan lupa!
+import 'main_page.dart';
 
 class AuthWrapper extends StatelessWidget {
   @override
@@ -14,9 +14,7 @@ class AuthWrapper extends StatelessWidget {
           if (user == null) {
             return LoginScreen();
           } else {
-            return MainPage(
-              initialPage: 0,
-            ); // << Langsung ke MainPage, bukan PengajuanScreen
+            return MainPage(initialPage: 0);
           }
         }
         return const Scaffold(body: Center(child: CircularProgressIndicator()));

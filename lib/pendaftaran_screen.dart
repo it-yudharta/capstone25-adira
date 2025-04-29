@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
+import 'status_pendaftaran_screen.dart';
 
 class PendaftaranScreen extends StatefulWidget {
   @override
@@ -266,7 +267,13 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
             final item = statusButtons[index ~/ 2];
             return InkWell(
               onTap: () {
-                // TODO: Tambahkan fungsi saat tombol diklik, misalnya filter berdasarkan status
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => StatusPendaftaranScreen(status: item['status']),
+                  ),
+                );
               },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
