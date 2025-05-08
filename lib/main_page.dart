@@ -5,6 +5,8 @@ import 'generate_qr_screen.dart';
 import 'saved_orders_screen.dart';
 import 'pendaftaran_screen.dart';
 import 'custom_bottom_nav_bar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart';
 
 class MainPage extends StatefulWidget {
   final int initialPage;
@@ -39,7 +41,14 @@ class _MainPageState extends State<MainPage> {
     super.dispose();
   }
 
-  void _logout() {}
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -31,7 +31,7 @@ android {
         }
     }
 
-    namespace = "com.example.resellerapp"
+    namespace = "com.fundrain.resellerapp"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "29.0.13113456"
 
