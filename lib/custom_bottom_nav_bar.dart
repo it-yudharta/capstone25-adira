@@ -5,33 +5,25 @@ class CustomBottomNavBar extends StatelessWidget {
   final String currentRoute;
   final Function(int)? onTapIndex;
   final double pageOffset;
+  final bool showOnlyEssentialButtons;
 
   const CustomBottomNavBar({
     required this.currentRoute,
     this.onTapIndex,
     this.pageOffset = 0.0,
+    this.showOnlyEssentialButtons = false, // tambahkan default false
     Key? key,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    int? getIndexFromRoute(String route) {
-      switch (route) {
-        case '/pengajuan':
-          return 0;
-        case '/qr':
-          return 1;
-        case '/pendaftaran':
-          return 2;
-        case '/saved':
-          return 3;
-        default:
-          return null;
-      }
-    }
+    final routes =
+        showOnlyEssentialButtons
+            ? ['/pengajuan', '/saved']
+            : ['/pengajuan', '/qr', '/pendaftaran', '/saved'];
 
-    final routes = ['/pengajuan', '/qr', '/pendaftaran', '/saved'];
-    final activeIndex = getIndexFromRoute(currentRoute);
+    final activeIndex = routes.indexOf(currentRoute);
+    final safeIndex = activeIndex < 0 ? 0 : activeIndex;
     final bool isMainScreen = routes.contains(currentRoute);
 
     return Theme(
@@ -42,7 +34,7 @@ class CustomBottomNavBar extends StatelessWidget {
       ),
       child: BottomNavigationBar(
         backgroundColor: const Color(0xFFF0F4F5),
-        currentIndex: activeIndex ?? 0,
+        currentIndex: safeIndex,
         selectedItemColor: const Color(0xFF0E5C36),
         unselectedItemColor: Colors.black,
         type: BottomNavigationBarType.fixed,
@@ -62,36 +54,54 @@ class CustomBottomNavBar extends StatelessWidget {
         },
         selectedFontSize: 14,
         unselectedFontSize: 14,
-        items: [
-          _buildNavItem(
-            icon: Icons.insert_drive_file,
-            label: 'Pengajuan',
-            isSelected: activeIndex == 0 && isMainScreen,
-            isMainScreen: isMainScreen,
-            itemIndex: 0,
-          ),
-          _buildNavItem(
-            icon: Icons.qr_code,
-            label: 'QR Code',
-            isSelected: activeIndex == 1 && isMainScreen,
-            isMainScreen: isMainScreen,
-            itemIndex: 1,
-          ),
-          _buildNavItem(
-            icon: Icons.assignment,
-            label: 'Pendaftaran',
-            isSelected: activeIndex == 2 && isMainScreen,
-            isMainScreen: isMainScreen,
-            itemIndex: 2,
-          ),
-          _buildNavItem(
-            icon: Icons.bookmark,
-            label: 'Lead',
-            isSelected: activeIndex == 3 && isMainScreen,
-            isMainScreen: isMainScreen,
-            itemIndex: 3,
-          ),
-        ],
+        items:
+            showOnlyEssentialButtons
+                ? [
+                  _buildNavItem(
+                    icon: Icons.insert_drive_file,
+                    label: 'Pengajuan',
+                    isSelected: currentRoute == '/pengajuan',
+                    isMainScreen: true,
+                    itemIndex: 0,
+                  ),
+                  _buildNavItem(
+                    icon: Icons.bookmark,
+                    label: 'Lead',
+                    isSelected: currentRoute == '/saved',
+                    isMainScreen: true,
+                    itemIndex: 1,
+                  ),
+                ]
+                : [
+                  _buildNavItem(
+                    icon: Icons.insert_drive_file,
+                    label: 'Pengajuan',
+                    isSelected: currentRoute == '/pengajuan',
+                    isMainScreen: true,
+                    itemIndex: 0,
+                  ),
+                  _buildNavItem(
+                    icon: Icons.qr_code,
+                    label: 'QR Code',
+                    isSelected: currentRoute == '/qr',
+                    isMainScreen: true,
+                    itemIndex: 1,
+                  ),
+                  _buildNavItem(
+                    icon: Icons.assignment,
+                    label: 'Pendaftaran',
+                    isSelected: currentRoute == '/pendaftaran',
+                    isMainScreen: true,
+                    itemIndex: 2,
+                  ),
+                  _buildNavItem(
+                    icon: Icons.bookmark,
+                    label: 'Lead',
+                    isSelected: currentRoute == '/saved',
+                    isMainScreen: true,
+                    itemIndex: 3,
+                  ),
+                ],
       ),
     );
   }
