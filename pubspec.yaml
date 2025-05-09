@@ -41,6 +41,7 @@ dependencies:
   firebase_database: ^10.4.0
   intl: ^0.18.0
   url_launcher: ^6.1.5
+  flutter_svg: ^2.0.9
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -64,6 +65,9 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - assets/images/rectangle_2.png
+    - assets/images/rectangle_10.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
