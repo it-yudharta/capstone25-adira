@@ -48,8 +48,8 @@ android {
     applicationId = "com.fundrain.resellerapp"
     minSdk = flutter.minSdkVersion
     targetSdk = flutter.targetSdkVersion
-    versionCode = flutter.versionCode
-    versionName = flutter.versionName
+    versionCode = 5
+    versionName = "1.0.4"
     }
 
     buildTypes {

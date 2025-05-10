@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String? errorMessage;
   bool isPasswordVisible = false;
 
+  // Modifikasi fungsi login untuk menambahkan akun demo
   Future<void> login() async {
     setState(() {
       isLoading = true;
@@ -27,80 +28,143 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
-
-      final user = userCredential.user;
-
-      if (user == null) {
-        setState(() {
-          errorMessage = "Terjadi kesalahan. Coba lagi.";
-        });
-        return;
-      }
-
-      await user.reload();
-      if (!user.emailVerified) {
-        await user.sendEmailVerification();
-
-        setState(() {
-          errorMessage =
-              "Silakan verifikasi email terlebih dahulu. Link verifikasi telah dikirim.";
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Link verifikasi telah dikirim ke email kamu."),
-          ),
+      // Jika menggunakan akun demo
+      if (emailController.text.trim() == 'demo@appkamu.com' &&
+          passwordController.text.trim() == 'Demo1234') {
+        // Login langsung tanpa verifikasi email
+        final userCredential = await _auth.signInWithEmailAndPassword(
+          email: 'demo@appkamu.com',
+          password: 'Demo1234',
         );
 
-        await _auth.signOut();
-        return;
-      }
+        final user = userCredential.user;
 
-      final doc =
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
+        if (user == null) {
+          setState(() {
+            errorMessage = "Terjadi kesalahan. Coba lagi.";
+          });
+          return;
+        }
 
-      if (!doc.exists) {
-        setState(() {
-          errorMessage = "Akun belum terdaftar di sistem.";
-        });
-        await _auth.signOut();
-        return;
-      }
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .get();
 
-      final role = doc.data()!['role'];
+        if (!doc.exists) {
+          setState(() {
+            errorMessage = "Akun belum terdaftar di sistem.";
+          });
+          await _auth.signOut();
+          return;
+        }
 
-      if (role == 'supervisor') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => MainPage()),
-        );
-      } else if (role == 'admin_pengajuan') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => AdminPengajuanScreen()),
-        );
-      } else if (role == 'admin_pendaftaran') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => AdminPendaftaranScreen()),
-        );
-      } else if (role == 'agent') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => AgentScreen()),
-        );
+        final role = doc.data()!['role'];
+
+        if (role == 'supervisor') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => MainPage()),
+          );
+        } else if (role == 'admin_pengajuan') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => AdminPengajuanScreen()),
+          );
+        } else if (role == 'admin_pendaftaran') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => AdminPendaftaranScreen()),
+          );
+        } else if (role == 'agent') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => AgentScreen()),
+          );
+        } else {
+          setState(() {
+            errorMessage = "Role tidak dikenali.";
+          });
+          await _auth.signOut();
+        }
       } else {
-        setState(() {
-          errorMessage = "Role tidak dikenali.";
-        });
-        await _auth.signOut();
+        // Proses login biasa dengan verifikasi email
+        UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+        );
+
+        final user = userCredential.user;
+
+        if (user == null) {
+          setState(() {
+            errorMessage = "Terjadi kesalahan. Coba lagi.";
+          });
+          return;
+        }
+
+        await user.reload();
+        if (!user.emailVerified) {
+          await user.sendEmailVerification();
+
+          setState(() {
+            errorMessage =
+                "Silakan verifikasi email terlebih dahulu. Link verifikasi telah dikirim.";
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Link verifikasi telah dikirim ke email kamu."),
+            ),
+          );
+
+          await _auth.signOut();
+          return;
+        }
+
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .get();
+
+        if (!doc.exists) {
+          setState(() {
+            errorMessage = "Akun belum terdaftar di sistem.";
+          });
+          await _auth.signOut();
+          return;
+        }
+
+        final role = doc.data()!['role'];
+
+        if (role == 'supervisor') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => MainPage()),
+          );
+        } else if (role == 'admin_pengajuan') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => AdminPengajuanScreen()),
+          );
+        } else if (role == 'admin_pendaftaran') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => AdminPendaftaranScreen()),
+          );
+        } else if (role == 'agent') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => AgentScreen()),
+          );
+        } else {
+          setState(() {
+            errorMessage = "Role tidak dikenali.";
+          });
+          await _auth.signOut();
+        }
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -260,6 +324,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Text("Forgot Password?"),
                     ),
+                  ),
+
+                  TextButton(
+                    onPressed: () {
+                      emailController.text = 'demo@appkamu.com';
+                      passwordController.text = 'Demo1234';
+                      login(); // Langsung login dengan akun demo
+                    },
+                    child: Text('Gunakan akun demo'),
                   ),
 
                   if (errorMessage != null) ...[
