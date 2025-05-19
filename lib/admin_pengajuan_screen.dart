@@ -76,11 +76,11 @@ class _AdminPengajuanScreenState extends State<AdminPengajuanScreen> {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 children: [
                   TextSpan(
-                    text: 'Admin ',
+                    text: 'Fundra',
                     style: TextStyle(color: Color(0xFF0E5C36)),
                   ),
                   TextSpan(
-                    text: 'Panel',
+                    text: 'IN',
                     style: TextStyle(color: Color(0xFFE67D13)),
                   ),
                 ],

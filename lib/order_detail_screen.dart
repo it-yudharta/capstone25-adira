@@ -8,6 +8,84 @@ class OrderDetailScreen extends StatelessWidget {
 
   OrderDetailScreen({required this.orderData, required this.orderKey});
 
+  void showImageDialog(BuildContext context, String label, String url) {
+    showDialog(
+      context: context,
+      builder:
+          (_) => Dialog(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text(
+                    label,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, progress) {
+                    if (progress == null) return child;
+                    return SizedBox(
+                      height: 150,
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                  errorBuilder:
+                      (context, error, stackTrace) => Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text("Gagal memuat gambar"),
+                      ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Tutup'),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  Widget buildImageRow(BuildContext context, String label, String url) {
+    String buttonText = "View";
+    if (label.trim().contains(' ')) {
+      buttonText = "View " + label.trim().split(' ').last;
+    } else {
+      buttonText = "View $label";
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label :',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          ElevatedButton.icon(
+            icon: Icon(Icons.image),
+            label: Text(buttonText),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF0E5C36),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            ),
+            onPressed: () => showImageDialog(context, label, url),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -152,7 +230,40 @@ class OrderDetailScreen extends StatelessWidget {
                     Text("Pendapatan: ${orderData['income'] ?? '-'}"),
                     Text("Pengajuan: ${orderData['item'] ?? '-'}"),
                     Text("Angsuran Lain: ${orderData['installment'] ?? '-'}"),
-                    Text("Tanggal Pengajuan: ${orderData['timestamp'] ?? '-'}"),
+
+                    SizedBox(height: 16),
+                    if (orderData['ktp'] != null)
+                      buildImageRow(context, "Foto KTP", orderData['ktp']),
+
+                    if (orderData['kk'] != null)
+                      buildImageRow(context, "Foto KK", orderData['kk']),
+
+                    if (orderData['slipgaji'] != null)
+                      buildImageRow(
+                        context,
+                        "Slip Gaji",
+                        orderData['slipgaji'],
+                      ),
+
+                    if (orderData['npwp'] != null)
+                      buildImageRow(context, "NPWP", orderData['npwp']),
+
+                    if ((orderData['item'] ?? '')
+                        .toString()
+                        .toLowerCase()
+                        .contains('amanah')) ...[
+                      if (orderData['stnk'] != null)
+                        buildImageRow(context, "STNK", orderData['stnk']),
+                      if (orderData['bpkb'] != null)
+                        buildImageRow(context, "BPKB", orderData['bpkb']),
+                    ],
+
+                    SizedBox(height: 16),
+                    Text(
+                      "Tanggal Pengajuan: ${formatTimestamp(orderData['timestamp'])}",
+                    ),
+
+                    ..._buildStatusTimestamps(orderData),
 
                     SizedBox(height: 16),
                     Text(
@@ -167,6 +278,36 @@ class OrderDetailScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  List<Widget> _buildStatusTimestamps(Map orderData) {
+    final statusTimestamps = {
+      'process': 'Tanggal Process',
+      'approved': 'Tanggal Disetujui',
+      'rejected': 'Tanggal Ditolak',
+      'canceled': 'Tanggal Dibatalkan',
+      'pending': 'Tanggal Pending',
+    };
+
+    List<Widget> widgets = [];
+
+    statusTimestamps.forEach((key, label) {
+      final timestampKey = '${key}Timestamp';
+      if (orderData['status'] == key) {
+        final timestamp = orderData[timestampKey] ?? orderData['timestamp'];
+        widgets.add(Text("$label: ${formatTimestamp(timestamp)}"));
+      }
+    });
+
+    return widgets;
+  }
+
+  String formatTimestamp(dynamic ts) {
+    if (ts is int) {
+      final date = DateTime.fromMillisecondsSinceEpoch(ts);
+      return "${date.day}-${date.month}-${date.year}";
+    }
+    return ts.toString();
   }
 
   String normalizePhoneNumber(String phone) {

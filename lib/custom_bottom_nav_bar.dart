@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'main_page.dart';
+import 'admin_pengajuan_screen.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final String currentRoute;
@@ -11,16 +11,13 @@ class CustomBottomNavBar extends StatelessWidget {
     required this.currentRoute,
     this.onTapIndex,
     this.pageOffset = 0.0,
-    this.showOnlyEssentialButtons = false, // tambahkan default false
+    this.showOnlyEssentialButtons = false,
     Key? key,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final routes =
-        showOnlyEssentialButtons
-            ? ['/pengajuan', '/saved']
-            : ['/pengajuan', '/qr', '/pendaftaran', '/saved'];
+    final routes = ['/pengajuan', '/saved'];
 
     final activeIndex = routes.indexOf(currentRoute);
     final safeIndex = activeIndex < 0 ? 0 : activeIndex;
@@ -46,7 +43,7 @@ class CustomBottomNavBar extends StatelessWidget {
             Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                builder: (context) => MainPage(initialPage: index),
+                builder: (context) => AdminPengajuanScreen(initialPage: index),
               ),
               (route) => false,
             );
@@ -54,54 +51,22 @@ class CustomBottomNavBar extends StatelessWidget {
         },
         selectedFontSize: 14,
         unselectedFontSize: 14,
-        items:
-            showOnlyEssentialButtons
-                ? [
-                  _buildNavItem(
-                    icon: Icons.insert_drive_file,
-                    label: 'Pengajuan',
-                    isSelected: currentRoute == '/pengajuan',
-                    isMainScreen: true,
-                    itemIndex: 0,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.bookmark,
-                    label: 'Lead',
-                    isSelected: currentRoute == '/saved',
-                    isMainScreen: true,
-                    itemIndex: 1,
-                  ),
-                ]
-                : [
-                  _buildNavItem(
-                    icon: Icons.insert_drive_file,
-                    label: 'Pengajuan',
-                    isSelected: currentRoute == '/pengajuan',
-                    isMainScreen: true,
-                    itemIndex: 0,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.qr_code,
-                    label: 'QR Code',
-                    isSelected: currentRoute == '/qr',
-                    isMainScreen: true,
-                    itemIndex: 1,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.assignment,
-                    label: 'Pendaftaran',
-                    isSelected: currentRoute == '/pendaftaran',
-                    isMainScreen: true,
-                    itemIndex: 2,
-                  ),
-                  _buildNavItem(
-                    icon: Icons.bookmark,
-                    label: 'Lead',
-                    isSelected: currentRoute == '/saved',
-                    isMainScreen: true,
-                    itemIndex: 3,
-                  ),
-                ],
+        items: [
+          _buildNavItem(
+            icon: Icons.insert_drive_file,
+            label: 'Pengajuan',
+            isSelected: currentRoute == '/pengajuan',
+            isMainScreen: true,
+            itemIndex: 0,
+          ),
+          _buildNavItem(
+            icon: Icons.bookmark,
+            label: 'Lead',
+            isSelected: currentRoute == '/saved',
+            isMainScreen: true,
+            itemIndex: 1,
+          ),
+        ],
       ),
     );
   }

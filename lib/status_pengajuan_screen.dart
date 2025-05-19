@@ -261,48 +261,124 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                   if (widget.status == 'process')
                     Align(
                       alignment: Alignment.centerRight,
-                      child: PopupMenuButton<String>(
-                        color: Colors.transparent,
-                        elevation: 0,
-                        padding: EdgeInsets.zero,
-                        offset: Offset(0, 36),
-                        onSelected: (value) {
-                          switch (value) {
-                            case 'cancel':
-                              updateStatus(order['key'], 'cancel');
-                              break;
-                            case 'reject':
-                              updateStatus(order['key'], 'reject');
-                              break;
-                            case 'approve':
-                              updateStatus(order['key'], 'approve');
-                              break;
-                          }
-                        },
-                        itemBuilder:
-                            (BuildContext context) => [
-                              _customMenuItem(Icons.cancel, 'Cancel', 'cancel'),
-                              _customMenuItem(Icons.block, 'Reject', 'reject'),
-                              _customMenuItem(
-                                Icons.check_circle,
-                                'Approve',
-                                'approve',
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ElevatedButton(
+                            onPressed:
+                                () => updateStatus(order['key'], 'cancel'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                            ],
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.cancel,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color: Color(0xFF0E5C36),
-                            borderRadius: BorderRadius.circular(8),
+                          SizedBox(width: 6),
+                          ElevatedButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  TextEditingController _noteController =
+                                      TextEditingController();
+                                  return AlertDialog(
+                                    title: Text('Add Note'),
+                                    content: TextField(
+                                      controller: _noteController,
+                                      decoration: InputDecoration(
+                                        hintText: 'Tulis catatan...',
+                                      ),
+                                      maxLines: 3,
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text('Batal'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () async {
+                                          final note =
+                                              _noteController.text.trim();
+                                          if (note.isNotEmpty) {
+                                            final dbRef = FirebaseDatabase
+                                                .instance
+                                                .ref()
+                                                .child(
+                                                  'orders/${order['key']}',
+                                                );
+                                            await dbRef.update({'note': note});
+                                            Navigator.pop(context);
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Catatan berhasil ditambahkan',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: Text('Simpan'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.note_add,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Add Note',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          child: Text(
-                            'Ubah Status',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                 ],
