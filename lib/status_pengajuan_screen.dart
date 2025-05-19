@@ -71,28 +71,30 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
 
     groupedOrders.clear();
     for (var order in _filteredOrders) {
-      final date = formatTimestamp(order['timestamp']);
+      final date = order['tanggal'] ?? '';
       if (!groupedOrders.containsKey(date)) {
         groupedOrders[date] = [];
       }
       groupedOrders[date]!.add(order);
     }
-    orderedDates = groupedOrders.keys.toList()..sort((a, b) => b.compareTo(a));
-  }
 
-  String formatTimestamp(dynamic timestamp) {
-    if (timestamp is int) {
-      final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-      return DateFormat('d-M-yyyy').format(date);
-    } else if (timestamp is String) {
-      return timestamp;
-    } else {
-      return '';
-    }
+    orderedDates =
+        groupedOrders.keys.toList()..sort((a, b) {
+          DateTime parseDate(String d) {
+            final parts = d.split('-');
+            return DateTime(
+              int.parse(parts[2]),
+              int.parse(parts[1]),
+              int.parse(parts[0]),
+            );
+          }
+
+          return parseDate(b).compareTo(parseDate(a));
+        });
   }
 
   void updateStatus(String key, String newStatus) async {
-    final now = DateFormat('d-M-yyyy').format(DateTime.now());
+    final now = DateFormat('dd-MM-yyyy').format(DateTime.now());
     final dbRef = FirebaseDatabase.instance.ref().child('orders/$key');
     await dbRef.update({'status': newStatus, 'statusUpdatedAt': now});
 

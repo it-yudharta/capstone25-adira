@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 import 'status_pengajuan_screen.dart';
 import 'login_screen.dart';
 import 'order_detail_screen.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class PengajuanScreen extends StatefulWidget {
   @override
@@ -31,11 +33,27 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   List<String> get orderedDates {
     final grouped = groupedOrders;
     final dates = grouped.keys.toList();
+
     dates.sort((a, b) {
-      final dateA = DateFormat('d-M-yyyy').parse(a);
-      final dateB = DateFormat('d-M-yyyy').parse(b);
+      DateTime? dateA, dateB;
+
+      try {
+        dateA = DateFormat('d-M-yyyy').parseStrict(a);
+      } catch (_) {
+        dateA = null;
+      }
+      try {
+        dateB = DateFormat('d-M-yyyy').parseStrict(b);
+      } catch (_) {
+        dateB = null;
+      }
+
+      if (dateA == null && dateB == null) return 0;
+      if (dateA == null) return 1;
+      if (dateB == null) return -1;
       return dateB.compareTo(dateA);
     });
+
     return dates;
   }
 
@@ -65,9 +83,6 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
       final loadedOrders = <Map<dynamic, dynamic>>[];
 
       data.forEach((key, value) {
-        if (value['timestamp'] != null && value['timestamp'] is int) {
-          value['timestamp'] = _convertTimestamp(value['timestamp']);
-        }
         value['key'] = key;
         loadedOrders.add(value);
       });
@@ -100,19 +115,29 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
               final email = (order['email'] ?? '').toString().toLowerCase();
               final agentName =
                   (order['agentName'] ?? '').toString().toLowerCase();
-              final timestamp =
-                  (order['timestamp'] ?? '').toString().toLowerCase();
+              final tanggal = (order['tanggal'] ?? '').toString().toLowerCase();
               return name.contains(query) ||
                   email.contains(query) ||
                   agentName.contains(query) ||
-                  timestamp.contains(query);
+                  tanggal.contains(query);
             }).toList();
   }
 
-  String _convertTimestamp(int timestamp) {
-    return DateFormat(
-      'd-M-yyyy',
-    ).format(DateTime.fromMillisecondsSinceEpoch(timestamp));
+  Map<String, List<Map>> _groupOrdersByDate(List<Map> orders) {
+    final Map<String, List<Map>> grouped = {};
+    for (var order in orders) {
+      final dateStr = order['tanggal'];
+      String dateKey;
+      try {
+        if (dateStr == null || dateStr.isEmpty) throw FormatException();
+        DateFormat('d-M-yyyy').parseStrict(dateStr);
+        dateKey = dateStr;
+      } catch (_) {
+        dateKey = 'Tanggal tidak diketahui';
+      }
+      grouped.putIfAbsent(dateKey, () => []).add(order);
+    }
+    return grouped;
   }
 
   void _logout() async {
@@ -154,7 +179,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
   void _updateOrderStatus(String orderKey, String newStatus) async {
     final now = DateTime.now();
-    final formattedDate = DateFormat('d-M-yyyy').format(now);
+    final formattedDate = DateFormat('dd-MM-yyyy').format(now);
 
     try {
       await _database.child(orderKey).update({
@@ -423,15 +448,6 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     );
   }
 
-  Map<String, List<Map>> _groupOrdersByDate(List<Map> orders) {
-    final Map<String, List<Map>> grouped = {};
-    for (var order in orders) {
-      final date = order['timestamp'] ?? 'Tanggal tidak diketahui';
-      grouped.putIfAbsent(date, () => []).add(order);
-    }
-    return grouped;
-  }
-
   Widget _buildMainPage() {
     final baseStyle = Theme.of(context).textTheme.bodyMedium;
 
@@ -497,16 +513,14 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              ElevatedButton(
-                onPressed: () {},
+              ElevatedButton.icon(
+                onPressed: _showExportDatePickerDialog,
+                icon: Icon(Icons.file_download),
+                label: Text("Export by Date"),
                 style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  backgroundColor: Color(0xFF0E5C36),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  backgroundColor: Colors.green,
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
-                child: Text('Export All', style: TextStyle(fontSize: 14)),
               ),
             ],
           ),
@@ -560,6 +574,159 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         ),
       ],
     );
+  }
+
+  void _showExportDatePickerDialog() async {
+    final ref = FirebaseDatabase.instance.ref("orders");
+
+    try {
+      final snapshot = await ref.get();
+
+      if (!snapshot.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tidak ada data untuk diekspor')),
+        );
+        return;
+      }
+
+      final Set<String> uniqueDates = {};
+
+      for (final child in snapshot.children) {
+        final data = Map<String, dynamic>.from(child.value as Map);
+        final tanggal = data['tanggal'];
+        if (tanggal != null) {
+          uniqueDates.add(tanggal);
+        }
+      }
+
+      final sortedDates =
+          uniqueDates.toList()..sort((a, b) {
+            final dateA = DateTime.parse(_toIsoDate(a));
+            final dateB = DateTime.parse(_toIsoDate(b));
+            return dateB.compareTo(dateA); // Terbaru di atas
+          });
+
+      showDialog(
+        context: context,
+        builder:
+            (_) => AlertDialog(
+              title: Text("Pilih Tanggal untuk Export"),
+              content: Container(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: sortedDates.length,
+                  itemBuilder: (ctx, index) {
+                    final date = sortedDates[index];
+                    return ListTile(
+                      title: Text(date),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _exportOrdersByDate(date);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengambil tanggal: $e')));
+    }
+  }
+
+  String _toIsoDate(String date) {
+    try {
+      final parts = date.split('-');
+      return '${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}';
+    } catch (_) {
+      return date;
+    }
+  }
+
+  Future<void> _exportOrdersByDate(String selectedDate) async {
+    final ref = FirebaseDatabase.instance.ref("orders");
+
+    try {
+      final snapshot =
+          await ref.orderByChild("tanggal").equalTo(selectedDate).get();
+
+      if (!snapshot.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tidak ada data pada tanggal $selectedDate')),
+        );
+        return;
+      }
+
+      final List<Map> ordersToExport = [];
+
+      for (final child in snapshot.children) {
+        final data = Map<String, dynamic>.from(child.value as Map);
+        data['key'] = child.key;
+        ordersToExport.add(data);
+      }
+
+      if (ordersToExport.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tidak ada data pada tanggal $selectedDate')),
+        );
+        return;
+      }
+
+      final StringBuffer csvData = StringBuffer();
+      csvData.writeln('Tanggal, Nama, Email, Agent, Telepon, Status');
+
+      for (var order in ordersToExport) {
+        csvData.writeln(
+          '${order['tanggal']},'
+          '${order['name']},'
+          '${order['email']},'
+          '${order['agentName']},'
+          '${order['phone']},'
+          '${order['status'] ?? 'Belum diproses'}',
+        );
+      }
+
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.request();
+        if (!status.isGranted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Izin storage ditolak')));
+          return;
+        }
+      }
+
+      Directory? directory;
+      if (Platform.isAndroid) {
+        directory = await getExternalStorageDirectory();
+        String newPath = "";
+        List<String> folders = directory!.path.split("/");
+        for (int i = 1; i < folders.length; i++) {
+          String folder = folders[i];
+          if (folder == "Android") break;
+          newPath += "/$folder";
+        }
+        newPath += "/Download";
+        directory = Directory(newPath);
+      } else if (Platform.isIOS) {
+        directory = await getApplicationDocumentsDirectory();
+      }
+
+      String fileName = "export_pengajuan_$selectedDate.csv";
+      File file = File('${directory!.path}/$fileName');
+      await file.writeAsString(csvData.toString());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('File berhasil disimpan di ${file.path}')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengekspor: $e')));
+    }
   }
 
   @override

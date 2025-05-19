@@ -259,9 +259,7 @@ class OrderDetailScreen extends StatelessWidget {
                     ],
 
                     SizedBox(height: 16),
-                    Text(
-                      "Tanggal Pengajuan: ${formatTimestamp(orderData['timestamp'])}",
-                    ),
+                    Text("Tanggal Pengajuan: ${orderData['tanggal'] ?? '-'}"),
 
                     ..._buildStatusTimestamps(orderData),
 
@@ -281,7 +279,7 @@ class OrderDetailScreen extends StatelessWidget {
   }
 
   List<Widget> _buildStatusTimestamps(Map orderData) {
-    final statusTimestamps = {
+    final statusLabels = {
       'process': 'Tanggal Process',
       'approved': 'Tanggal Disetujui',
       'rejected': 'Tanggal Ditolak',
@@ -291,18 +289,17 @@ class OrderDetailScreen extends StatelessWidget {
 
     List<Widget> widgets = [];
 
-    statusTimestamps.forEach((key, label) {
-      final timestampKey = '${key}Timestamp';
-      if (orderData['status'] == key) {
-        final timestamp = orderData[timestampKey] ?? orderData['timestamp'];
-        widgets.add(Text("$label: ${formatTimestamp(timestamp)}"));
-      }
-    });
+    final status = orderData['status'] ?? '';
+    if (statusLabels.containsKey(status)) {
+      final tanggalStatus = orderData['statusUpdatedAt'] ?? '-';
+      widgets.add(Text("${statusLabels[status]}: $tanggalStatus"));
+    }
 
     return widgets;
   }
 
   String formatTimestamp(dynamic ts) {
+    if (ts == null) return '-';
     if (ts is int) {
       final date = DateTime.fromMillisecondsSinceEpoch(ts);
       return "${date.day}-${date.month}-${date.year}";
