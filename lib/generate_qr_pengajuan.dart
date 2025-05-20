@@ -3,7 +3,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:gal/gal.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
@@ -80,20 +79,18 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
 
   Future<bool> saveImageToGallery(Uint8List bytes) async {
     try {
-      if (await Permission.storage.request().isDenied) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Izin penyimpanan ditolak")));
-        return false;
+      final directory = await getExternalStorageDirectory();
+      if (directory == null) return false;
+
+      final qrDir = Directory('${directory.path}/QRCodes');
+      if (!(await qrDir.exists())) {
+        await qrDir.create(recursive: true);
       }
 
-      Directory tempDir = await getTemporaryDirectory();
-      String filePath =
-          '${tempDir.path}/QR_${DateTime.now().millisecondsSinceEpoch}.png';
-      File file = File(filePath);
+      final filePath =
+          '${qrDir.path}/QR${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File(filePath);
       await file.writeAsBytes(bytes);
-
-      await Gal.putImage(file.path, album: "QR Codes");
 
       return true;
     } catch (e) {

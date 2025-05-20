@@ -8,7 +8,13 @@ import 'order_detail_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/services.dart';
+
+const platform = MethodChannel('com.fundrain.resellerapp/download');
 
 class PengajuanScreen extends StatefulWidget {
   @override
@@ -28,6 +34,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   List<Map<dynamic, dynamic>> _filteredOrders = [];
   String _searchQuery = '';
   bool _isLoading = false;
+  bool _isExporting = false;
   final FocusNode _focusNode = FocusNode();
 
   List<String> get orderedDates {
@@ -603,7 +610,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
           uniqueDates.toList()..sort((a, b) {
             final dateA = DateTime.parse(_toIsoDate(a));
             final dateB = DateTime.parse(_toIsoDate(b));
-            return dateB.compareTo(dateA); // Terbaru di atas
+            return dateB.compareTo(dateA);
           });
 
       showDialog(
@@ -646,7 +653,25 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     }
   }
 
+  Future<Uint8List?> _downloadImage(String? url) async {
+    if (url == null || url.isEmpty) return null;
+    try {
+      final response = await http.get(Uri.parse(url));
+      return response.bodyBytes;
+    } catch (e) {
+      print('Gagal download gambar: $e');
+      return null;
+    }
+  }
+
   Future<void> _exportOrdersByDate(String selectedDate) async {
+    setState(() => _isExporting = true);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(child: CircularProgressIndicator()),
+    );
+
     final ref = FirebaseDatabase.instance.ref("orders");
 
     try {
@@ -654,6 +679,8 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
           await ref.orderByChild("tanggal").equalTo(selectedDate).get();
 
       if (!snapshot.exists) {
+        Navigator.of(context, rootNavigator: true).pop();
+        setState(() => _isExporting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Tidak ada data pada tanggal $selectedDate')),
         );
@@ -675,57 +702,170 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         return;
       }
 
-      final StringBuffer csvData = StringBuffer();
-      csvData.writeln('Tanggal, Nama, Email, Agent, Telepon, Status');
+      final workbook = xlsio.Workbook();
+      final sheet = workbook.worksheets[0];
 
-      for (var order in ordersToExport) {
-        csvData.writeln(
-          '${order['tanggal']},'
-          '${order['name']},'
-          '${order['email']},'
-          '${order['agentName']},'
-          '${order['phone']},'
-          '${order['status'] ?? 'Belum diproses'}',
+      final headers = [
+        'Tanggal Pengajuan',
+        'Status',
+        'Tanggal Perubahan Status',
+        'Name',
+        'Email',
+        'Phone',
+        'Job',
+        'Income',
+        'Item',
+        'Merk',
+        'Nominal',
+        'Installment',
+        'DP',
+        'Domicile',
+        'Postal Code',
+        'Agent Name',
+        'Agent Email',
+        'Agent Phone',
+        'Foto KTP',
+        'Foto BPKB',
+        'Foto KK',
+        'Foto NPWP',
+      ];
+
+      for (int col = 0; col < headers.length; col++) {
+        sheet.getRangeByIndex(1, col + 1).setText(headers[col]);
+      }
+
+      for (int col = 19; col <= 22; col++) {
+        sheet.getRangeByIndex(1, col).columnWidth = 20;
+      }
+
+      for (int i = 0; i < ordersToExport.length; i++) {
+        final order = ordersToExport[i];
+        final row = i + 2;
+
+        sheet.getRangeByIndex(row, 1).rowHeight = 80;
+
+        sheet.getRangeByIndex(row, 1).setText(order['tanggal'] ?? '');
+        sheet.getRangeByIndex(row, 2).setText(order['status'] ?? '');
+        sheet.getRangeByIndex(row, 3).setText(order['statusUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 4).setText(order['name'] ?? '');
+        sheet.getRangeByIndex(row, 5).setText(order['email'] ?? '');
+        sheet.getRangeByIndex(row, 6).setText(order['phone'] ?? '');
+        sheet.getRangeByIndex(row, 7).setText(order['job'] ?? '');
+        sheet.getRangeByIndex(row, 8).setText(order['income'] ?? '');
+        sheet.getRangeByIndex(row, 9).setText(order['item'] ?? '');
+        sheet.getRangeByIndex(row, 10).setText(order['merk'] ?? '');
+        sheet.getRangeByIndex(row, 11).setText(order['nominal'] ?? '');
+        sheet.getRangeByIndex(row, 12).setText(order['installment'] ?? '');
+        sheet.getRangeByIndex(row, 13).setText(order['dp'] ?? '');
+        sheet.getRangeByIndex(row, 14).setText(order['domicile'] ?? '');
+        sheet.getRangeByIndex(row, 15).setText(order['postalCode'] ?? '');
+        sheet.getRangeByIndex(row, 16).setText(order['agentName'] ?? '');
+        sheet.getRangeByIndex(row, 17).setText(order['agentEmail'] ?? '');
+        sheet.getRangeByIndex(row, 18).setText(order['agentPhone'] ?? '');
+
+        final ktpImageBytes = await _downloadImage(order['ktp']);
+        final bpkbImageBytes = await _downloadImage(order['bpkb']);
+        final kkImageBytes = await _downloadImage(order['kk']);
+        final npwpImageBytes = await _downloadImage(order['npwp']);
+
+        if (ktpImageBytes != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            19,
+            base64Encode(ktpImageBytes),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
+
+        if (bpkbImageBytes != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            20,
+            base64Encode(bpkbImageBytes),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
+
+        if (kkImageBytes != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            21,
+            base64Encode(kkImageBytes),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
+
+        if (npwpImageBytes != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            22,
+            base64Encode(npwpImageBytes),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
+      }
+
+      final List<int> bytes = workbook.saveAsStream();
+      workbook.dispose();
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filePath =
+          'Folder Download'; // atau bisa hapus saja kalau gak perlu
+      try {
+        final savedPath = await platform.invokeMethod<String>(
+          'saveFileToDownloads',
+          {
+            'fileName': 'pengajuan_${selectedDate}_$timestamp.xlsx',
+            'bytes': bytes,
+          },
+        );
+
+        if (savedPath != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('File berhasil disimpan di $savedPath')),
+          );
+        }
+      } on PlatformException catch (e) {
+        print("Gagal menyimpan file: ${e.message}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menyimpan file: ${e.message}')),
         );
       }
 
-      if (Platform.isAndroid) {
-        final status = await Permission.storage.request();
-        if (!status.isGranted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Izin storage ditolak')));
-          return;
-        }
-      }
-
-      Directory? directory;
-      if (Platform.isAndroid) {
-        directory = await getExternalStorageDirectory();
-        String newPath = "";
-        List<String> folders = directory!.path.split("/");
-        for (int i = 1; i < folders.length; i++) {
-          String folder = folders[i];
-          if (folder == "Android") break;
-          newPath += "/$folder";
-        }
-        newPath += "/Download";
-        directory = Directory(newPath);
-      } else if (Platform.isIOS) {
-        directory = await getApplicationDocumentsDirectory();
-      }
-
-      String fileName = "export_pengajuan_$selectedDate.csv";
-      File file = File('${directory!.path}/$fileName');
-      await file.writeAsString(csvData.toString());
+      Navigator.of(context, rootNavigator: true).pop();
+      setState(() => _isExporting = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('File berhasil disimpan di ${file.path}')),
+        SnackBar(content: Text('File berhasil disimpan di $filePath')),
       );
-    } catch (e) {
+    } catch (e, stacktrace) {
+      print('Error export: $e');
+      print(stacktrace);
+      Navigator.of(context, rootNavigator: true).pop();
+      setState(() => _isExporting = false);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Gagal mengekspor: $e')));
+    }
+  }
+
+  Future<void> _addImageToCell(
+    xlsio.Worksheet sheet,
+    int row,
+    int col,
+    String? url,
+  ) async {
+    if (url == null || url.isEmpty) return;
+    try {
+      final response = await http.get(Uri.parse(url));
+      final imageBytes = response.bodyBytes;
+      sheet.pictures.addBase64(row, col, base64Encode(imageBytes));
+    } catch (e) {
+      print('Gagal ambil gambar: \$e');
     }
   }
 
