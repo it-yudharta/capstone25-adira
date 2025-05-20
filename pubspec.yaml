@@ -77,6 +77,7 @@ flutter:
   assets:
     - assets/images/rectangle_2.png
     - assets/images/rectangle_10.png
+    - assets/icon/export_icon.png
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

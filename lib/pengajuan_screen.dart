@@ -520,13 +520,52 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              ElevatedButton.icon(
-                onPressed: _showExportDatePickerDialog,
-                icon: Icon(Icons.file_download),
-                label: Text("Export by Date"),
+              ElevatedButton(
+                onPressed: _confirmDeleteAllToTrash,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  backgroundColor: Color(0xFF0E5C36),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.delete_outline, size: 16, color: Colors.white),
+                    SizedBox(height: 4),
+                    Text(
+                      'Delete All',
+                      style: TextStyle(fontSize: 12, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _showExportDatePickerDialog,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF0E5C36),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/icon/export_icon.png',
+                      width: 16,
+                      height: 16,
+                      color: Colors.white,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Export by',
+                      style: TextStyle(fontSize: 12, color: Colors.white),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -581,6 +620,59 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         ),
       ],
     );
+  }
+
+  void _confirmDeleteAllToTrash() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Semua?'),
+            content: Text('Yakin ingin menghapus semua data (non-lead)?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _deleteAllToTrash();
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _deleteAllToTrash() async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+
+    int updatedCount = 0;
+
+    for (var order in _filteredOrders) {
+      final isLead = order['lead'] == true;
+      final key = order['key'];
+      if (!isLead && key != null) {
+        try {
+          await _database.child(key).update({
+            'status': 'trash',
+            'statusUpdatedAt': formattedDate,
+          });
+          updatedCount++;
+        } catch (e) {
+          print("Gagal update order $key: $e");
+        }
+      }
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Berhasil menghapus $updatedCount data')),
+    );
+
+    _fetchOrders();
   }
 
   void _showExportDatePickerDialog() async {
@@ -813,8 +905,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
       workbook.dispose();
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filePath =
-          'Folder Download'; // atau bisa hapus saja kalau gak perlu
+      final filePath = 'Folder Download';
       try {
         final savedPath = await platform.invokeMethod<String>(
           'saveFileToDownloads',
