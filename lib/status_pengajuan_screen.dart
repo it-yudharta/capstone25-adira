@@ -20,6 +20,9 @@ class StatusPengajuanScreen extends StatefulWidget {
 class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final DatabaseReference _database = FirebaseDatabase.instance.ref().child(
+    'orders',
+  );
   bool _isLoading = true;
   List<Map<dynamic, dynamic>> _orders = [];
   List<Map<dynamic, dynamic>> _filteredOrders = [];
@@ -173,6 +176,63 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
     await dbRef.update({'lead': isLead});
   }
 
+  void _confirmDeleteAllToTrash() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Semua?'),
+            content: Text('Yakin ingin menghapus semua data (non-lead)?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _markAllNonLeadAsTrashed();
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _markAllNonLeadAsTrashed() async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+
+    int trashedCount = 0;
+
+    for (final order in _filteredOrders) {
+      final isLead = order['lead'] == true;
+      final key = order['key'];
+
+      if (!isLead && key != null) {
+        try {
+          await _database.child(key).update({
+            'trash': true,
+            'trashUpdatedAt': formattedDate,
+          });
+          trashedCount++;
+        } catch (e) {
+          debugPrint("Gagal menandai order $key sebagai trash: $e");
+        }
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Berhasil menandai $trashedCount data sebagai trash'),
+        ),
+      );
+      _fetchOrders();
+    }
+  }
+
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
       {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
@@ -193,41 +253,43 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
-          children: List.generate(statusButtons.length * 2 - 1, (index) {
-            if (index.isOdd) return SizedBox(width: 16);
-            final item = statusButtons[index ~/ 2];
-            final bool isActive = widget.status == item['status'];
+          children: [
+            ...List.generate(statusButtons.length * 2 - 1, (index) {
+              if (index.isOdd) return SizedBox(width: 16);
+              final item = statusButtons[index ~/ 2];
+              final bool isActive = widget.status == item['status'];
 
-            return InkWell(
-              onTap: () {
-                if (!isActive) {
-                  _changeStatus(item['status'], item['label']);
-                }
-              },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: isActive ? Color(0xFF0E5C36) : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(color: Colors.grey.shade300, blurRadius: 4),
-                      ],
+              return InkWell(
+                onTap: () {
+                  if (!isActive) {
+                    _changeStatus(item['status'], item['label']);
+                  }
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: isActive ? Color(0xFF0E5C36) : Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(color: Colors.grey.shade300, blurRadius: 4),
+                        ],
+                      ),
+                      child: Icon(
+                        item['icon'],
+                        size: 21,
+                        color: isActive ? Colors.white : Color(0xFF0E5C36),
+                      ),
                     ),
-                    child: Icon(
-                      item['icon'],
-                      size: 21,
-                      color: isActive ? Colors.white : Color(0xFF0E5C36),
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(item['label'], style: TextStyle(fontSize: 10)),
-                ],
-              ),
-            );
-          }),
+                    SizedBox(height: 4),
+                    Text(item['label'], style: TextStyle(fontSize: 10)),
+                  ],
+                ),
+              );
+            }),
+          ],
         ),
       ),
     );
@@ -445,28 +507,63 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
               top: 0,
               right: 0,
               child: PopupMenuButton<String>(
-                onSelected: (value) {
+                onSelected: (value) async {
                   if (value == 'lead') {
                     setState(() => order['lead'] = true);
                     _updateLeadStatus(orderKey, true);
                   } else if (value == 'unlead') {
                     setState(() => order['lead'] = false);
                     _updateLeadStatus(orderKey, false);
+                  } else if (value == 'restore') {
+                    // Proses restore: hapus trash dan trashUpdatedAt
+                    try {
+                      await _database.child(orderKey).update({
+                        'trash': null,
+                        'trashUpdatedAt': null,
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Data berhasil di-restore')),
+                      );
+                      _fetchOrders(); // refresh data
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Gagal restore data: $e')),
+                      );
+                    }
                   }
                 },
-                itemBuilder:
-                    (BuildContext context) => [
-                      if (!isLead)
-                        PopupMenuItem<String>(
-                          value: 'lead',
-                          child: Text('Tandai sebagai Lead'),
-                        ),
-                      if (isLead)
-                        PopupMenuItem<String>(
-                          value: 'unlead',
-                          child: Text('Batalkan Lead'),
-                        ),
-                    ],
+                itemBuilder: (BuildContext context) {
+                  List<PopupMenuEntry<String>> items = [];
+
+                  if (!isLead) {
+                    items.add(
+                      PopupMenuItem<String>(
+                        value: 'lead',
+                        child: Text('Tandai sebagai Lead'),
+                      ),
+                    );
+                  }
+                  if (isLead) {
+                    items.add(
+                      PopupMenuItem<String>(
+                        value: 'unlead',
+                        child: Text('Batalkan Lead'),
+                      ),
+                    );
+                  }
+
+                  if (widget.status == 'trash') {
+                    items.add(PopupMenuDivider());
+                    items.add(
+                      PopupMenuItem<String>(
+                        value: 'restore',
+                        child: Text('Restore'),
+                      ),
+                    );
+                  }
+
+                  return items;
+                },
               ),
             ),
           ],
@@ -607,21 +704,60 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                if (widget.status != 'trash')
+                  ElevatedButton(
+                    onPressed: _confirmDeleteAllToTrash,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Delete All',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    backgroundColor: const Color(0xFF0E5C36),
+                    backgroundColor: Color(0xFF0E5C36),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   ),
-                  child: const Text(
-                    'Export All',
-                    style: TextStyle(fontSize: 14),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/icon/export_icon.png',
+                        width: 16,
+                        height: 16,
+                        color: Colors.white,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Export by',
+                        style: TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ],
                   ),
                 ),
               ],
