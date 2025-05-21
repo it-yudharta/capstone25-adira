@@ -1220,11 +1220,11 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                   ElevatedButton(
                     onPressed: _confirmDeleteAllTrashPermanently,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF0E5C36),
+                      backgroundColor: const Color(0xFF0E5C36),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 6,
                       ),
@@ -1233,13 +1233,13 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: const [
                         Icon(
-                          Icons.delete_forever,
+                          Icons.delete_outline, // Sesuai tombol sebelumnya
                           size: 16,
                           color: Colors.white,
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Delete All Permanen',
+                          'Delete All', // Sama dengan tombol trash biasa
                           style: TextStyle(fontSize: 12, color: Colors.white),
                         ),
                       ],

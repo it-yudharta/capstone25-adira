@@ -158,7 +158,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     ).pushReplacement(MaterialPageRoute(builder: (_) => LoginScreen()));
   }
 
-  void _updateLeadStatus(String orderKey, bool isLead) async {
+  Future<void> _updateLeadStatus(String orderKey, bool isLead) async {
     final orderRef = _database.child(orderKey);
     try {
       await orderRef.update({'lead': isLead});
@@ -349,15 +349,26 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
             ),
             if (isLead)
               Positioned(
-                top: 4,
-                left: 260,
-                child: Transform.scale(
-                  scaleY: 1.3,
-                  scaleX: 1.0,
-                  child: Icon(
-                    Icons.bookmark,
-                    size: 24,
-                    color: Color(0xFF0E5C36),
+                top: 12,
+                left: 240,
+                child: GestureDetector(
+                  onTap: () async {
+                    setState(() {
+                      order['lead'] = false;
+                    });
+                    await _updateLeadStatus(orderKey, false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Status lead dibatalkan')),
+                    );
+                  },
+                  child: Transform.scale(
+                    scaleY: 1.3,
+                    scaleX: 1.0,
+                    child: Icon(
+                      Icons.bookmark,
+                      size: 24,
+                      color: Color(0xFF0E5C36),
+                    ),
                   ),
                 ),
               ),
@@ -366,28 +377,30 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
               top: 0,
               right: 0,
               child: PopupMenuButton<String>(
-                onSelected: (value) {
+                onSelected: (value) async {
                   if (value == 'lead') {
                     setState(() => order['lead'] = true);
-                    _updateLeadStatus(orderKey, true);
+                    await _updateLeadStatus(orderKey, true);
                   } else if (value == 'unlead') {
                     setState(() => order['lead'] = false);
-                    _updateLeadStatus(orderKey, false);
+                    await _updateLeadStatus(orderKey, false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Status lead dibatalkan')),
+                    );
                   }
+                  // Jika ada opsi lain (restore, delete), tambahkan sesuai kebutuhan
                 },
-                itemBuilder:
-                    (BuildContext context) => [
-                      if (!isLead)
-                        PopupMenuItem<String>(
-                          value: 'lead',
-                          child: Text('Tandai sebagai Lead'),
-                        ),
-                      if (isLead)
-                        PopupMenuItem<String>(
-                          value: 'unlead',
-                          child: Text('Batalkan Lead'),
-                        ),
-                    ],
+                itemBuilder: (BuildContext context) {
+                  return [
+                    if (!isLead)
+                      PopupMenuItem<String>(value: 'lead', child: Text('Lead')),
+                    if (isLead)
+                      PopupMenuItem<String>(
+                        value: 'unlead',
+                        child: Text('Batalkan Lead'),
+                      ),
+                  ];
+                },
               ),
             ),
           ],
