@@ -192,11 +192,13 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     final now = DateTime.now();
     final formattedDate = DateFormat('dd-MM-yyyy').format(now);
 
+    Map<String, dynamic> updates = {
+      'status': newStatus,
+      '${newStatus}UpdatedAt': formattedDate,
+    };
+
     try {
-      await _database.child(orderKey).update({
-        'status': newStatus,
-        'statusUpdatedAt': formattedDate,
-      });
+      await _database.child(orderKey).update(updates);
       _fetchOrders();
     } catch (e) {
       print("Gagal memperbarui status: $e");
@@ -398,6 +400,11 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     final List<Map<String, dynamic>> statusButtons = [
       {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
       {'label': 'Process', 'status': 'process', 'icon': Icons.hourglass_bottom},
+      {
+        'label': 'Pending',
+        'status': 'pending',
+        'icon': Icons.pause_circle_filled,
+      },
       {'label': 'Reject', 'status': 'reject', 'icon': Icons.block},
       {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
       {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
@@ -808,7 +815,11 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
       final headers = [
         'Tanggal Pengajuan',
         'Status',
-        'Tanggal Perubahan Status',
+        'Tanggal Cancel',
+        'Tanggal Process',
+        'Tanggal Pending',
+        'Tanggal Reject',
+        'Tanggal Approve',
         'Nama',
         'Email',
         'No. Telephone',
@@ -820,7 +831,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         'Angsuran Lain',
         'DP',
         'Domisili',
-        'Kodee Pos',
+        'Kode Pos',
         'Nama Agent',
         'Email Agent',
         'No. Telephone Agent',
@@ -828,6 +839,8 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         'Foto BPKB',
         'Foto KK',
         'Foto NPWP',
+        'Foto Slip Gaji',
+        'Foto STNK',
       ];
 
       for (int col = 0; col < headers.length; col++) {
@@ -839,70 +852,93 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
       }
 
       for (int i = 0; i < ordersToExport.length; i++) {
-        final order = ordersToExport[i];
+        final dynamicOrder = ordersToExport[i];
+        final order = Map<String, dynamic>.from(dynamicOrder);
         final row = i + 2;
 
         sheet.getRangeByIndex(row, 1).rowHeight = 80;
 
         sheet.getRangeByIndex(row, 1).setText(order['tanggal'] ?? '');
         sheet.getRangeByIndex(row, 2).setText(order['status'] ?? '');
-        sheet.getRangeByIndex(row, 3).setText(order['statusUpdatedAt'] ?? '');
-        sheet.getRangeByIndex(row, 4).setText(order['name'] ?? '');
-        sheet.getRangeByIndex(row, 5).setText(order['email'] ?? '');
-        sheet.getRangeByIndex(row, 6).setText(order['phone'] ?? '');
-        sheet.getRangeByIndex(row, 7).setText(order['job'] ?? '');
-        sheet.getRangeByIndex(row, 8).setText(order['income'] ?? '');
-        sheet.getRangeByIndex(row, 9).setText(order['item'] ?? '');
-        sheet.getRangeByIndex(row, 10).setText(order['merk'] ?? '');
-        sheet.getRangeByIndex(row, 11).setText(order['nominal'] ?? '');
-        sheet.getRangeByIndex(row, 12).setText(order['installment'] ?? '');
-        sheet.getRangeByIndex(row, 13).setText(order['dp'] ?? '');
-        sheet.getRangeByIndex(row, 14).setText(order['domicile'] ?? '');
-        sheet.getRangeByIndex(row, 15).setText(order['postalCode'] ?? '');
-        sheet.getRangeByIndex(row, 16).setText(order['agentName'] ?? '');
-        sheet.getRangeByIndex(row, 17).setText(order['agentEmail'] ?? '');
-        sheet.getRangeByIndex(row, 18).setText(order['agentPhone'] ?? '');
+
+        sheet.getRangeByIndex(row, 3).setText(order['cancelUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 4).setText(order['processUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 5).setText(order['pendingUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 6).setText(order['rejectUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 7).setText(order['approveUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 8).setText(order['name'] ?? '');
+        sheet.getRangeByIndex(row, 9).setText(order['email'] ?? '');
+        sheet.getRangeByIndex(row, 10).setText(order['phone'] ?? '');
+        sheet.getRangeByIndex(row, 11).setText(order['job'] ?? '');
+        sheet.getRangeByIndex(row, 12).setText(order['income'] ?? '');
+        sheet.getRangeByIndex(row, 13).setText(order['item'] ?? '');
+        sheet.getRangeByIndex(row, 14).setText(order['merk'] ?? '');
+        sheet.getRangeByIndex(row, 15).setText(order['nominal'] ?? '');
+        sheet.getRangeByIndex(row, 16).setText(order['installment'] ?? '');
+        sheet.getRangeByIndex(row, 17).setText(order['dp'] ?? '');
+        sheet.getRangeByIndex(row, 18).setText(order['domicile'] ?? '');
+        sheet.getRangeByIndex(row, 19).setText(order['postalCode'] ?? '');
+        sheet.getRangeByIndex(row, 20).setText(order['agentName'] ?? '');
+        sheet.getRangeByIndex(row, 21).setText(order['agentEmail'] ?? '');
+        sheet.getRangeByIndex(row, 22).setText(order['agentPhone'] ?? '');
 
         final ktpImageBytes = await _downloadImage(order['ktp']);
         final bpkbImageBytes = await _downloadImage(order['bpkb']);
         final kkImageBytes = await _downloadImage(order['kk']);
         final npwpImageBytes = await _downloadImage(order['npwp']);
+        final slipgajiImageBytes = await _downloadImage(order['slipgaji']);
+        final stnkImageBytes = await _downloadImage(order['stnk']);
 
         if (ktpImageBytes != null) {
           final picture = sheet.pictures.addBase64(
             row,
-            19,
+            23,
             base64Encode(ktpImageBytes),
           );
           picture.height = 80;
           picture.width = 120;
         }
-
         if (bpkbImageBytes != null) {
           final picture = sheet.pictures.addBase64(
             row,
-            20,
+            24,
             base64Encode(bpkbImageBytes),
           );
           picture.height = 80;
           picture.width = 120;
         }
-
         if (kkImageBytes != null) {
           final picture = sheet.pictures.addBase64(
             row,
-            21,
+            25,
             base64Encode(kkImageBytes),
           );
           picture.height = 80;
           picture.width = 120;
         }
-
         if (npwpImageBytes != null) {
           final picture = sheet.pictures.addBase64(
             row,
-            22,
+            26,
             base64Encode(npwpImageBytes),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
+        if (slipgajiImageBytes != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            27,
+            base64Encode(slipgajiImageBytes),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
+        if (stnkImageBytes != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            28,
+            base64Encode(stnkImageBytes),
           );
           picture.height = 80;
           picture.width = 120;
@@ -966,6 +1002,17 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     } catch (e) {
       print('Gagal ambil gambar: \$e');
     }
+  }
+
+  String findStatusUpdatedAt(Map<String, dynamic> order) {
+    for (var key in order.keys) {
+      if (key.toLowerCase().endsWith('updatedat') &&
+          order[key] != null &&
+          order[key].toString().isNotEmpty) {
+        return order[key].toString();
+      }
+    }
+    return '';
   }
 
   @override
