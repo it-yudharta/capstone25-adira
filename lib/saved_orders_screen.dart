@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'order_detail_screen.dart';
 import 'custom_bottom_nav_bar.dart';
+import 'status_saved_order_screen.dart';
 
 class SavedOrdersScreen extends StatefulWidget {
   @override
@@ -47,6 +48,71 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
     }
   }
 
+  Widget _buildStatusMenu() {
+    final List<Map<String, dynamic>> statusButtons = [
+      {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
+      {'label': 'Process', 'status': 'process', 'icon': Icons.hourglass_bottom},
+      {'label': 'Reject', 'status': 'reject', 'icon': Icons.block},
+      {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
+      {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
+    ];
+
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+      padding: EdgeInsets.symmetric(horizontal: 19, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 5)],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: List.generate(statusButtons.length * 2 - 1, (index) {
+            if (index.isOdd) return SizedBox(width: 16);
+            final item = statusButtons[index ~/ 2];
+            return InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => StatusSavedOrderScreen(
+                          status: item['status'],
+                          title: item['label'],
+                        ),
+                  ),
+                );
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(color: Colors.grey.shade300, blurRadius: 4),
+                      ],
+                    ),
+                    child: Icon(
+                      item['icon'],
+                      size: 21,
+                      color: Color(0xFF0E5C36),
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(item['label'], style: TextStyle(fontSize: 10)),
+                ],
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,33 +122,26 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
         backgroundColor: Color(0xFFF0F4F5),
         elevation: 0,
         foregroundColor: Colors.black,
-        title: Row(
-          children: [
-            Text(
-              'Lead Orders',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            Spacer(),
-            IconButton(
-              icon: Icon(Icons.arrow_back, color: Color(0xFFE67D13)),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
       ),
       body:
           _isLoading
               ? Center(child: CircularProgressIndicator())
-              : _savedOrders.isEmpty
-              ? Center(child: Text("No saved orders"))
-              : ListView.builder(
-                itemCount: _savedOrders.length,
-                itemBuilder: (context, index) {
-                  final order = _savedOrders[index];
-                  return _buildOrderCard(order);
-                },
+              : Column(
+                children: [
+                  _buildStatusMenu(),
+                  Expanded(
+                    child:
+                        _savedOrders.isEmpty
+                            ? Center(child: Text("No saved orders"))
+                            : ListView.builder(
+                              itemCount: _savedOrders.length,
+                              itemBuilder: (context, index) {
+                                final order = _savedOrders[index];
+                                return _buildOrderCard(order);
+                              },
+                            ),
+                  ),
+                ],
               ),
     );
   }

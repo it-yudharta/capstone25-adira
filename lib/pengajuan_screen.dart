@@ -85,6 +85,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   void _fetchOrders() async {
     setState(() => _isLoading = true);
     final snapshot = await _database.get();
+
     if (snapshot.exists) {
       final data = snapshot.value as Map<dynamic, dynamic>;
       final loadedOrders = <Map<dynamic, dynamic>>[];
@@ -97,9 +98,12 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
       setState(() {
         _orders =
             loadedOrders.where((order) {
-              return order['status'] == null ||
-                  order['status'] == 'Belum diproses';
+              final status = order['status'];
+              final isTrashed = order['trash'] == true;
+              return !isTrashed &&
+                  (status == null || status == 'Belum diproses');
             }).toList();
+
         _applySearch();
         _isLoading = false;
       });
@@ -637,7 +641,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  _deleteAllToTrash();
+                  _markAllNonLeadAsTrashed();
                 },
                 child: Text('Ya, Hapus'),
               ),
@@ -646,33 +650,37 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     );
   }
 
-  void _deleteAllToTrash() async {
+  void _markAllNonLeadAsTrashed() async {
     final now = DateTime.now();
     final formattedDate = DateFormat('dd-MM-yyyy').format(now);
 
-    int updatedCount = 0;
+    int trashedCount = 0;
 
-    for (var order in _filteredOrders) {
+    for (final order in _filteredOrders) {
       final isLead = order['lead'] == true;
       final key = order['key'];
+
       if (!isLead && key != null) {
         try {
           await _database.child(key).update({
-            'status': 'trash',
-            'statusUpdatedAt': formattedDate,
+            'trash': true,
+            'trashUpdatedAt': formattedDate,
           });
-          updatedCount++;
+          trashedCount++;
         } catch (e) {
-          print("Gagal update order $key: $e");
+          debugPrint("Gagal menandai order $key sebagai trash: $e");
         }
       }
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Berhasil menghapus $updatedCount data')),
-    );
-
-    _fetchOrders();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Berhasil menandai $trashedCount data sebagai trash'),
+        ),
+      );
+      _fetchOrders();
+    }
   }
 
   void _showExportDatePickerDialog() async {
@@ -801,21 +809,21 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         'Tanggal Pengajuan',
         'Status',
         'Tanggal Perubahan Status',
-        'Name',
+        'Nama',
         'Email',
-        'Phone',
-        'Job',
-        'Income',
+        'No. Telephone',
+        'Pekerjaan',
+        'Pendapatan',
         'Item',
         'Merk',
-        'Nominal',
-        'Installment',
+        'Nominal Pengajuan',
+        'Angsuran Lain',
         'DP',
-        'Domicile',
-        'Postal Code',
-        'Agent Name',
-        'Agent Email',
-        'Agent Phone',
+        'Domisili',
+        'Kodee Pos',
+        'Nama Agent',
+        'Email Agent',
+        'No. Telephone Agent',
         'Foto KTP',
         'Foto BPKB',
         'Foto KK',

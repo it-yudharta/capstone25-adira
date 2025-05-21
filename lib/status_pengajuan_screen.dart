@@ -35,31 +35,72 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
 
   void _fetchOrders() async {
     final dbRef = FirebaseDatabase.instance.ref().child('orders');
-    dbRef.orderByChild('status').equalTo(widget.status).onValue.listen((event) {
-      final data = event.snapshot.value as Map<dynamic, dynamic>?;
-      if (data != null) {
-        final List<Map<dynamic, dynamic>> items = [];
-        data.forEach((key, value) {
-          final Map<dynamic, dynamic> item = Map<dynamic, dynamic>.from(value);
-          item['key'] = key;
-          items.add(item);
-        });
 
-        setState(() {
-          _orders = items;
-          _applySearch();
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _orders = [];
-          _filteredOrders = [];
-          groupedOrders = {};
-          orderedDates = [];
-          _isLoading = false;
-        });
-      }
-    });
+    if (widget.status == 'trash') {
+      dbRef.onValue.listen((event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+
+        if (data != null) {
+          final List<Map<dynamic, dynamic>> items = [];
+          data.forEach((key, value) {
+            final Map<dynamic, dynamic> item = Map<dynamic, dynamic>.from(
+              value,
+            );
+            if (item['trash'] == true) {
+              item['key'] = key;
+              items.add(item);
+            }
+          });
+
+          setState(() {
+            _orders = items;
+            _applySearch();
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _orders = [];
+            _filteredOrders = [];
+            groupedOrders = {};
+            orderedDates = [];
+            _isLoading = false;
+          });
+        }
+      });
+    } else {
+      dbRef.orderByChild('status').equalTo(widget.status).onValue.listen((
+        event,
+      ) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+
+        if (data != null) {
+          final List<Map<dynamic, dynamic>> items = [];
+          data.forEach((key, value) {
+            final Map<dynamic, dynamic> item = Map<dynamic, dynamic>.from(
+              value,
+            );
+            if (item['trash'] != true) {
+              item['key'] = key;
+              items.add(item);
+            }
+          });
+
+          setState(() {
+            _orders = items;
+            _applySearch();
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _orders = [];
+            _filteredOrders = [];
+            groupedOrders = {};
+            orderedDates = [];
+            _isLoading = false;
+          });
+        }
+      });
+    }
   }
 
   void _applySearch() {
