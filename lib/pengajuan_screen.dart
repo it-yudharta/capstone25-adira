@@ -206,6 +206,47 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     }
   }
 
+  void _confirmDeleteSingleToTrash(String key) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Data Ini?'),
+            content: Text('Yakin ingin menghapus data ini ke Trash Bin?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final now = DateTime.now();
+                  final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+                  try {
+                    await _database.child(key).update({
+                      'trash': true,
+                      'trashUpdatedAt': formattedDate,
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Data berhasil dipindahkan ke Trash'),
+                      ),
+                    );
+                    _fetchOrders();
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal menghapus data: $e')),
+                    );
+                  }
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
+  }
+
   Widget _buildOrderCard(Map order, String orderKey, TextStyle? baseStyle) {
     final isLead = order['lead'] == true;
     final String phoneNumber = order['phone'] ?? '-';
@@ -379,12 +420,18 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                   if (value == 'lead') {
                     setState(() => order['lead'] = true);
                     await _updateLeadStatus(orderKey, true);
+                  } else if (value == 'delete') {
+                    _confirmDeleteSingleToTrash(orderKey);
                   }
                 },
                 itemBuilder: (BuildContext context) {
                   return [
                     if (!isLead)
                       PopupMenuItem<String>(value: 'lead', child: Text('Lead')),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
                   ];
                 },
               ),
