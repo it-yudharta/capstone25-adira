@@ -797,6 +797,8 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
       for (final child in snapshot.children) {
         final data = Map<String, dynamic>.from(child.value as Map);
+        if (data['trash'] == true) continue;
+
         data['key'] = child.key;
         ordersToExport.add(data);
       }
