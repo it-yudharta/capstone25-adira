@@ -6,15 +6,13 @@ import 'status_pengajuan_screen.dart';
 import 'login_screen.dart';
 import 'order_detail_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
 
-const platform = MethodChannel('com.fundrain.resellerapp/download');
+const platform = MethodChannel('com.fundrain.adiraapp/download');
 
 class PengajuanScreen extends StatefulWidget {
   @override
@@ -381,24 +379,12 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                   if (value == 'lead') {
                     setState(() => order['lead'] = true);
                     await _updateLeadStatus(orderKey, true);
-                  } else if (value == 'unlead') {
-                    setState(() => order['lead'] = false);
-                    await _updateLeadStatus(orderKey, false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Status lead dibatalkan')),
-                    );
                   }
-                  // Jika ada opsi lain (restore, delete), tambahkan sesuai kebutuhan
                 },
                 itemBuilder: (BuildContext context) {
                   return [
                     if (!isLead)
                       PopupMenuItem<String>(value: 'lead', child: Text('Lead')),
-                    if (isLead)
-                      PopupMenuItem<String>(
-                        value: 'unlead',
-                        child: Text('Batalkan Lead'),
-                      ),
                   ];
                 },
               ),

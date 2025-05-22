@@ -28,7 +28,7 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
     'orders',
   );
   bool _isExporting = false;
-  static const platform = MethodChannel('com.fundrain.resellerapp/download');
+  static const platform = MethodChannel('com.fundrain.adiraapp/download');
   bool _isLoading = true;
   List<Map<dynamic, dynamic>> _orders = [];
   List<Map<dynamic, dynamic>> _filteredOrders = [];
@@ -1233,13 +1233,13 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: const [
                         Icon(
-                          Icons.delete_outline, // Sesuai tombol sebelumnya
+                          Icons.delete_outline,
                           size: 16,
                           color: Colors.white,
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Delete All', // Sama dengan tombol trash biasa
+                          'Delete All',
                           style: TextStyle(fontSize: 12, color: Colors.white),
                         ),
                       ],

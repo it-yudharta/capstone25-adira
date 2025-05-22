@@ -26,12 +26,12 @@ android {
         create("release") {
             keyAlias = keystoreProperties["keyAlias"] as String?
             keyPassword = keystoreProperties["keyPassword"] as String?
-            storeFile = file("C:/Users/USER/resellerapp/android/app/release-key.keystore")
+            storeFile = file(keystoreProperties["storeFile"] as String?)
             storePassword = keystoreProperties["storePassword"] as String?
         }
     }
 
-    namespace = "com.fundrain.resellerapp"
+    namespace = "com.fundrain.adiraapp"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "29.0.13113456"
 
@@ -45,11 +45,11 @@ android {
     }
 
     defaultConfig {
-    applicationId = "com.fundrain.resellerapp"
+    applicationId = "com.fundrain.adiraapp"
     minSdk = flutter.minSdkVersion
     targetSdk = flutter.targetSdkVersion
-    versionCode = 10
-    versionName = "1.0.9"
+    versionCode = 2
+    versionName = "1.0.1"
     }
 
     buildTypes {

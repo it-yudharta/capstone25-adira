@@ -1,4 +1,4 @@
-package com.fundrain.resellerapp
+package com.fundrain.adiraapp
 
 import android.os.Build
 import android.os.Environment
@@ -12,7 +12,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
 
-    private val CHANNEL = "com.fundrain.resellerapp/download"
+    private val CHANNEL = "com.fundrain.adiraapp/download"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
