@@ -220,214 +220,183 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFF0F4F5),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Color(0xFFF0F4F5),
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
-      body:
-          _isLoading
-              ? Center(child: CircularProgressIndicator())
-              : Column(
-                children: [
-                  // Search bar di paling atas
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                    child: Container(
-                      width: 250,
-                      height: 40,
-                      child: TextField(
-                        controller: _searchController,
-                        focusNode: _focusNode,
-                        onChanged: (value) {
-                          setState(() {
-                            _searchQuery = value;
-                            _applySearch();
-                          });
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Search data',
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(
-                              color: Colors.black,
-                              width: 1.2,
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(
-                              color: Colors.grey.shade500,
-                              width: 1.2,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(
-                              color: Color(0xFF0E5C36),
-                              width: 1.5,
-                            ),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              Icons.search,
-                              color:
-                                  _focusNode.hasFocus
-                                      ? Color(0xFF0E5C36)
-                                      : Colors.grey.shade600,
-                            ),
-                            onPressed:
-                                () => FocusScope.of(
-                                  context,
-                                ).requestFocus(_focusNode),
-                          ),
-                        ),
-                        style: TextStyle(fontSize: 14),
+  Widget _buildMainPage() {
+    return _isLoading
+        ? Center(child: CircularProgressIndicator())
+        : Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Container(
+                width: 250,
+                height: 40,
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: _focusNode,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                      _applySearch();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Search data',
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.black, width: 1.2),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Colors.grey.shade500,
+                        width: 1.2,
                       ),
                     ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(
+                        color: Color(0xFF0E5C36),
+                        width: 1.5,
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        Icons.search,
+                        color:
+                            _focusNode.hasFocus
+                                ? Color(0xFF0E5C36)
+                                : Colors.grey.shade600,
+                      ),
+                      onPressed:
+                          () => FocusScope.of(context).requestFocus(_focusNode),
+                    ),
                   ),
-
-                  // Status menu setelah search bar
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-                    child: _buildStatusMenu(),
-                  ),
-
-                  // Tombol Delete All & Export All
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                  style: TextStyle(fontSize: 14),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+              child: _buildStatusMenu(),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF0E5C36),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.delete_outline,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Delete All',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
+                        Icon(
+                          Icons.delete_outline,
+                          size: 16,
+                          color: Colors.white,
                         ),
-                        SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () {},
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF0E5C36),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Image.asset(
-                                'assets/icon/export_icon.png',
-                                width: 16,
-                                height: 16,
-                                color: Colors.white,
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Export All',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Delete All',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
                         ),
                       ],
                     ),
                   ),
-
-                  SizedBox(height: 12),
-
-                  // List data
-                  Expanded(
-                    child:
-                        _savedOrders.isEmpty
-                            ? Center(child: Text("No saved orders"))
-                            : ListView.builder(
-                              itemCount: orderedDates.fold<int>(
-                                0,
-                                (sum, date) =>
-                                    sum + groupedOrders[date]!.length + 1,
-                              ),
-                              itemBuilder: (context, index) {
-                                int currentIndex = 0;
-                                for (final date in orderedDates) {
-                                  if (index == currentIndex) {
-                                    return Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        16,
-                                        12,
-                                        16,
-                                        4,
-                                      ),
-                                      child: Text(
-                                        'Date: $date',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  currentIndex++;
-
-                                  final orders = groupedOrders[date]!;
-                                  if (index - currentIndex < orders.length) {
-                                    final order = orders[index - currentIndex];
-                                    return _buildOrderCard(order, null);
-                                  }
-                                  currentIndex += orders.length;
-                                }
-                                return SizedBox.shrink();
-                              },
-                            ),
+                  SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/icon/export_icon.png',
+                          width: 16,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Export All',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-    );
+            ),
+            SizedBox(height: 12),
+            Expanded(
+              child:
+                  _savedOrders.isEmpty
+                      ? Center(child: Text("No saved orders"))
+                      : ListView.builder(
+                        itemCount: orderedDates.fold<int>(
+                          0,
+                          (sum, date) => sum + groupedOrders[date]!.length + 1,
+                        ),
+                        itemBuilder: (context, index) {
+                          int currentIndex = 0;
+                          for (final date in orderedDates) {
+                            if (index == currentIndex) {
+                              return Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  12,
+                                  16,
+                                  4,
+                                ),
+                                child: Text(
+                                  'Date: $date',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              );
+                            }
+                            currentIndex++;
+
+                            final orders = groupedOrders[date]!;
+                            if (index - currentIndex < orders.length) {
+                              final order = orders[index - currentIndex];
+                              return _buildOrderCard(order, null);
+                            }
+                            currentIndex += orders.length;
+                          }
+                          return SizedBox.shrink();
+                        },
+                      ),
+            ),
+          ],
+        );
   }
 
   Future<void> _launchWhatsApp(String phoneNumber) async {
@@ -612,6 +581,14 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF0F4F5),
+      body: _buildMainPage(),
     );
   }
 }
