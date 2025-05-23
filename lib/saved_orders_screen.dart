@@ -157,7 +157,7 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
     ];
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 0),
       padding: EdgeInsets.symmetric(horizontal: 19, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -199,7 +199,7 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                         ),
                         child: Icon(
                           item['icon'],
-                          size: 20,
+                          size: 21,
                           color: Color(0xFF0E5C36),
                         ),
                       ),
