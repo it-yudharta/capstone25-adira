@@ -622,6 +622,55 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
     }
   }
 
+  void _confirmDeleteSinglePermanently(String orderKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Konfirmasi Hapus Permanen'),
+            content: const Text(
+              'Apakah Anda yakin ingin menghapus data ini secara permanen? Tindakan ini tidak bisa dibatalkan.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _deleteSingleTrashPermanently(orderKey);
+                },
+                child: const Text('Hapus Permanen'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _deleteSingleTrashPermanently(String orderKey) async {
+    setState(() => _isLoading = true);
+
+    try {
+      await FirebaseDatabase.instance
+          .reference()
+          .child('orders')
+          .child(orderKey)
+          .remove();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Data berhasil dihapus permanen')));
+      _fetchOrders();
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menghapus data: $e')));
+    }
+
+    setState(() => _isLoading = false);
+  }
+
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
       {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
@@ -976,6 +1025,8 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                         SnackBar(content: Text('Gagal restore data: $e')),
                       );
                     }
+                  } else if (value == 'delete_permanent') {
+                    _confirmDeleteSinglePermanently(orderKey);
                   } else if (value == 'delete') {
                     _confirmDeleteSingleToTrash(orderKey);
                   }
@@ -986,6 +1037,10 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                       PopupMenuItem<String>(
                         value: 'restore',
                         child: Text('Restore'),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete_permanent',
+                        child: Text('Delete'),
                       ),
                     ];
                   } else {

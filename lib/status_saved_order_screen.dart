@@ -110,7 +110,7 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
       if (dateA == null) return 1;
       if (dateB == null) return -1;
 
-      return dateB.compareTo(dateA); // descending
+      return dateB.compareTo(dateA);
     });
 
     return dates;
@@ -146,8 +146,10 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
     }
   }
 
-  Future<void> _updateLeadStatus(String key, bool isLead) async {
-    await _database.child(key).update({'lead': isLead});
+  Future<void> _updateLeadStatus(String orderKey, bool isLead) async {
+    await FirebaseDatabase.instance.ref('orders/$orderKey').update({
+      'lead': isLead,
+    });
   }
 
   Future<void> _confirmDeleteSingleToTrash(String key) async {
@@ -185,7 +187,7 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
 
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
-      padding: EdgeInsets.symmetric(horizontal: 19, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 5)],
@@ -196,7 +198,7 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
         child: Row(
           children: [
             ...List.generate(statusButtons.length * 2 - 1, (index) {
-              if (index.isOdd) return SizedBox(width: 16);
+              if (index.isOdd) return SizedBox(width: 12);
               final item = statusButtons[index ~/ 2];
               final bool isActive = _currentStatus == item['status'];
 
@@ -354,19 +356,22 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              if (_currentStatus != 'trash')
+              if (_currentStatus == 'trash')
                 ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF0E5C36),
+                    backgroundColor: const Color(0xFF0E5C36),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                    children: const [
                       Icon(Icons.delete_outline, size: 16, color: Colors.white),
                       SizedBox(height: 4),
                       Text(
@@ -376,16 +381,43 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                     ],
                   ),
                 ),
-              if (_currentStatus != 'trash') SizedBox(width: 8),
-              if (_currentStatus != 'trash')
+              if (_currentStatus != 'trash') ...[
                 ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF0E5C36),
+                    backgroundColor: const Color(0xFF0E5C36),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.delete_outline, size: 16, color: Colors.white),
+                      SizedBox(height: 4),
+                      Text(
+                        'Delete All',
+                        style: TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0E5C36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -396,24 +428,24 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                         height: 16,
                         color: Colors.white,
                       ),
-                      SizedBox(height: 4),
-                      Text(
+                      const SizedBox(height: 4),
+                      const Text(
                         'Export by',
                         style: TextStyle(fontSize: 12, color: Colors.white),
                       ),
                     ],
                   ),
                 ),
+              ],
             ],
           ),
         ),
+
         SizedBox(height: 12),
         Expanded(
           child:
               _isLoading
-                  ? Center(
-                    child: CircularProgressIndicator(),
-                  ) // <-- Loading cuma di sini
+                  ? Center(child: CircularProgressIndicator())
                   : _filteredOrders.isEmpty
                   ? Center(
                     child: Text(
@@ -448,7 +480,7 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                           final order = orders[index - currentIndex];
                           return _buildOrderCard(
                             order,
-                            date,
+                            order['key'],
                             TextStyle(color: Colors.black87),
                           );
                         }
@@ -540,10 +572,8 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                 left: 240,
                 child: GestureDetector(
                   onTap: () async {
-                    setState(() {
-                      order['lead'] = false;
-                    });
                     await _updateLeadStatus(orderKey, false);
+                    await _fetchFilteredOrders();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Status lead dibatalkan')),
                     );
@@ -567,9 +597,13 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                   if (value == 'lead') {
                     setState(() => order['lead'] = true);
                     _updateLeadStatus(orderKey, true);
+                    await _fetchFilteredOrders();
                   } else if (value == 'unlead') {
-                    setState(() => order['lead'] = false);
-                    _updateLeadStatus(orderKey, false);
+                    await _updateLeadStatus(orderKey, false);
+                    await _fetchFilteredOrders();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Status lead dibatalkan')),
+                    );
                   } else if (value == 'delete') {
                     _confirmDeleteSingleToTrash(orderKey);
                   }
@@ -580,11 +614,6 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                       PopupMenuItem<String>(
                         value: 'lead',
                         child: Text('Mark as Lead'),
-                      ),
-                    if (isLead)
-                      PopupMenuItem<String>(
-                        value: 'unlead',
-                        child: Text('Remove Lead'),
                       ),
                     PopupMenuItem<String>(
                       value: 'delete',
