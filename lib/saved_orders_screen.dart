@@ -431,7 +431,7 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  _markAllAsTrashed(); // Sudah ganti ke fungsi baru
+                  _markAllAsTrashed();
                 },
                 child: Text('Ya, Hapus'),
               ),
@@ -840,6 +840,12 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
     );
   }
 
+  Future<void> _updateLeadStatus(String orderKey, bool isLead) async {
+    await FirebaseDatabase.instance.ref('orders/$orderKey').update({
+      'lead': isLead,
+    });
+  }
+
   Widget _buildOrderCard(Map order, TextStyle? baseStyle) {
     final isLead = order['lead'] == true;
     final String phoneNumber = order['phone'] ?? '-';
@@ -984,13 +990,21 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
               top: 0,
               right: 0,
               child: PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'delete') {
+                onSelected: (value) async {
+                  if (value == 'lead') {
+                    setState(() => order['lead'] = true);
+                    await _updateLeadStatus(order['key'], true);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Ditandai sebagai lead')),
+                    );
+                  } else if (value == 'delete') {
                     _confirmDeleteSingleToTrash(order['key']);
                   }
                 },
                 itemBuilder: (BuildContext context) {
                   return [
+                    if (!isLead)
+                      PopupMenuItem<String>(value: 'lead', child: Text('Lead')),
                     PopupMenuItem<String>(
                       value: 'delete',
                       child: Text('Delete'),
@@ -999,15 +1013,32 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                 },
               ),
             ),
-            Positioned(
-              top: 12,
-              left: 240,
-              child: Transform.scale(
-                scaleY: 1.3,
-                scaleX: 1.0,
-                child: Icon(Icons.bookmark, size: 24, color: Color(0xFF0E5C36)),
+            if (isLead)
+              Positioned(
+                top: 12,
+                left: 240,
+                child: GestureDetector(
+                  onTap: () async {
+                    setState(() {
+                      order['lead'] = false;
+                    });
+                    await _updateLeadStatus(order['key'], false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Status lead dibatalkan')),
+                    );
+                    _fetchSavedOrders();
+                  },
+                  child: Transform.scale(
+                    scaleY: 1.3,
+                    scaleX: 1.0,
+                    child: Icon(
+                      Icons.bookmark,
+                      size: 24,
+                      color: Color(0xFF0E5C36),
+                    ),
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),
