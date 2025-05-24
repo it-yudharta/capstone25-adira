@@ -283,17 +283,36 @@ class OrderDetailScreen extends StatelessWidget {
       'process': 'Tanggal Process',
       'approved': 'Tanggal Disetujui',
       'rejected': 'Tanggal Ditolak',
-      'canceled': 'Tanggal Dibatalkan',
+      'cancel': 'Tanggal Dibatalkan',
       'pending': 'Tanggal Pending',
     };
 
     List<Widget> widgets = [];
 
-    final status = orderData['status'] ?? '';
-    if (statusLabels.containsKey(status)) {
-      final tanggalStatus = orderData['statusUpdatedAt'] ?? '-';
-      widgets.add(Text("${statusLabels[status]}: $tanggalStatus"));
-    }
+    statusLabels.forEach((statusKey, label) {
+      String tanggalStatus = '-';
+      switch (statusKey) {
+        case 'process':
+          tanggalStatus = orderData['processUpdatedAt'] ?? '-';
+          break;
+        case 'approved':
+          tanggalStatus = orderData['approvedUpdatedAt'] ?? '-';
+          break;
+        case 'rejected':
+          tanggalStatus = orderData['rejectedUpdatedAt'] ?? '-';
+          break;
+        case 'cancel':
+          tanggalStatus = orderData['cancelUpdatedAt'] ?? '-';
+          break;
+        case 'pending':
+          tanggalStatus = orderData['pendingUpdatedAt'] ?? '-';
+          break;
+      }
+
+      if (tanggalStatus != '-') {
+        widgets.add(Text("$label: $tanggalStatus"));
+      }
+    });
 
     return widgets;
   }
