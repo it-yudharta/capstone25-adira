@@ -627,6 +627,57 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
     }
   }
 
+  void _confirmDeleteSinglePermanently(String orderKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Konfirmasi Hapus Permanen'),
+            content: const Text(
+              'Apakah Anda yakin ingin menghapus data ini secara permanen? Tindakan ini tidak bisa dibatalkan.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _deleteSingleTrashPermanently(orderKey);
+                },
+                child: const Text('Hapus Permanen'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _deleteSingleTrashPermanently(String orderKey) async {
+    setState(() => _isLoading = true);
+
+    try {
+      await FirebaseDatabase.instance
+          .reference()
+          .child('orders')
+          .child(orderKey)
+          .remove();
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Data berhasil dihapus permanen')));
+
+      _fetchFilteredOrders();
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menghapus data: $e')));
+    }
+
+    setState(() => _isLoading = false);
+  }
+
   Widget _buildOrderCard(Map order, String orderKey, TextStyle? baseStyle) {
     final isLead = order['lead'] == true;
     final String phoneNumber = order['phone'] ?? '-';
@@ -739,22 +790,52 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                     );
                   } else if (value == 'delete') {
                     _confirmDeleteSingleToTrash(orderKey);
+                  } else if (value == 'delete_permanent') {
+                    _confirmDeleteSinglePermanently(orderKey);
+                  } else if (value == 'restore') {
+                    try {
+                      await FirebaseDatabase.instance
+                          .reference()
+                          .child('orders')
+                          .child(orderKey)
+                          .update({'trash': null, 'trashUpdatedAt': null});
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Data berhasil di-restore')),
+                      );
+                      _fetchFilteredOrders();
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Gagal restore data: $e')),
+                      );
+                    }
                   }
                 },
                 itemBuilder: (BuildContext context) {
                   final isInTrash = _currentStatus == 'trash';
-                  return [
-                    if (!isLead)
+                  if (_currentStatus == 'trash') {
+                    return [
                       PopupMenuItem<String>(
-                        value: 'lead',
-                        child: Text('Mark as Lead'),
+                        value: 'restore',
+                        child: Text('Restore'),
                       ),
-                    if (!isInTrash)
+                      PopupMenuItem<String>(
+                        value: 'delete_permanent',
+                        child: Text('Delete'),
+                      ),
+                    ];
+                  } else {
+                    return [
+                      if (!isLead)
+                        PopupMenuItem<String>(
+                          value: 'lead',
+                          child: Text('Mark as Lead'),
+                        ),
                       PopupMenuItem<String>(
                         value: 'delete',
                         child: Text('Delete'),
                       ),
-                  ];
+                    ];
+                  }
                 },
               ),
             ),
