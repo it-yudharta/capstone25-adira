@@ -419,9 +419,7 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
       builder:
           (context) => AlertDialog(
             title: Text('Hapus Semua?'),
-            content: Text(
-              'Yakin ingin menghapus semua data?',
-            ), // Perbarui teksnya
+            content: Text('Yakin ingin menghapus semua data?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),

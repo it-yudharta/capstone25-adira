@@ -67,10 +67,18 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
       data.forEach((key, value) {
         final status = value['status'];
         final isTrash = value['trash'] == true;
+        final isLead = value['lead'] == true;
 
-        if (!isTrash && value['lead'] == true && status == _currentStatus) {
-          value['key'] = key;
-          loaded.add(value);
+        if (_currentStatus == 'trash') {
+          if (isTrash && isLead) {
+            value['key'] = key;
+            loaded.add(value);
+          }
+        } else {
+          if (!isTrash && isLead && status == _currentStatus) {
+            value['key'] = key;
+            loaded.add(value);
+          }
         }
       });
 
@@ -152,23 +160,45 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
     });
   }
 
-  Future<void> _confirmDeleteSingleToTrash(String key) async {
-    final orderSnapshot = await _database.child(key).get();
-    if (orderSnapshot.exists) {
-      final orderData = orderSnapshot.value;
-      await FirebaseDatabase.instance
-          .ref()
-          .child('trash')
-          .child(key)
-          .set(orderData);
-      await _database.child(key).remove();
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Order dipindahkan ke trash')));
-
-      _fetchFilteredOrders();
-    }
+  void _confirmDeleteSingleToTrash(String key) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Data Ini?'),
+            content: Text('Yakin ingin menghapus data ini ke Trash Bin?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final now = DateTime.now();
+                  final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+                  try {
+                    await _database.child(key).update({
+                      'trash': true,
+                      'trashUpdatedAt': formattedDate,
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Data berhasil dipindahkan ke Trash'),
+                      ),
+                    );
+                    _fetchFilteredOrders();
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal menghapus data: $e')),
+                    );
+                  }
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
   }
 
   Widget _buildStatusMenu() {
@@ -288,6 +318,54 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
     );
   }
 
+  void _confirmDeleteAllLeadTrashPermanently() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Konfirmasi Hapus Permanen'),
+            content: const Text(
+              'Apakah Anda yakin ingin menghapus semua data Lead di Trash secara permanen? Tindakan ini tidak bisa dibatalkan.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _deleteAllLeadTrashPermanently();
+                },
+                child: const Text('Hapus Semua'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _deleteAllLeadTrashPermanently() async {
+    setState(() => _isLoading = true);
+
+    final ref = FirebaseDatabase.instance.reference().child('orders');
+    final snapshot = await ref.once();
+    final data = snapshot.snapshot.value as Map<dynamic, dynamic>?;
+
+    if (data != null) {
+      for (var entry in data.entries) {
+        final key = entry.key;
+        final order = Map<String, dynamic>.from(entry.value);
+        if (order['trash'] == true && order['lead'] == true) {
+          await ref.child(key).remove();
+        }
+      }
+    }
+
+    setState(() => _isLoading = false);
+    _fetchFilteredOrders();
+  }
+
   Widget _buildMainPage() {
     return Column(
       children: [
@@ -358,7 +436,7 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
             children: [
               if (_currentStatus == 'trash')
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: _confirmDeleteAllLeadTrashPermanently,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0E5C36),
                     shape: RoundedRectangleBorder(
@@ -383,7 +461,7 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                 ),
               if (_currentStatus != 'trash') ...[
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: _confirmDeleteAllToTrash,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0E5C36),
                     shape: RoundedRectangleBorder(
@@ -492,6 +570,61 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
         ),
       ],
     );
+  }
+
+  void _confirmDeleteAllToTrash() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Semua?'),
+            content: Text('Yakin ingin menghapus semua data ke trash bin?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _markAllStatusOrdersAsTrashed();
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _markAllStatusOrdersAsTrashed() async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+
+    int trashedCount = 0;
+
+    for (final order in _filteredOrders) {
+      final key = order['key'];
+      if (key != null) {
+        try {
+          await _database.child(key).update({
+            'trash': true,
+            'trashUpdatedAt': formattedDate,
+          });
+          trashedCount++;
+        } catch (e) {
+          debugPrint("Gagal menandai order $key sebagai trash: $e");
+        }
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Berhasil menandai $trashedCount data sebagai trash'),
+        ),
+      );
+      _fetchFilteredOrders();
+    }
   }
 
   Widget _buildOrderCard(Map order, String orderKey, TextStyle? baseStyle) {
@@ -609,16 +742,18 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                   }
                 },
                 itemBuilder: (BuildContext context) {
+                  final isInTrash = _currentStatus == 'trash';
                   return [
                     if (!isLead)
                       PopupMenuItem<String>(
                         value: 'lead',
                         child: Text('Mark as Lead'),
                       ),
-                    PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Text('Delete'),
-                    ),
+                    if (!isInTrash)
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Text('Delete'),
+                      ),
                   ];
                 },
               ),
