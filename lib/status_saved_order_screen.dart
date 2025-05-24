@@ -4,6 +4,7 @@ import 'order_detail_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'custom_bottom_nav_bar.dart';
+import 'package:intl/intl.dart';
 
 class StatusSavedOrderScreen extends StatefulWidget {
   final String status;
@@ -56,15 +57,18 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
     });
   }
 
-  void _fetchFilteredOrders() async {
-    setState(() => _isLoading = true);
+  Future<void> _fetchFilteredOrders() async {
     final snapshot = await _database.get();
+
     if (snapshot.exists) {
       final data = snapshot.value as Map<dynamic, dynamic>;
       final List<Map<dynamic, dynamic>> loaded = [];
 
       data.forEach((key, value) {
-        if (value['lead'] == true && value['status'] == _currentStatus) {
+        final status = value['status'];
+        final isTrash = value['trash'] == true;
+
+        if (!isTrash && value['lead'] == true && status == _currentStatus) {
           value['key'] = key;
           loaded.add(value);
         }
@@ -72,14 +76,67 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
 
       setState(() {
         _filteredOrders = loaded;
+        groupedOrders = _groupOrdersByDate(_filteredOrders);
         _isLoading = false;
       });
     } else {
       setState(() {
         _filteredOrders = [];
+        groupedOrders = {};
         _isLoading = false;
       });
     }
+  }
+
+  List<String> get orderedDates {
+    final dates = groupedOrders.keys.toList();
+
+    dates.sort((a, b) {
+      DateTime? dateA, dateB;
+
+      try {
+        dateA = DateFormat('d-M-yyyy').parseStrict(a);
+      } catch (_) {
+        dateA = null;
+      }
+
+      try {
+        dateB = DateFormat('d-M-yyyy').parseStrict(b);
+      } catch (_) {
+        dateB = null;
+      }
+
+      if (dateA == null && dateB == null) return 0;
+      if (dateA == null) return 1;
+      if (dateB == null) return -1;
+
+      return dateB.compareTo(dateA); // descending
+    });
+
+    return dates;
+  }
+
+  Map<String, List<Map<dynamic, dynamic>>> groupedOrders = {};
+
+  Map<String, List<Map<dynamic, dynamic>>> _groupOrdersByDate(
+    List<Map<dynamic, dynamic>> orders,
+  ) {
+    final Map<String, List<Map<dynamic, dynamic>>> grouped = {};
+    for (var order in orders) {
+      final dateStr = order['tanggal'];
+      String dateKey;
+
+      try {
+        if (dateStr == null || dateStr.isEmpty) throw FormatException();
+        DateFormat('d-M-yyyy').parseStrict(dateStr);
+        dateKey = dateStr;
+      } catch (_) {
+        dateKey = 'Tanggal tidak diketahui';
+      }
+
+      grouped.putIfAbsent(dateKey, () => []).add(order);
+    }
+    return grouped;
   }
 
   Future<void> _launchWhatsApp(String phoneNumber) async {
@@ -144,13 +201,14 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
               final bool isActive = _currentStatus == item['status'];
 
               return InkWell(
-                onTap: () {
+                onTap: () async {
                   if (!isActive) {
                     setState(() {
                       _currentStatus = item['status'];
                       _currentTitle = item['label'];
+                      _isLoading = true;
                     });
-                    _fetchFilteredOrders();
+                    await _fetchFilteredOrders();
                   }
                 },
 
@@ -187,7 +245,7 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF0F4F5),
+      backgroundColor: const Color(0xFFF0F4F5),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: const Color(0xFFF0F4F5),
@@ -223,157 +281,184 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-            child: SizedBox(
-              width: 250,
-              height: 40,
-              child: TextField(
-                controller: _searchController,
-                focusNode: _focusNode,
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                    _applySearch();
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search data',
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.black, width: 1.2),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: Colors.grey.shade500,
-                      width: 1.2,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF0E5C36),
-                      width: 1.5,
-                    ),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      Icons.search,
-                      color:
-                          _focusNode.hasFocus
-                              ? Color(0xFF0E5C36)
-                              : Colors.grey.shade600,
-                    ),
-                    onPressed:
-                        () => FocusScope.of(context).requestFocus(_focusNode),
+      body: _buildMainPage(),
+      bottomNavigationBar: const CustomBottomNavBar(currentRoute: 'other'),
+    );
+  }
+
+  Widget _buildMainPage() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: SizedBox(
+            width: 250,
+            height: 40,
+            child: TextField(
+              controller: _searchController,
+              focusNode: _focusNode,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                  _applySearch();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search data',
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.black, width: 1.2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.grey.shade500,
+                    width: 1.2,
                   ),
                 ),
-                style: TextStyle(fontSize: 14),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF0E5C36),
+                    width: 1.5,
+                  ),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    Icons.search,
+                    color:
+                        _focusNode.hasFocus
+                            ? Color(0xFF0E5C36)
+                            : Colors.grey.shade600,
+                  ),
+                  onPressed:
+                      () => FocusScope.of(context).requestFocus(_focusNode),
+                ),
               ),
+              style: TextStyle(fontSize: 14),
             ),
           ),
-          _buildStatusMenu(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (_currentStatus != 'trash')
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF0E5C36),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+          child: _buildStatusMenu(),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (_currentStatus != 'trash')
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF0E5C36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.delete_outline,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Delete All',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
-                        ),
-                      ],
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   ),
-                if (_currentStatus != 'trash') SizedBox(width: 8),
-                if (_currentStatus != 'trash')
-                  ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF0E5C36),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.delete_outline, size: 16, color: Colors.white),
+                      SizedBox(height: 4),
+                      Text(
+                        'Delete All',
+                        style: TextStyle(fontSize: 12, color: Colors.white),
                       ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/icon/export_icon.png',
-                          width: 16,
-                          height: 16,
-                          color: Colors.white,
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Export by',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-              ],
-            ),
-          ),
-          Expanded(
-            child:
-                _isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : _filteredOrders.isEmpty
-                    ? Center(
-                      child: Text(
-                        "Tidak ada order tersimpan dengan status '${_currentStatus}'",
-                      ),
-                    )
-                    : ListView.builder(
-                      itemCount: _filteredOrders.length,
-                      itemBuilder: (context, index) {
-                        final order = _filteredOrders[index];
-                        final orderKey = order['key'];
-                        final baseStyle =
-                            Theme.of(context).textTheme.bodyMedium;
-                        return _buildOrderCard(order, orderKey, baseStyle);
-                      },
+                ),
+              if (_currentStatus != 'trash') SizedBox(width: 8),
+              if (_currentStatus != 'trash')
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF0E5C36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/icon/export_icon.png',
+                        width: 16,
+                        height: 16,
+                        color: Colors.white,
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Export by',
+                        style: TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
-        ],
-      ),
-      bottomNavigationBar: const CustomBottomNavBar(currentRoute: 'other'),
+        ),
+        SizedBox(height: 12),
+        Expanded(
+          child:
+              _isLoading
+                  ? Center(
+                    child: CircularProgressIndicator(),
+                  ) // <-- Loading cuma di sini
+                  : _filteredOrders.isEmpty
+                  ? Center(
+                    child: Text(
+                      "Tidak ada order tersimpan dengan status '$_currentStatus'",
+                    ),
+                  )
+                  : ListView.builder(
+                    itemCount: orderedDates.fold<int>(
+                      0,
+                      (sum, date) => sum + groupedOrders[date]!.length + 1,
+                    ),
+                    itemBuilder: (context, index) {
+                      int currentIndex = 0;
+                      for (final date in orderedDates) {
+                        if (index == currentIndex) {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                            child: Text(
+                              'Date: $date',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          );
+                        }
+                        currentIndex++;
+
+                        final orders = groupedOrders[date]!;
+                        if (index - currentIndex < orders.length) {
+                          final order = orders[index - currentIndex];
+                          return _buildOrderCard(
+                            order,
+                            date,
+                            TextStyle(color: Colors.black87),
+                          );
+                        }
+                        currentIndex += orders.length;
+                      }
+                      return SizedBox.shrink();
+                    },
+                  ),
+        ),
+      ],
     );
   }
 
