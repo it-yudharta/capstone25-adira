@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'status_pendaftaran_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'pendaftaran_detail_screen.dart';
 
 class PendaftaranScreen extends StatefulWidget {
   @override
@@ -103,7 +104,14 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
     final String status = agent['status'] ?? 'Belum diproses';
 
     return InkWell(
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PendaftaranDetailScreen(agentData: agent),
+          ),
+        );
+      },
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         padding: EdgeInsets.all(12),
@@ -157,7 +165,6 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                       ),
                     ),
                   ),
-
                   Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
                   SizedBox(height: 8),
                   Text("Status        : $status"),
