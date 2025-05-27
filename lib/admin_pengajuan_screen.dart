@@ -20,7 +20,6 @@ class _AdminPengajuanScreenState extends State<AdminPengajuanScreen> {
   late PageController _pageController;
   late int _currentPage;
 
-  // Hanya Pengajuan dan Saved Orders
   final List<String> _routes = ['/pengajuan', '/saved'];
 
   @override

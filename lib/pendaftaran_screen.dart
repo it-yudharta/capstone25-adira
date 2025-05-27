@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'status_pendaftaran_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PendaftaranScreen extends StatefulWidget {
   @override
@@ -37,14 +38,13 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
       final Map<String, List<Map<dynamic, dynamic>>> groupedAgents = {};
 
       data.forEach((key, value) {
-        if (value['timestamp'] != null && value['timestamp'] is int) {
-          final formattedDate = _convertTimestamp(value['timestamp']);
-          if (!groupedAgents.containsKey(formattedDate)) {
-            groupedAgents[formattedDate] = [];
+        final tanggal = value['tanggal'];
+        if (tanggal != null && tanggal is String) {
+          if (!groupedAgents.containsKey(tanggal)) {
+            groupedAgents[tanggal] = [];
           }
-          value['timestampFormatted'] = formattedDate;
           value['key'] = key;
-          groupedAgents[formattedDate]?.add(value);
+          groupedAgents[tanggal]?.add(value);
         }
       });
 
@@ -63,16 +63,6 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
     }
   }
 
-  String _convertTimestamp(int timestamp) {
-    return DateFormat(
-      'dd-MM-yyyy',
-    ).format(DateTime.fromMillisecondsSinceEpoch(timestamp));
-  }
-
-  String _getCurrentDate() {
-    return DateFormat('dd-MM-yyyy').format(DateTime.now());
-  }
-
   void _applySearch() {
     _agents =
         _agents.where((group) {
@@ -88,7 +78,30 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         }).toList();
   }
 
+  String normalizePhoneNumber(String phone) {
+    if (phone.startsWith('0')) {
+      return '62${phone.substring(1)}';
+    }
+    return phone;
+  }
+
+  Future<void> _launchWhatsApp(String phoneNumber) async {
+    final normalizedPhone = normalizePhoneNumber(phoneNumber);
+    final url = 'https://wa.me/$normalizedPhone';
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+    }
+  }
+
   Widget _buildAgentCard(Map agent) {
+    final String status = agent['status'] ?? 'Belum diproses';
+
     return InkWell(
       onTap: () {},
       child: Container(
@@ -119,8 +132,35 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                   SizedBox(height: 4),
                   Text("Alamat      : ${agent['address'] ?? '-'}"),
                   Text("Email         : ${agent['email'] ?? '-'}"),
-                  Text("No. Telp    : ${agent['phone'] ?? '-'}"),
+                  GestureDetector(
+                    onTap: () async {
+                      try {
+                        await _launchWhatsApp(agent['phone'] ?? '');
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error launching WhatsApp: $e'),
+                          ),
+                        );
+                      }
+                    },
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          TextSpan(text: "No. Telp     : "),
+                          TextSpan(
+                            text: agent['phone'] ?? '-',
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                   Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
+                  SizedBox(height: 8),
+                  Text("Status        : $status"),
                   SizedBox(height: 16),
                   Align(
                     alignment: Alignment.centerRight,
@@ -198,53 +238,15 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-      child: Container(
-        width: 250,
-        height: 40,
-        child: TextField(
-          controller: _searchController,
-          onChanged: (value) {
-            setState(() {
-              _searchQuery = value;
-              _applySearch();
-            });
-          },
-          decoration: InputDecoration(
-            hintText: 'Search data',
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.black, width: 1.2),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade500, width: 1.2),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Color(0xFF0E5C36), width: 1.5),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            suffixIcon: IconButton(
-              icon: Icon(Icons.search, color: Colors.grey.shade600),
-              onPressed: () {
-                FocusScope.of(context).requestFocus(FocusNode());
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
       {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
       {'label': 'Process', 'status': 'process', 'icon': Icons.hourglass_top},
+      {
+        'label': 'Pending',
+        'status': 'pending',
+        'icon': Icons.pause_circle_filled,
+      },
       {'label': 'Reject', 'status': 'reject', 'icon': Icons.block},
       {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
       {'label': 'QR Given', 'status': 'qr_given', 'icon': Icons.qr_code},
@@ -304,49 +306,158 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
     );
   }
 
+  Widget _buildMainPage() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: Container(
+            width: 250,
+            height: 40,
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                  _applySearch();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search data',
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.black, width: 1.2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.grey.shade500,
+                    width: 1.2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Color(0xFF0E5C36), width: 1.5),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.search, color: Colors.grey.shade600),
+                  onPressed: () {
+                    FocusScope.of(context).requestFocus(FocusNode());
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        _buildStatusMenu(),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF0E5C36),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.delete_outline, size: 16, color: Colors.white),
+                    SizedBox(height: 4),
+                    Text(
+                      'Delete All',
+                      style: TextStyle(fontSize: 12, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF0E5C36),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/icon/export_icon.png',
+                      width: 16,
+                      height: 16,
+                      color: Colors.white,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Export by',
+                      style: TextStyle(fontSize: 12, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 12),
+
+        Expanded(
+          child:
+              _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : _agents.isEmpty
+                  ? Center(child: Text('Belum ada data pendaftaran'))
+                  : ListView.builder(
+                    itemCount: _agents.length,
+                    itemBuilder: (ctx, idx) {
+                      final group = _agents[idx];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                            child: Text(
+                              'Date: ${group['date']}',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                          ...group['agents']
+                              .map<Widget>((agent) => _buildAgentCard(agent))
+                              .toList(),
+                        ],
+                      );
+                    },
+                  ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F5),
-      appBar: null,
-      body: Column(
-        children: [
-          _buildSearchBar(),
-          _buildStatusMenu(),
-          Expanded(
-            child:
-                _isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : _agents.isEmpty
-                    ? Center(child: Text('Belum ada data pendaftaran'))
-                    : ListView.builder(
-                      itemCount: _agents.length,
-                      itemBuilder: (ctx, idx) {
-                        final group = _agents[idx];
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                              child: Text(
-                                'Date: ${group['date']}',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
-                            ...group['agents']
-                                .map((agent) => _buildAgentCard(agent))
-                                .toList(),
-                          ],
-                        );
-                      },
-                    ),
-          ),
-        ],
-      ),
+      body: _buildMainPage(),
     );
   }
 }

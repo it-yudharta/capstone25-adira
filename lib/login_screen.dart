@@ -20,7 +20,6 @@ class _LoginScreenState extends State<LoginScreen> {
   String? errorMessage;
   bool isPasswordVisible = false;
 
-  // Modifikasi fungsi login untuk menambahkan akun demo
   Future<void> login() async {
     setState(() {
       isLoading = true;
@@ -28,10 +27,8 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Jika menggunakan akun demo
       if (emailController.text.trim() == 'demo@appkamu.com' &&
           passwordController.text.trim() == 'Demo1234') {
-        // Login langsung tanpa verifikasi email
         final userCredential = await _auth.signInWithEmailAndPassword(
           email: 'demo@appkamu.com',
           password: 'Demo1234',
@@ -89,7 +86,6 @@ class _LoginScreenState extends State<LoginScreen> {
           await _auth.signOut();
         }
       } else {
-        // Proses login biasa dengan verifikasi email
         UserCredential userCredential = await _auth.signInWithEmailAndPassword(
           email: emailController.text.trim(),
           password: passwordController.text.trim(),
