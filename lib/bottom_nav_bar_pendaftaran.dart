@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'admin_pendaftaran_screen.dart';
 
 class BottomNavBarPendaftaran extends StatelessWidget {
   final String currentRoute;
@@ -15,9 +16,9 @@ class BottomNavBarPendaftaran extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final routes = ['/pendaftaran', '/qr', '/saved_pendaftaran'];
-
     final activeIndex = routes.indexOf(currentRoute);
-    final safeIndex = activeIndex < 0 ? 0 : activeIndex;
+    final bool isMainScreen = activeIndex != -1;
+    final safeIndex = isMainScreen ? activeIndex : 0;
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -32,30 +33,53 @@ class BottomNavBarPendaftaran extends StatelessWidget {
         unselectedItemColor: Colors.black,
         type: BottomNavigationBarType.fixed,
         elevation: 8,
-        onTap: (index) {
-          if (onTapIndex != null) {
-            onTapIndex!(index);
-          }
-        },
         selectedFontSize: 14,
         unselectedFontSize: 14,
+        onTap: (index) {
+          if (isMainScreen) {
+            if (onTapIndex != null) {
+              onTapIndex!(index);
+            } else if (index != activeIndex) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AdminPendaftaranScreen(initialPage: index),
+                ),
+                (route) => false,
+              );
+            }
+          } else {
+            // Halaman lain (non-main), tetap bisa navigasi balik ke main tab
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AdminPendaftaranScreen(initialPage: index),
+              ),
+              (route) => false,
+            );
+          }
+        },
+
         items: [
           _buildNavItem(
             icon: Icons.app_registration,
             label: 'Pendaftaran',
             isSelected: currentRoute == '/pendaftaran',
+            isMainScreen: isMainScreen,
             itemIndex: 0,
           ),
           _buildNavItem(
             icon: Icons.qr_code,
             label: 'QR Code',
             isSelected: currentRoute == '/qr',
+            isMainScreen: isMainScreen,
             itemIndex: 1,
           ),
           _buildNavItem(
             icon: Icons.bookmark,
             label: 'Lead',
             isSelected: currentRoute == '/saved_pendaftaran',
+            isMainScreen: isMainScreen,
             itemIndex: 2,
           ),
         ],
@@ -67,10 +91,11 @@ class BottomNavBarPendaftaran extends StatelessWidget {
     required IconData icon,
     required String label,
     required bool isSelected,
+    required bool isMainScreen,
     required int itemIndex,
   }) {
     final double distance = (pageOffset - itemIndex).abs().clamp(0.0, 1.0);
-    final double verticalOffset = 8 * distance;
+    final double verticalOffset = isMainScreen ? (8 * distance) : 0;
 
     return BottomNavigationBarItem(
       icon: Column(

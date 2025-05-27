@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'pendaftaran_screen.dart';
+import 'generate_qr_screen.dart';
+import 'saved_pendaftaran_screen.dart';
+import 'saved_orders_screen.dart';
 import 'login_screen.dart';
 import 'main_page.dart';
 import 'admin_pengajuan_screen.dart';
@@ -21,6 +24,15 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Reseller App',
       theme: ThemeData(primarySwatch: Colors.blue),
+      routes: {
+        '/pendaftaran': (context) => PendaftaranScreen(),
+        '/qr': (context) => GenerateQRScreen(),
+        '/saved_pendaftaran': (context) => SavedPendaftaranScreen(),
+
+        // route lainnya yang kamu perlukan, misalnya
+        '/pengajuan': (context) => AdminPengajuanScreen(),
+        '/saved': (context) => SavedOrdersScreen(),
+      },
       home: AuthWrapper(),
     );
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
-import 'custom_bottom_nav_bar.dart';
+import 'bottom_nav_bar_pendaftaran.dart';
 
 class StatusPendaftaranScreen extends StatefulWidget {
   String status;
@@ -335,7 +335,7 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const CustomBottomNavBar(currentRoute: 'other'),
+      bottomNavigationBar: BottomNavBarPendaftaran(currentRoute: 'status'),
     );
   }
 }
