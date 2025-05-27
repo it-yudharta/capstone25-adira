@@ -126,6 +126,186 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
     }
   }
 
+  void _showCancelConfirmation(String agentKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Cancel Pendaftaran?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Pendaftaran will be canceled and\nmoved to “Cancel”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateAgentStatus(agentKey, 'cancel');
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _showProcessConfirmation(String agentKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Process Pendaftaran?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Pendaftaran will be processed and\nmoved to “Process”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateAgentStatus(agentKey, 'process');
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
   Widget _buildAgentCard(Map agent) {
     final String status = agent['status'] ?? 'Belum diproses';
 
@@ -202,7 +382,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                       children: [
                         ElevatedButton(
                           onPressed:
-                              () => _updateAgentStatus(agent['key'], 'cancel'),
+                              () => _showCancelConfirmation(agent['key']),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
@@ -231,7 +411,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                         SizedBox(width: 6),
                         ElevatedButton(
                           onPressed:
-                              () => _updateAgentStatus(agent['key'], 'process'),
+                              () => _showProcessConfirmation(agent['key']),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
