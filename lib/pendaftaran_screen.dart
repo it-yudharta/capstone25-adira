@@ -34,18 +34,24 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
   void _fetchAgents() async {
     setState(() => _isLoading = true);
     final snapshot = await _database.get();
+
     if (snapshot.exists) {
       final data = snapshot.value as Map<dynamic, dynamic>;
       final Map<String, List<Map<dynamic, dynamic>>> groupedAgents = {};
 
       data.forEach((key, value) {
-        final tanggal = value['tanggal'];
-        if (tanggal != null && tanggal is String) {
-          if (!groupedAgents.containsKey(tanggal)) {
-            groupedAgents[tanggal] = [];
+        final status = value['status'];
+        final isValid = (status == null || status == 'Belum diproses');
+
+        if (isValid) {
+          final tanggal = value['tanggal'];
+          if (tanggal != null && tanggal is String) {
+            if (!groupedAgents.containsKey(tanggal)) {
+              groupedAgents[tanggal] = [];
+            }
+            value['key'] = key;
+            groupedAgents[tanggal]?.add(value);
           }
-          value['key'] = key;
-          groupedAgents[tanggal]?.add(value);
         }
       });
 
@@ -97,6 +103,26 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+    }
+  }
+
+  void _updateAgentStatus(String agentKey, String newStatus) async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+
+    Map<String, dynamic> updates = {
+      'status': newStatus,
+      '${newStatus}UpdatedAt': formattedDate,
+    };
+
+    try {
+      await _database.child(agentKey).update(updates);
+      _fetchAgents();
+    } catch (e) {
+      print("Gagal memperbarui status: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal memperbarui status')));
     }
   }
 
@@ -175,7 +201,8 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed:
+                              () => _updateAgentStatus(agent['key'], 'cancel'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
@@ -203,7 +230,8 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                         ),
                         SizedBox(width: 6),
                         ElevatedButton(
-                          onPressed: () {},
+                          onPressed:
+                              () => _updateAgentStatus(agent['key'], 'process'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
@@ -368,55 +396,78 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF0E5C36),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.delete_outline, size: 16, color: Colors.white),
-                    SizedBox(height: 4),
-                    Text(
-                      'Delete All',
-                      style: TextStyle(fontSize: 12, color: Colors.white),
-                    ),
-                  ],
+              Text(
+                'Data Pendaftaran',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
               ),
-              SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF0E5C36),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Delete All',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'assets/icon/export_icon.png',
-                      width: 16,
-                      height: 16,
-                      color: Colors.white,
+                  SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Export by',
-                      style: TextStyle(fontSize: 12, color: Colors.white),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/icon/export_icon.png',
+                          width: 16,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Export by',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),

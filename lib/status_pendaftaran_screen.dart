@@ -109,6 +109,11 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     final List<Map<String, dynamic>> statusButtons = [
       {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
       {'label': 'Process', 'status': 'process', 'icon': Icons.hourglass_top},
+      {
+        'label': 'Pending',
+        'status': 'pending',
+        'icon': Icons.pause_circle_filled,
+      },
       {'label': 'Reject', 'status': 'reject', 'icon': Icons.highlight_off},
       {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
       {'label': 'QR Given', 'status': 'qr_given', 'icon': Icons.qr_code},
