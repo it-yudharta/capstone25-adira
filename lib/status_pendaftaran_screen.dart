@@ -70,25 +70,27 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
 
     groupedPendaftarans.clear();
     for (var item in _filteredPendaftarans) {
-      final date = formatTimestamp(item['timestamp']);
+      final date = formatTanggal(item['tanggal']);
       if (!groupedPendaftarans.containsKey(date)) {
         groupedPendaftarans[date] = [];
       }
       groupedPendaftarans[date]!.add(item);
     }
+
     orderedDates =
         groupedPendaftarans.keys.toList()..sort((a, b) => b.compareTo(a));
   }
 
-  String formatTimestamp(dynamic timestamp) {
-    if (timestamp is int) {
-      final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-      return DateFormat('d-M-yyyy').format(date);
-    } else if (timestamp is String) {
-      return timestamp;
-    } else {
-      return '';
+  String formatTanggal(dynamic tanggal) {
+    if (tanggal is String && tanggal.isNotEmpty) {
+      try {
+        final parsedDate = DateFormat('d-M-yyyy').parse(tanggal);
+        return DateFormat('d-M-yyyy').format(parsedDate);
+      } catch (e) {
+        return 'Tanggal Invalid';
+      }
     }
+    return 'Tanggal Kosong';
   }
 
   void _logout() {
@@ -205,15 +207,140 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildMainPage() {
     final baseStyle = Theme.of(context).textTheme.bodyMedium;
 
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: Container(
+            width: 250,
+            height: 40,
+            child: TextField(
+              controller: _searchController,
+              focusNode: _focusNode,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                  _applySearch();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search Data',
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.black, width: 1.2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.grey.shade500,
+                    width: 1.2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Color(0xFF0E5C36), width: 1.5),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    Icons.search,
+                    color:
+                        _focusNode.hasFocus
+                            ? Color(0xFF0E5C36)
+                            : Colors.grey.shade600,
+                  ),
+                  onPressed: () {
+                    FocusScope.of(context).requestFocus(_focusNode);
+                  },
+                ),
+              ),
+              style: TextStyle(fontSize: 14),
+            ),
+          ),
+        ),
+
+        _buildStatusMenu(),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Data Pendaftaran',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ),
+
+        Expanded(
+          child:
+              _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : _pendaftarans.isEmpty
+                  ? Center(child: Text("Tidak ada data pendaftaran"))
+                  : _filteredPendaftarans.isEmpty
+                  ? Center(child: Text("Tidak ada hasil pencarian"))
+                  : ListView.builder(
+                    itemCount: orderedDates.fold<int>(
+                      0,
+                      (sum, date) =>
+                          sum + groupedPendaftarans[date]!.length + 1,
+                    ),
+                    itemBuilder: (context, index) {
+                      int currentIndex = 0;
+                      for (final date in orderedDates) {
+                        if (index == currentIndex) {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                            child: Text(
+                              'Date: $date',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          );
+                        }
+                        currentIndex++;
+
+                        final items = groupedPendaftarans[date]!;
+                        if (index - currentIndex < items.length) {
+                          final item = items[index - currentIndex];
+                          return _buildPendaftaranCard(
+                            item,
+                            item['key'],
+                            baseStyle,
+                          );
+                        }
+                        currentIndex += items.length;
+                      }
+                      return SizedBox.shrink();
+                    },
+                  ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF0F4F5),
+      backgroundColor: const Color(0xFFF0F4F5),
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        backgroundColor: Color(0xFFF0F4F5),
+        backgroundColor: const Color(0xFFF0F4F5),
         elevation: 0,
         foregroundColor: Colors.black,
         systemOverlayStyle: SystemUiOverlayStyle(
@@ -245,101 +372,7 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-            child: SizedBox(
-              width: 250,
-              height: 40,
-              child: TextField(
-                controller: _searchController,
-                focusNode: _focusNode,
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                    _applySearch();
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search pendaftaran',
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.black, width: 1.2),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      Icons.search,
-                      color:
-                          _focusNode.hasFocus
-                              ? Color(0xFF0E5C36)
-                              : Colors.grey.shade600,
-                    ),
-                    onPressed:
-                        () => FocusScope.of(context).requestFocus(_focusNode),
-                  ),
-                ),
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          ),
-          SizedBox(height: 8),
-          _buildStatusMenu(),
-          SizedBox(height: 12),
-          Expanded(
-            child:
-                _isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : _pendaftarans.isEmpty
-                    ? Center(child: Text("Tidak ada data pendaftaran"))
-                    : _filteredPendaftarans.isEmpty
-                    ? Center(child: Text("Tidak ada hasil pencarian"))
-                    : ListView.builder(
-                      itemCount: orderedDates.fold<int>(
-                        0,
-                        (sum, date) =>
-                            sum + groupedPendaftarans[date]!.length + 1,
-                      ),
-                      itemBuilder: (context, index) {
-                        int currentIndex = 0;
-                        for (final date in orderedDates) {
-                          if (index == currentIndex) {
-                            return Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                              child: Text(
-                                'Tanggal: $date',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            );
-                          }
-                          currentIndex++;
-
-                          final items = groupedPendaftarans[date]!;
-                          if (index - currentIndex < items.length) {
-                            final item = items[index - currentIndex];
-                            return _buildPendaftaranCard(
-                              item,
-                              item['key'],
-                              baseStyle,
-                            );
-                          }
-                          currentIndex += items.length;
-                        }
-                        return SizedBox.shrink();
-                      },
-                    ),
-          ),
-        ],
-      ),
+      body: _buildMainPage(),
       bottomNavigationBar: BottomNavBarPendaftaran(currentRoute: 'status'),
     );
   }

@@ -660,7 +660,38 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
               _isLoading
                   ? Center(child: CircularProgressIndicator())
                   : _agents.isEmpty
-                  ? Center(child: Text('Belum ada data pendaftaran'))
+                  ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/images/EmptyState.png',
+                          width: 300,
+                          height: 200,
+                          fit: BoxFit.contain,
+                          alignment: Alignment.topCenter,
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'No Data Found',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'No data pendaftaran found',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                   : ListView.builder(
                     itemCount: _agents.length,
                     itemBuilder: (ctx, idx) {
