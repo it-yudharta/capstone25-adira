@@ -41,7 +41,9 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
 
       data.forEach((key, value) {
         final status = value['status'];
-        final isValid = (status == null || status == 'Belum diproses');
+        final isTrashed = value['trash'] == true;
+        final isValid =
+            !isTrashed && (status == null || status == 'Belum diproses');
 
         if (isValid) {
           final tanggal = value['tanggal'];
@@ -590,7 +592,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
               Row(
                 children: [
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _confirmDeleteAllRegistrationsToTrash,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF0E5C36),
                       shape: RoundedRectangleBorder(
@@ -720,6 +722,68 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         ),
       ],
     );
+  }
+
+  void _confirmDeleteAllRegistrationsToTrash() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Semua?'),
+            content: Text(
+              'Yakin ingin menghapus semua data pendaftaran (non-lead)?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _markAllRegistrationsAsTrashed();
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _markAllRegistrationsAsTrashed() async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+
+    int trashedCount = 0;
+
+    for (final group in _agents) {
+      final agents = group['agents'];
+      for (final agent in agents) {
+        final isLead = agent['lead'] == true;
+        final key = agent['key'];
+
+        if (!isLead && key != null) {
+          try {
+            await _database.child(key).update({
+              'trash': true,
+              'trashUpdatedAt': formattedDate,
+            });
+            trashedCount++;
+          } catch (e) {
+            debugPrint("Gagal menandai pendaftaran $key sebagai trash: $e");
+          }
+        }
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Berhasil menandai $trashedCount data sebagai trash'),
+        ),
+      );
+      _fetchAgents();
+    }
   }
 
   @override

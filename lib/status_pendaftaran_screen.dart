@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'bottom_nav_bar_pendaftaran.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class StatusPendaftaranScreen extends StatefulWidget {
   String status;
@@ -17,6 +18,9 @@ class StatusPendaftaranScreen extends StatefulWidget {
 class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final DatabaseReference _database = FirebaseDatabase.instance.ref().child(
+    'agent-form',
+  );
   bool _isLoading = true;
   List<Map<dynamic, dynamic>> _pendaftarans = [];
   List<Map<dynamic, dynamic>> _filteredPendaftarans = [];
@@ -84,8 +88,8 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
   String formatTanggal(dynamic tanggal) {
     if (tanggal is String && tanggal.isNotEmpty) {
       try {
-        final parsedDate = DateFormat('d-M-yyyy').parse(tanggal);
-        return DateFormat('d-M-yyyy').format(parsedDate);
+        final parsedDate = DateFormat('dd-MM-yyyy').parse(tanggal);
+        return DateFormat('dd-MM-yyyy').format(parsedDate);
       } catch (e) {
         return 'Tanggal Invalid';
       }
@@ -105,6 +109,137 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
       _searchController.clear();
     });
     _fetchPendaftarans();
+  }
+
+  String normalizePhoneNumber(String phone) {
+    if (phone.startsWith('0')) {
+      return '62${phone.substring(1)}';
+    }
+    return phone;
+  }
+
+  Future<void> _launchWhatsApp(String phoneNumber) async {
+    final normalizedPhone = normalizePhoneNumber(phoneNumber);
+    final url = 'https://wa.me/$normalizedPhone';
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+    }
+  }
+
+  void _showCancelConfirmation(String agentKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Cancel Pendaftaran?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Pendaftaran will be canceled and\nmoved to “Cancel”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateAgentStatus(agentKey, 'cancel');
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _updateAgentStatus(String agentKey, String newStatus) async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+
+    Map<String, dynamic> updates = {
+      'status': newStatus,
+      '${newStatus}UpdatedAt': formattedDate,
+    };
+
+    try {
+      await _database.child(agentKey).update(updates);
+      _fetchPendaftarans();
+    } catch (e) {
+      print("Gagal memperbarui status: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal memperbarui status')));
+    }
   }
 
   Widget _buildStatusMenu() {
@@ -178,6 +313,8 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     String key,
     TextStyle? baseStyle,
   ) {
+    final phone = pendaftaran['phone'] ?? '-';
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       padding: EdgeInsets.all(12),
@@ -197,10 +334,55 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
             ),
             SizedBox(height: 4),
             Text("Email        : ${pendaftaran['email'] ?? '-'}"),
-            Text("Phone      : ${pendaftaran['phone'] ?? '-'}"),
+            GestureDetector(
+              onTap: () async {
+                try {
+                  await _launchWhatsApp(phone);
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error launching WhatsApp: $e')),
+                  );
+                }
+              },
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                  children: [
+                    TextSpan(text: "Phone        : "),
+                    TextSpan(text: phone, style: TextStyle(color: Colors.blue)),
+                  ],
+                ),
+              ),
+            ),
             Text("Alamat      : ${pendaftaran['address'] ?? '-'}"),
             Text("Kode Pos  : ${pendaftaran['postalCode'] ?? '-'}"),
             Text("Status       : ${pendaftaran['status'] ?? 'Belum ada'}"),
+            SizedBox(height: 16),
+            if ((pendaftaran['status'] ?? '').toLowerCase() == 'process')
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton(
+                  onPressed: () => _showCancelConfirmation(key),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF0E5C36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.cancel, size: 16, color: Colors.white),
+                      SizedBox(height: 4),
+                      Text(
+                        'Cancel',
+                        style: TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -270,17 +452,86 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
         _buildStatusMenu(),
 
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Data Pendaftaran',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Data Pendaftaran',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
               ),
-            ),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      // TODO: Tambahkan logika delete all
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Delete All',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      // TODO: Tambahkan logika export by date
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/icon/export_icon.png',
+                          width: 16,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Export by',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
 
