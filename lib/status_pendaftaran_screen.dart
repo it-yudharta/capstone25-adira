@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'bottom_nav_bar_pendaftaran.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'pendaftaran_detail_screen.dart';
 
 class StatusPendaftaranScreen extends StatefulWidget {
   String status;
@@ -34,42 +35,93 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     _fetchPendaftarans();
   }
 
-  void _fetchPendaftarans() async {
+  void _fetchPendaftarans() {
     final dbRef = FirebaseDatabase.instance.ref().child('agent-form');
-    dbRef.onValue.listen((event) {
-      final data = event.snapshot.value as Map<dynamic, dynamic>?;
-      if (data != null) {
-        final List<Map<dynamic, dynamic>> items = [];
-        data.forEach((key, value) {
-          final Map<dynamic, dynamic> item = Map<dynamic, dynamic>.from(value);
-          item['key'] = key;
-          items.add(item);
-        });
 
-        setState(() {
-          _pendaftarans = items;
-          _applySearch();
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _pendaftarans = [];
-          _filteredPendaftarans = [];
-          groupedPendaftarans = {};
-          orderedDates = [];
-          _isLoading = false;
-        });
-      }
-    });
+    setState(() => _isLoading = true);
+
+    if (widget.status == 'trash') {
+      dbRef.onValue.listen((event) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+
+        if (data != null) {
+          final List<Map<dynamic, dynamic>> items = [];
+          data.forEach((key, value) {
+            final Map<dynamic, dynamic> item = Map<dynamic, dynamic>.from(
+              value,
+            );
+            if (item['trash'] == true || item['trash'] == 'true') {
+              item['key'] = key;
+              items.add(item);
+            }
+          });
+
+          setState(() {
+            _pendaftarans = items;
+            _applySearch();
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _pendaftarans = [];
+            _filteredPendaftarans = [];
+            groupedPendaftarans = {};
+            orderedDates = [];
+            _isLoading = false;
+          });
+        }
+      });
+    } else {
+      dbRef.orderByChild('status').equalTo(widget.status).onValue.listen((
+        event,
+      ) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+
+        if (data != null) {
+          final List<Map<dynamic, dynamic>> items = [];
+          data.forEach((key, value) {
+            final Map<dynamic, dynamic> item = Map<dynamic, dynamic>.from(
+              value,
+            );
+            if (item['trash'] != true && item['trash'] != 'true') {
+              item['key'] = key;
+              items.add(item);
+            }
+          });
+
+          setState(() {
+            _pendaftarans = items;
+            _applySearch();
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _pendaftarans = [];
+            _filteredPendaftarans = [];
+            groupedPendaftarans = {};
+            orderedDates = [];
+            _isLoading = false;
+          });
+        }
+      });
+    }
   }
 
   void _applySearch() {
+    final query = _searchQuery.toLowerCase();
+
     _filteredPendaftarans =
         _pendaftarans.where((item) {
           final name = (item['fullName'] ?? '').toString().toLowerCase();
           final status = (item['status'] ?? '').toString().toLowerCase();
-          return name.contains(_searchQuery.toLowerCase()) &&
-              status == widget.status.toLowerCase();
+          final isTrash = item['trash'] == true || item['trash'] == 'true';
+          if (widget.status == 'trash') {
+            return isTrash && name.contains(query);
+          }
+
+          return !isTrash &&
+              status == widget.status.toLowerCase() &&
+              name.contains(query);
         }).toList();
 
     groupedPendaftarans.clear();
@@ -315,75 +367,94 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
   ) {
     final phone = pendaftaran['phone'] ?? '-';
 
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 4)],
-      ),
-      child: DefaultTextStyle.merge(
-        style: baseStyle,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Nama       : ${pendaftaran['fullName'] ?? '-'}",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 4),
-            Text("Email        : ${pendaftaran['email'] ?? '-'}"),
-            GestureDetector(
-              onTap: () async {
-                try {
-                  await _launchWhatsApp(phone);
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error launching WhatsApp: $e')),
-                  );
-                }
-              },
-              child: RichText(
-                text: TextSpan(
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
-                  children: [
-                    TextSpan(text: "Phone        : "),
-                    TextSpan(text: phone, style: TextStyle(color: Colors.blue)),
-                  ],
-                ),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => PendaftaranDetailScreen(agentData: pendaftaran),
+          ),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 4)],
+        ),
+        child: DefaultTextStyle.merge(
+          style: baseStyle,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Nama       : ${pendaftaran['fullName'] ?? '-'}",
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-            ),
-            Text("Alamat      : ${pendaftaran['address'] ?? '-'}"),
-            Text("Kode Pos  : ${pendaftaran['postalCode'] ?? '-'}"),
-            Text("Status       : ${pendaftaran['status'] ?? 'Belum ada'}"),
-            SizedBox(height: 16),
-            if ((pendaftaran['status'] ?? '').toLowerCase() == 'process')
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton(
-                  onPressed: () => _showCancelConfirmation(key),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF0E5C36),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+              SizedBox(height: 4),
+              Text("Email        : ${pendaftaran['email'] ?? '-'}"),
+              GestureDetector(
+                onTap: () async {
+                  try {
+                    await _launchWhatsApp(phone);
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error launching WhatsApp: $e')),
+                    );
+                  }
+                },
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
                     children: [
-                      Icon(Icons.cancel, size: 16, color: Colors.white),
-                      SizedBox(height: 4),
-                      Text(
-                        'Cancel',
-                        style: TextStyle(fontSize: 12, color: Colors.white),
+                      TextSpan(text: "Phone        : "),
+                      TextSpan(
+                        text: phone,
+                        style: TextStyle(color: Colors.blue),
                       ),
                     ],
                   ),
                 ),
               ),
-          ],
+              Text("Alamat      : ${pendaftaran['address'] ?? '-'}"),
+              Text("Kode Pos  : ${pendaftaran['postalCode'] ?? '-'}"),
+              Text(
+                "Status       : ${pendaftaran['status'] ?? 'Belum diproses'}",
+              ),
+              SizedBox(height: 16),
+              if ((pendaftaran['status'] ?? '').toLowerCase() == 'process')
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    onPressed: () => _showCancelConfirmation(key),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.cancel, size: 16, color: Colors.white),
+                        SizedBox(height: 4),
+                        Text(
+                          'Cancel',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -465,72 +536,72 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                   color: Colors.black87,
                 ),
               ),
-              Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      // TODO: Tambahkan logika delete all
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF0E5C36),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.delete_outline,
-                          size: 16,
-                          color: Colors.white,
+
+              if (widget.status != 'trash')
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: _confirmDeleteAllRegistrationsToTrashStatus,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF0E5C36),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Delete All',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
                         ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      // TODO: Tambahkan logika export by date
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF0E5C36),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.delete_outline,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Delete All',
+                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/icon/export_icon.png',
-                          width: 16,
-                          height: 16,
-                          color: Colors.white,
+                    SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        // TODO: Tambahkan logika export by date
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF0E5C36),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Export by',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
                         ),
-                      ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.asset(
+                            'assets/icon/export_icon.png',
+                            width: 16,
+                            height: 16,
+                            color: Colors.white,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Export by',
+                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -583,6 +654,68 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
         ),
       ],
     );
+  }
+
+  void _confirmDeleteAllRegistrationsToTrashStatus() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Semua?'),
+            content: Text(
+              'Yakin ingin menghapus semua data pendaftaran (non-lead)?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _markAllRegistrationsAsTrashedStatus();
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _markAllRegistrationsAsTrashedStatus() async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+
+    int trashedCount = 0;
+
+    for (final date in orderedDates) {
+      final items = groupedPendaftarans[date]!;
+      for (final item in items) {
+        final isLead = item['lead'] == true;
+        final key = item['key'];
+
+        if (!isLead && key != null) {
+          try {
+            await _database.child(key).update({
+              'trash': true,
+              'trashUpdatedAt': formattedDate,
+            });
+            trashedCount++;
+          } catch (e) {
+            debugPrint("Gagal menandai pendaftaran $key sebagai trash: $e");
+          }
+        }
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Berhasil menandai $trashedCount data sebagai trash'),
+        ),
+      );
+      _fetchPendaftarans(); // ganti dengan method fetch-mu
+    }
   }
 
   @override

@@ -467,7 +467,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
       {'label': 'Reject', 'status': 'reject', 'icon': Icons.block},
       {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
       {'label': 'QR Given', 'status': 'qr_given', 'icon': Icons.qr_code},
-      {'label': 'Trash Bin', 'status': 'trash_bin', 'icon': Icons.delete},
+      {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
     ];
 
     return Container(
