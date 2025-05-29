@@ -391,6 +391,51 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     }
   }
 
+  void _confirmDeleteSingleToTrashPendaftaran(String key) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Data Ini?'),
+            content: Text('Yakin ingin menghapus data ini ke Trash Bin?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final now = DateTime.now();
+                  final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+                  try {
+                    await FirebaseDatabase.instance
+                        .ref()
+                        .child('agent-form')
+                        .child(key)
+                        .update({
+                          'trash': true,
+                          'trashUpdatedAt': formattedDate,
+                        });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Data berhasil dipindahkan ke Trash'),
+                      ),
+                    );
+                    _fetchPendaftarans();
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal menghapus data: $e')),
+                    );
+                  }
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
+  }
+
   Widget _buildPendaftaranCard(
     Map pendaftaran,
     String key,
@@ -516,7 +561,7 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                       );
                       if (index != -1) {
                         _pendaftarans[index]['lead'] = false;
-                        _applySearch(); // update filtered list
+                        _applySearch();
                       }
                     });
 
@@ -536,7 +581,6 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                 ),
               ),
 
-            // Menu lead + delete
             Positioned(
               top: 0,
               right: 0,
@@ -551,15 +595,16 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                       );
                       if (index != -1) {
                         _pendaftarans[index]['lead'] = true;
-                        _applySearch(); // update filtered list
+                        _applySearch();
                       }
                     });
 
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Status lead ditandai')),
                     );
+                  } else if (value == 'delete') {
+                    _confirmDeleteSingleToTrashPendaftaran(key);
                   }
-                  // TODO: implement delete if needed
                 },
                 itemBuilder: (BuildContext context) {
                   return [
