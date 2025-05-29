@@ -499,7 +499,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
             if (agent['lead'] == true)
               Positioned(
                 top: 12,
-                left: 300,
+                left: 280,
                 child: GestureDetector(
                   onTap: () async {
                     setState(() => agent['lead'] = false);

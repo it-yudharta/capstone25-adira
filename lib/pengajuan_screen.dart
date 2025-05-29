@@ -389,7 +389,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
             if (isLead)
               Positioned(
                 top: 12,
-                left: 300,
+                left: 280,
                 child: GestureDetector(
                   onTap: () async {
                     setState(() {

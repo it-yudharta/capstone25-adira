@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'bottom_nav_bar_pendaftaran.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'pendaftaran_detail_screen.dart';
+import 'dart:async';
 
 class StatusPendaftaranScreen extends StatefulWidget {
   String status;
@@ -22,6 +23,9 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
   final DatabaseReference _database = FirebaseDatabase.instance.ref().child(
     'agent-form',
   );
+
+  StreamSubscription<DatabaseEvent>? _dataSubscription;
+
   bool _isLoading = true;
   List<Map<dynamic, dynamic>> _pendaftarans = [];
   List<Map<dynamic, dynamic>> _filteredPendaftarans = [];
@@ -35,13 +39,23 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     _fetchPendaftarans();
   }
 
-  void _fetchPendaftarans() {
-    final dbRef = FirebaseDatabase.instance.ref().child('agent-form');
+  @override
+  void dispose() {
+    _dataSubscription?.cancel();
+    _searchController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
 
+  void _fetchPendaftarans() {
+    _dataSubscription
+        ?.cancel(); // batalkan listener lama sebelum buat listener baru
+
+    final dbRef = FirebaseDatabase.instance.ref().child('agent-form');
     setState(() => _isLoading = true);
 
     if (widget.status == 'trash') {
-      dbRef.onValue.listen((event) {
+      _dataSubscription = dbRef.onValue.listen((event) {
         final data = event.snapshot.value as Map<dynamic, dynamic>?;
 
         if (data != null) {
@@ -72,38 +86,40 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
         }
       });
     } else {
-      dbRef.orderByChild('status').equalTo(widget.status).onValue.listen((
-        event,
-      ) {
-        final data = event.snapshot.value as Map<dynamic, dynamic>?;
+      _dataSubscription = dbRef
+          .orderByChild('status')
+          .equalTo(widget.status)
+          .onValue
+          .listen((event) {
+            final data = event.snapshot.value as Map<dynamic, dynamic>?;
 
-        if (data != null) {
-          final List<Map<dynamic, dynamic>> items = [];
-          data.forEach((key, value) {
-            final Map<dynamic, dynamic> item = Map<dynamic, dynamic>.from(
-              value,
-            );
-            if (item['trash'] != true && item['trash'] != 'true') {
-              item['key'] = key;
-              items.add(item);
+            if (data != null) {
+              final List<Map<dynamic, dynamic>> items = [];
+              data.forEach((key, value) {
+                final Map<dynamic, dynamic> item = Map<dynamic, dynamic>.from(
+                  value,
+                );
+                if (item['trash'] != true && item['trash'] != 'true') {
+                  item['key'] = key;
+                  items.add(item);
+                }
+              });
+
+              setState(() {
+                _pendaftarans = items;
+                _applySearch();
+                _isLoading = false;
+              });
+            } else {
+              setState(() {
+                _pendaftarans = [];
+                _filteredPendaftarans = [];
+                groupedPendaftarans = {};
+                orderedDates = [];
+                _isLoading = false;
+              });
             }
           });
-
-          setState(() {
-            _pendaftarans = items;
-            _applySearch();
-            _isLoading = false;
-          });
-        } else {
-          setState(() {
-            _pendaftarans = [];
-            _filteredPendaftarans = [];
-            groupedPendaftarans = {};
-            orderedDates = [];
-            _isLoading = false;
-          });
-        }
-      });
     }
   }
 
@@ -360,12 +376,29 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     );
   }
 
+  Future<void> _updateLeadStatusPendaftaran(
+    String agentKey,
+    bool isLead,
+  ) async {
+    final agentRef = FirebaseDatabase.instance
+        .ref()
+        .child('agent-form')
+        .child(agentKey);
+    try {
+      await agentRef.update({'lead': isLead});
+    } catch (error) {
+      print("Gagal mengubah status lead: $error");
+    }
+  }
+
   Widget _buildPendaftaranCard(
     Map pendaftaran,
     String key,
     TextStyle? baseStyle,
   ) {
     final phone = pendaftaran['phone'] ?? '-';
+    final bool isLead = pendaftaran['lead'] == true;
+    final status = pendaftaran['status'] ?? 'Belum diproses';
 
     return InkWell(
       onTap: () {
@@ -429,13 +462,11 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                   SizedBox(height: 4),
                   Text("Kode Pos  : ${pendaftaran['postalCode'] ?? '-'}"),
                   SizedBox(height: 4),
-                  Text(
-                    "Status       : ${pendaftaran['status'] ?? 'Belum diproses'}",
-                  ),
+                  if (!(isLead && status == 'lead'))
+                    Text("Status       : $status"),
                   SizedBox(height: 16),
 
-                  if ((pendaftaran['status'] ?? '').toLowerCase() ==
-                          'process' &&
+                  if ((status.toLowerCase() == 'process') &&
                       widget.status != 'trash')
                     Align(
                       alignment: Alignment.centerRight,
@@ -468,6 +499,78 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                       ),
                     ),
                 ],
+              ),
+            ),
+
+            if (isLead)
+              Positioned(
+                top: 12,
+                left: 280,
+                child: GestureDetector(
+                  onTap: () async {
+                    await _updateLeadStatusPendaftaran(key, false);
+
+                    setState(() {
+                      final index = _pendaftarans.indexWhere(
+                        (item) => item['key'] == key,
+                      );
+                      if (index != -1) {
+                        _pendaftarans[index]['lead'] = false;
+                        _applySearch(); // update filtered list
+                      }
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Status lead dibatalkan')),
+                    );
+                  },
+                  child: Transform.scale(
+                    scaleY: 1.3,
+                    scaleX: 1.0,
+                    child: Icon(
+                      Icons.bookmark,
+                      size: 24,
+                      color: Color(0xFF0E5C36),
+                    ),
+                  ),
+                ),
+              ),
+
+            // Menu lead + delete
+            Positioned(
+              top: 0,
+              right: 0,
+              child: PopupMenuButton<String>(
+                onSelected: (value) async {
+                  if (value == 'lead') {
+                    await _updateLeadStatusPendaftaran(key, true);
+
+                    setState(() {
+                      final index = _pendaftarans.indexWhere(
+                        (item) => item['key'] == key,
+                      );
+                      if (index != -1) {
+                        _pendaftarans[index]['lead'] = true;
+                        _applySearch(); // update filtered list
+                      }
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Status lead ditandai')),
+                    );
+                  }
+                  // TODO: implement delete if needed
+                },
+                itemBuilder: (BuildContext context) {
+                  return [
+                    if (!isLead)
+                      PopupMenuItem<String>(value: 'lead', child: Text('Lead')),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ];
+                },
               ),
             ),
 
