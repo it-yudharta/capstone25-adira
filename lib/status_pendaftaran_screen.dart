@@ -385,79 +385,187 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
           borderRadius: BorderRadius.circular(8),
           boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 4)],
         ),
-        child: DefaultTextStyle.merge(
-          style: baseStyle,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Nama       : ${pendaftaran['fullName'] ?? '-'}",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 4),
-              Text("Email        : ${pendaftaran['email'] ?? '-'}"),
-              GestureDetector(
-                onTap: () async {
-                  try {
-                    await _launchWhatsApp(phone);
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error launching WhatsApp: $e')),
-                    );
-                  }
-                },
-                child: RichText(
-                  text: TextSpan(
-                    style: TextStyle(fontSize: 14, color: Colors.black87),
-                    children: [
-                      TextSpan(text: "Phone        : "),
-                      TextSpan(
-                        text: phone,
-                        style: TextStyle(color: Colors.blue),
-                      ),
-                    ],
+        child: Stack(
+          children: [
+            DefaultTextStyle.merge(
+              style: baseStyle,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Nama        : ${pendaftaran['fullName'] ?? '-'}",
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                ),
-              ),
-              Text("Alamat      : ${pendaftaran['address'] ?? '-'}"),
-              Text("Kode Pos  : ${pendaftaran['postalCode'] ?? '-'}"),
-              Text(
-                "Status       : ${pendaftaran['status'] ?? 'Belum diproses'}",
-              ),
-              SizedBox(height: 16),
-              if ((pendaftaran['status'] ?? '').toLowerCase() == 'process')
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ElevatedButton(
-                    onPressed: () => _showCancelConfirmation(key),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF0E5C36),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+                  SizedBox(height: 4),
+                  Text("Email         : ${pendaftaran['email'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () async {
+                      try {
+                        await _launchWhatsApp(phone);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error launching WhatsApp: $e'),
+                          ),
+                        );
+                      }
+                    },
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          TextSpan(text: "No. Telp     : "),
+                          TextSpan(
+                            text: phone,
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.cancel, size: 16, color: Colors.white),
-                        SizedBox(height: 4),
-                        Text(
-                          'Cancel',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
+                  ),
+                  SizedBox(height: 4),
+                  Text("Alamat      : ${pendaftaran['address'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  Text("Kode Pos  : ${pendaftaran['postalCode'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  Text(
+                    "Status       : ${pendaftaran['status'] ?? 'Belum diproses'}",
+                  ),
+                  SizedBox(height: 16),
+
+                  if ((pendaftaran['status'] ?? '').toLowerCase() ==
+                          'process' &&
+                      widget.status != 'trash')
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton(
+                        onPressed: () => _showCancelConfirmation(key),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF0E5C36),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                         ),
-                      ],
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.cancel, size: 16, color: Colors.white),
+                            SizedBox(height: 4),
+                            Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                ],
+              ),
+            ),
+
+            if (widget.status == 'trash')
+              Positioned(
+                top: 0,
+                right: 0,
+                child: PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    if (value == 'restore') {
+                      try {
+                        await FirebaseDatabase.instance
+                            .ref()
+                            .child('agent-form')
+                            .child(key)
+                            .update({'trash': null, 'trashUpdatedAt': null});
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Data berhasil di-restore')),
+                        );
+                        _fetchPendaftarans();
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Gagal restore data: $e')),
+                        );
+                      }
+                    } else if (value == 'delete_permanent') {
+                      _confirmDeleteSinglePermanently(key);
+                    }
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return [
+                      PopupMenuItem<String>(
+                        value: 'restore',
+                        child: Text('Restore'),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete_permanent',
+                        child: Text('Delete Permanen'),
+                      ),
+                    ];
+                  },
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
+  }
+
+  void _confirmDeleteSinglePermanently(String orderKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Konfirmasi Hapus Permanen'),
+            content: const Text(
+              'Apakah Anda yakin ingin menghapus data ini secara permanen? Tindakan ini tidak bisa dibatalkan.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _deleteSingleTrashPermanently(orderKey);
+                },
+                child: const Text('Hapus Permanen'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _deleteSingleTrashPermanently(String orderKey) async {
+    setState(() => _isLoading = true);
+
+    try {
+      await FirebaseDatabase.instance
+          .ref()
+          .child('agent-form')
+          .child(orderKey)
+          .remove();
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Data berhasil dihapus permanen')));
+
+      _fetchPendaftarans();
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menghapus data: $e')));
+    }
+
+    setState(() => _isLoading = false);
   }
 
   Widget _buildMainPage() {
@@ -688,22 +796,19 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
 
     int trashedCount = 0;
 
-    for (final date in orderedDates) {
-      final items = groupedPendaftarans[date]!;
-      for (final item in items) {
-        final isLead = item['lead'] == true;
-        final key = item['key'];
+    for (final item in _filteredPendaftarans) {
+      final isLead = item['lead'] == true;
+      final key = item['key'];
 
-        if (!isLead && key != null) {
-          try {
-            await _database.child(key).update({
-              'trash': true,
-              'trashUpdatedAt': formattedDate,
-            });
-            trashedCount++;
-          } catch (e) {
-            debugPrint("Gagal menandai pendaftaran $key sebagai trash: $e");
-          }
+      if (!isLead && key != null) {
+        try {
+          await _database.child(key).update({
+            'trash': true,
+            'trashUpdatedAt': formattedDate,
+          });
+          trashedCount++;
+        } catch (e) {
+          debugPrint("Gagal menandai pendaftaran $key sebagai trash: $e");
         }
       }
     }
@@ -714,7 +819,7 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
           content: Text('Berhasil menandai $trashedCount data sebagai trash'),
         ),
       );
-      _fetchPendaftarans(); // ganti dengan method fetch-mu
+      _fetchPendaftarans();
     }
   }
 

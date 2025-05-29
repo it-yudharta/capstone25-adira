@@ -308,8 +308,50 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
     );
   }
 
+  void _confirmDeleteSinglePendaftaranToTrash(String key) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Data Ini?'),
+            content: Text('Yakin ingin menghapus data ini ke Trash Bin?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final now = DateTime.now();
+                  final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+                  try {
+                    await _database.child(key).update({
+                      'trash': true,
+                      'trashUpdatedAt': formattedDate,
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Data berhasil dipindahkan ke Trash'),
+                      ),
+                    );
+                    _fetchAgents();
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal menghapus data: $e')),
+                    );
+                  }
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
+  }
+
   Widget _buildAgentCard(Map agent) {
     final String status = agent['status'] ?? 'Belum diproses';
+    final bool isLead = agent['lead'] == true;
 
     return InkWell(
       onTap: () {
@@ -346,8 +388,8 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   SizedBox(height: 4),
-                  Text("Alamat      : ${agent['address'] ?? '-'}"),
                   Text("Email         : ${agent['email'] ?? '-'}"),
+                  SizedBox(height: 4),
                   GestureDetector(
                     onTap: () async {
                       try {
@@ -373,9 +415,13 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                       ),
                     ),
                   ),
+                  SizedBox(height: 4),
+                  Text("Alamat      : ${agent['address'] ?? '-'}"),
+                  SizedBox(height: 4),
                   Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
                   SizedBox(height: 8),
-                  Text("Status        : $status"),
+                  if (!(isLead && status == 'lead'))
+                    Text("Status       : $status"),
                   SizedBox(height: 16),
                   Align(
                     alignment: Alignment.centerRight,
@@ -449,10 +495,74 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                 ],
               ),
             ),
+
+            if (agent['lead'] == true)
+              Positioned(
+                top: 12,
+                left: 300,
+                child: GestureDetector(
+                  onTap: () async {
+                    setState(() => agent['lead'] = false);
+                    await _updateLeadStatusPendaftaran(agent['key'], false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Status lead dibatalkan')),
+                    );
+                  },
+                  child: Transform.scale(
+                    scaleY: 1.3,
+                    scaleX: 1.0,
+                    child: Icon(
+                      Icons.bookmark,
+                      size: 24,
+                      color: Color(0xFF0E5C36),
+                    ),
+                  ),
+                ),
+              ),
+
+            Positioned(
+              top: 0,
+              right: 0,
+              child: PopupMenuButton<String>(
+                onSelected: (value) async {
+                  if (value == 'lead') {
+                    setState(() => agent['lead'] = true);
+                    await _updateLeadStatusPendaftaran(agent['key'], true);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Status lead ditandai')),
+                    );
+                  } else if (value == 'delete') {
+                    _confirmDeleteSinglePendaftaranToTrash(agent['key']);
+                  }
+                },
+                itemBuilder: (BuildContext context) {
+                  return [
+                    if (agent['lead'] != true)
+                      PopupMenuItem<String>(value: 'lead', child: Text('Lead')),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ];
+                },
+              ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _updateLeadStatusPendaftaran(
+    String agentKey,
+    bool isLead,
+  ) async {
+    final agentRef = _database.child(agentKey);
+    try {
+      await agentRef.update({'lead': isLead});
+    } catch (error) {
+      print("Gagal mengubah status lead: $error");
+    }
   }
 
   Widget _buildStatusMenu() {
