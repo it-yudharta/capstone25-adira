@@ -44,6 +44,12 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
     }
   }
 
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+  }
+
   bool isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
@@ -180,109 +186,191 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Generate QR Agent'),
+        automaticallyImplyLeading: false,
         backgroundColor: const Color(0xFFF0F4F5),
         elevation: 0,
         foregroundColor: Colors.black,
-        systemOverlayStyle: SystemUiOverlayStyle(
+        systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Color(0xFFF0F4F5),
           statusBarIconBrightness: Brightness.dark,
+          statusBarBrightness: Brightness.light,
         ),
-      ),
-      backgroundColor: const Color(0xFFF0F4F5),
-      body: Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
+        title: Row(
           children: [
-            TextField(
-              controller: agentNameController,
-              decoration: InputDecoration(
-                labelText: "Masukkan Nama Agent",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(
-                labelText: "Masukkan Email Agent",
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: phoneController,
-              decoration: InputDecoration(
-                labelText: "Masukkan Nomor Telepon Agent",
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.phone,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _onGeneratePressed,
-              child: Text("Generate QR Code & Buat Akun"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF0E5C36),
-                foregroundColor: Colors.white,
-                minimumSize: Size(double.infinity, 50),
-              ),
-            ),
-            SizedBox(height: 20),
-            if (currentAgentData.isNotEmpty)
-              RepaintBoundary(
-                key: _qrKey,
-                child: Container(
-                  padding: EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Color(0xFF0E5C36), width: 4),
-                    borderRadius: BorderRadius.circular(12),
+            RichText(
+              text: const TextSpan(
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                children: [
+                  TextSpan(
+                    text: 'Fundra',
+                    style: TextStyle(color: Color(0xFF0E5C36)),
                   ),
-                  child: QrImageView(
-                    data: currentAgentData,
-                    size: 250,
-                    backgroundColor: Colors.white,
+                  TextSpan(
+                    text: 'IN',
+                    style: TextStyle(color: Color(0xFFE67D13)),
                   ),
-                ),
+                ],
               ),
-            SizedBox(height: 20),
-            if (generatedPassword.isNotEmpty)
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.green),
-                ),
-                child: Text(
-                  "Password agent sementara:\n$generatedPassword",
-                  style: TextStyle(
-                    color: Colors.green[900],
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: currentAgentData.isEmpty ? null : _saveQrCode,
-              child: Text("Save QR Code"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF0E5C36),
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                textStyle: TextStyle(fontSize: 16),
-              ),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.black),
+              onPressed: _logout,
             ),
           ],
         ),
       ),
+      backgroundColor: const Color(0xFFF0F4F5),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            bottom: 180,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (currentAgentData.isNotEmpty) ...[
+                    Center(
+                      child: RepaintBoundary(
+                        key: _qrKey,
+                        child: Container(
+                          padding: EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(
+                              color: Color(0xFF0E5C36),
+                              width: 4,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: QrImageView(
+                            data: currentAgentData,
+                            size: 200,
+                            backgroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                  ],
+                  if (generatedPassword.isNotEmpty)
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      margin: EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.green[50],
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.green),
+                      ),
+                      child: Text(
+                        "Password agent sementara:\n$generatedPassword",
+                        style: TextStyle(
+                          color: Colors.green[900],
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
 
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              color: const Color(0xFFF0F4F5),
+              padding: EdgeInsets.fromLTRB(20, 10, 20, 30),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: agentNameController,
+                    enabled: !isAccountCreated, // disable jika sudah generate
+                    decoration: InputDecoration(
+                      labelText: "Masukkan Nama Agent",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: emailController,
+                    enabled: !isAccountCreated,
+                    decoration: InputDecoration(
+                      labelText: "Masukkan Email Agent",
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  SizedBox(height: 10),
+                  TextField(
+                    controller: phoneController,
+                    enabled: !isAccountCreated,
+                    decoration: InputDecoration(
+                      labelText: "Masukkan Nomor Telepon Agent",
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.phone,
+                  ),
+                  SizedBox(height: 20),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed:
+                              currentAgentData.isEmpty ? null : _saveQrCode,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Text(
+                              "Save QR",
+                              style: TextStyle(fontSize: 18),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed:
+                              isAccountCreated ? null : _onGeneratePressed,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(vertical: 20),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Text(
+                              "Generate QR",
+                              style: TextStyle(fontSize: 18),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: BottomNavBarPendaftaran(currentRoute: 'qr_agent'),
     );
   }
