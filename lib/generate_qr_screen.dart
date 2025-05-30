@@ -1,72 +1,106 @@
 import 'package:flutter/material.dart';
 import 'generate_qr_pengajuan.dart';
 import 'generate_qr_pendaftaran.dart';
-import 'custom_bottom_nav_bar.dart';
 
 class GenerateQRScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Generate QR Code')),
-      body: Center(
-        child: ListView(
-          padding: EdgeInsets.all(20),
+      backgroundColor: const Color(0xFFF0F4F5),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: Column(
           children: [
-            MenuButton(
-              icon: Icons.qr_code,
-              label: "Generate QR for Pengajuan",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => GenerateQRPengajuan(),
-                  ),
-                );
-              },
+            Text(
+              'QR Code',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-            MenuButton(
-              icon: Icons.qr_code_2,
-              label: "Generate QR for Pendaftaran",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => GenerateQRPendaftaran(),
-                  ),
-                );
-              },
+            SizedBox(height: 2),
+            Text(
+              'Pengajuan & Pendaftaran',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ],
         ),
+      ),
+      body: Column(
+        children: [
+          SizedBox(height: 10),
+          Expanded(
+            child: Column(
+              children: [
+                Image.asset(
+                  'assets/images/Barcode-removebg-preview.png',
+                  width: 400,
+                  height: 400,
+                  fit: BoxFit.contain,
+                ),
+                SizedBox(height: 30),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: MenuButton(
+                    label: "Generate QR Pendaftaran",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GenerateQRPendaftaran(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                Spacer(),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: MenuButton(
+                    label: "Generate QR Code Agent",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => GenerateQRPengajuan(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                SizedBox(height: 50),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class MenuButton extends StatelessWidget {
-  final IconData icon;
   final String label;
   final VoidCallback onTap;
 
-  const MenuButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+  const MenuButton({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          minimumSize: Size(double.infinity, 50),
-          backgroundColor: Colors.blue,
-        ),
-        icon: Icon(icon, color: Colors.white),
-        label: Text(label, style: TextStyle(color: Colors.white, fontSize: 16)),
-        onPressed: onTap,
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        minimumSize: Size(double.infinity, 50),
+        backgroundColor: const Color(0xFF0E5C36),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 2,
       ),
+      child: Text(label, style: TextStyle(color: Colors.white, fontSize: 16)),
+      onPressed: onTap,
     );
   }
 }
