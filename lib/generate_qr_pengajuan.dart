@@ -21,10 +21,14 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
   TextEditingController agentNameController = TextEditingController();
   TextEditingController emailController = TextEditingController();
   TextEditingController phoneController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
 
   String currentAgentData = "";
   String generatedPassword = "";
   bool isAccountCreated = false;
+  bool isAgentNameValid = true;
+  bool isEmailValid = true;
+  bool isPhoneValid = true;
 
   @override
   void initState() {
@@ -32,6 +36,7 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
     agentNameController.addListener(_resetOnEdit);
     emailController.addListener(_resetOnEdit);
     phoneController.addListener(_resetOnEdit);
+    passwordController.addListener(_resetOnEdit);
   }
 
   void _resetOnEdit() {
@@ -89,10 +94,31 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
     });
   }
 
+  @override
+  void dispose() {
+    agentNameController.dispose();
+    emailController.dispose();
+    phoneController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _onGeneratePressed() async {
     String name = agentNameController.text.trim();
     String email = emailController.text.trim();
     String phone = phoneController.text.trim();
+    setState(() {
+      isAgentNameValid = name.isNotEmpty;
+      isEmailValid = email.isNotEmpty && isValidEmail(email);
+      isPhoneValid = phone.isNotEmpty && isValidPhoneNumber(phone);
+    });
+
+    if (!isAgentNameValid || !isEmailValid || !isPhoneValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Mohon isi semua field dengan benar")),
+      );
+      return;
+    }
 
     if (!isValidEmail(email)) {
       ScaffoldMessenger.of(
@@ -174,12 +200,138 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('QR Code berhasil disimpan ke $result')),
       );
+
+      await Future.delayed(Duration(milliseconds: 500));
+      _showQrSavedPopup();
     } catch (e) {
       print("Error saving QR: $e");
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Gagal menyimpan QR Code')));
     }
+  }
+
+  void _showGenerateConfirmation() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Generate QR?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'QR and Account will be generated and Pendaftaran will be moved to “QR Given”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _onGeneratePressed();
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _showQrSavedPopup() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.all(30),
+          child: Container(
+            padding: EdgeInsets.all(30),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Image.asset(
+              'assets/images/QR_Saved.png',
+              width: 150,
+              height: 150,
+              fit: BoxFit.contain,
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -255,22 +407,80 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
                     SizedBox(height: 10),
                   ],
                   if (generatedPassword.isNotEmpty)
-                    Container(
-                      padding: EdgeInsets.all(12),
-                      margin: EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.green[50],
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.green),
-                      ),
-                      child: Text(
-                        "Password agent sementara:\n$generatedPassword",
-                        style: TextStyle(
-                          color: Colors.green[900],
-                          fontWeight: FontWeight.bold,
+                    Column(
+                      children: [
+                        Container(
+                          width: 280,
+                          padding: EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Color(0xFF0E5C36)),
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(10),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.email,
+                                color: Color(0xFF0E5C36),
+                                size: 20,
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  emailController.text,
+                                  style: TextStyle(
+                                    color: Color(0xFF0E5C36),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
+                        Container(
+                          width: 280,
+                          padding: EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border.all(color: Color(0xFF0E5C36)),
+                            borderRadius: BorderRadius.vertical(
+                              bottom: Radius.circular(10),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.lock,
+                                color: Color(0xFF0E5C36),
+                                size: 20,
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  generatedPassword,
+                                  style: TextStyle(
+                                    color: Color(0xFF0E5C36),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                      ],
                     ),
                 ],
               ),
@@ -289,10 +499,23 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
                 children: [
                   TextField(
                     controller: agentNameController,
-                    enabled: !isAccountCreated, // disable jika sudah generate
+                    enabled: !isAccountCreated,
                     decoration: InputDecoration(
-                      labelText: "Masukkan Nama Agent",
+                      labelText: "Nama",
+                      prefixIcon: Icon(Icons.person, color: Color(0xFF0E5C36)),
                       border: OutlineInputBorder(),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Color(0xFF0E5C36),
+                          width: 2,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: isAgentNameValid ? Colors.grey : Colors.red,
+                        ),
+                      ),
+                      floatingLabelStyle: TextStyle(color: Colors.black),
                     ),
                   ),
                   SizedBox(height: 10),
@@ -300,8 +523,21 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
                     controller: emailController,
                     enabled: !isAccountCreated,
                     decoration: InputDecoration(
-                      labelText: "Masukkan Email Agent",
+                      labelText: "Email",
+                      prefixIcon: Icon(Icons.email, color: Color(0xFF0E5C36)),
                       border: OutlineInputBorder(),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Color(0xFF0E5C36),
+                          width: 2,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: isEmailValid ? Colors.grey : Colors.red,
+                        ),
+                      ),
+                      floatingLabelStyle: TextStyle(color: Colors.black),
                     ),
                     keyboardType: TextInputType.emailAddress,
                   ),
@@ -310,11 +546,25 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
                     controller: phoneController,
                     enabled: !isAccountCreated,
                     decoration: InputDecoration(
-                      labelText: "Masukkan Nomor Telepon Agent",
+                      labelText: "No. Telp",
+                      prefixIcon: Icon(Icons.phone, color: Color(0xFF0E5C36)),
                       border: OutlineInputBorder(),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: Color(0xFF0E5C36),
+                          width: 2,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: isPhoneValid ? Colors.grey : Colors.red,
+                        ),
+                      ),
+                      floatingLabelStyle: TextStyle(color: Colors.black),
                     ),
                     keyboardType: TextInputType.phone,
                   ),
+
                   SizedBox(height: 20),
 
                   Row(
@@ -345,7 +595,9 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed:
-                              isAccountCreated ? null : _onGeneratePressed,
+                              isAccountCreated
+                                  ? null
+                                  : _showGenerateConfirmation,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             foregroundColor: Colors.white,
