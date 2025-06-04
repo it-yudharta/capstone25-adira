@@ -334,6 +334,50 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
     );
   }
 
+  Widget _buildMiniTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required bool enabled,
+    required bool isValid,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    final bool isMini = !enabled;
+
+    return SizedBox(
+      height: isMini ? 36 : null,
+      child: TextField(
+        controller: controller,
+        enabled: enabled,
+        keyboardType: keyboardType,
+        style: TextStyle(fontSize: isMini ? 12 : 16),
+        decoration: InputDecoration(
+          labelText: isMini ? null : label,
+          prefixIcon: Icon(
+            icon,
+            color: Color(0xFF0E5C36),
+            size: isMini ? 16 : 24,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(isMini ? 8 : 12),
+          ),
+          contentPadding: EdgeInsets.symmetric(
+            vertical: isMini ? 6 : 12,
+            horizontal: isMini ? 8 : 16,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: isValid ? Colors.grey : Colors.red),
+            borderRadius: BorderRadius.circular(isMini ? 8 : 12),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF0E5C36), width: 2),
+            borderRadius: BorderRadius.circular(isMini ? 8 : 12),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -497,71 +541,29 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(
+                  _buildMiniTextField(
                     controller: agentNameController,
+                    label: "Nama",
+                    icon: Icons.person,
                     enabled: !isAccountCreated,
-                    decoration: InputDecoration(
-                      labelText: "Nama",
-                      prefixIcon: Icon(Icons.person, color: Color(0xFF0E5C36)),
-                      border: OutlineInputBorder(),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Color(0xFF0E5C36),
-                          width: 2,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: isAgentNameValid ? Colors.grey : Colors.red,
-                        ),
-                      ),
-                      floatingLabelStyle: TextStyle(color: Colors.black),
-                    ),
+                    isValid: isAgentNameValid,
                   ),
                   SizedBox(height: 10),
-                  TextField(
+                  _buildMiniTextField(
                     controller: emailController,
+                    label: "Email",
+                    icon: Icons.email,
                     enabled: !isAccountCreated,
-                    decoration: InputDecoration(
-                      labelText: "Email",
-                      prefixIcon: Icon(Icons.email, color: Color(0xFF0E5C36)),
-                      border: OutlineInputBorder(),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Color(0xFF0E5C36),
-                          width: 2,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: isEmailValid ? Colors.grey : Colors.red,
-                        ),
-                      ),
-                      floatingLabelStyle: TextStyle(color: Colors.black),
-                    ),
+                    isValid: isEmailValid,
                     keyboardType: TextInputType.emailAddress,
                   ),
                   SizedBox(height: 10),
-                  TextField(
+                  _buildMiniTextField(
                     controller: phoneController,
+                    label: "No. Telp",
+                    icon: Icons.phone,
                     enabled: !isAccountCreated,
-                    decoration: InputDecoration(
-                      labelText: "No. Telp",
-                      prefixIcon: Icon(Icons.phone, color: Color(0xFF0E5C36)),
-                      border: OutlineInputBorder(),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: Color(0xFF0E5C36),
-                          width: 2,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: isPhoneValid ? Colors.grey : Colors.red,
-                        ),
-                      ),
-                      floatingLabelStyle: TextStyle(color: Colors.black),
-                    ),
+                    isValid: isPhoneValid,
                     keyboardType: TextInputType.phone,
                   ),
 

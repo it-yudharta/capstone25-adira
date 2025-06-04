@@ -29,12 +29,13 @@ class GenerateQRScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          SizedBox(height: 10),
-          Expanded(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
               children: [
+                SizedBox(height: 20),
                 Image.asset(
                   'assets/images/Barcode-removebg-preview.png',
                   width: 400,
@@ -42,43 +43,34 @@ class GenerateQRScreen extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 SizedBox(height: 30),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: MenuButton(
-                    label: "Generate QR Pendaftaran",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => GenerateQRPendaftaran(),
-                        ),
-                      );
-                    },
-                  ),
+                MenuButton(
+                  label: "Generate QR Pendaftaran",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GenerateQRPendaftaran(),
+                      ),
+                    );
+                  },
                 ),
-
-                Spacer(),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: MenuButton(
-                    label: "Generate QR Code Agent",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => GenerateQRPengajuan(),
-                        ),
-                      );
-                    },
-                  ),
+                SizedBox(height: 20),
+                MenuButton(
+                  label: "Generate QR Code Agent",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => GenerateQRPengajuan(),
+                      ),
+                    );
+                  },
                 ),
-
-                SizedBox(height: 50),
+                SizedBox(height: 40),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
