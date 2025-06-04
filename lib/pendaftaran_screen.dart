@@ -599,6 +599,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(statusButtons.length * 2 - 1, (index) {
             if (index.isOdd) return SizedBox(width: 16);
             final item = statusButtons[index ~/ 2];
