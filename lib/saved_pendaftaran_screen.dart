@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'status_saved_pendaftaran_screen.dart';
+import 'pendaftaran_detail_screen.dart';
+import 'package:intl/intl.dart';
 
 class SavedPendaftaranScreen extends StatefulWidget {
   @override
@@ -27,23 +29,36 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
     setState(() => _isLoading = true);
 
     final snapshot = await _database.get();
-    List<Map<dynamic, dynamic>> tempList = [];
+    Map<String, List<Map<dynamic, dynamic>>> groupedLeadAgents = {};
 
     if (snapshot.exists) {
       final data = snapshot.value as Map<dynamic, dynamic>;
+
       data.forEach((key, value) {
         final isLead = value['lead'] == true;
         final isTrashed = value['trash'] == true;
+        final status = value['status'];
 
-        if (isLead && !isTrashed) {
-          value['key'] = key;
-          tempList.add(value);
+        final isValidStatus = status == null || status == 'belum diproses';
+
+        if (isLead && !isTrashed && isValidStatus) {
+          final tanggal = value['tanggal'];
+          if (tanggal != null && tanggal is String) {
+            if (!groupedLeadAgents.containsKey(tanggal)) {
+              groupedLeadAgents[tanggal] = [];
+            }
+            value['key'] = key;
+            groupedLeadAgents[tanggal]?.add(value);
+          }
         }
       });
     }
 
     setState(() {
-      _leadAgents = tempList;
+      _leadAgents =
+          groupedLeadAgents.entries.map((e) {
+            return {'date': e.key, 'agents': e.value};
+          }).toList();
       _isLoading = false;
     });
   }
@@ -56,9 +71,13 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
 
     setState(() {
       _leadAgents =
-          _leadAgents.where((agent) {
-            final fullName = (agent['fullName'] ?? '').toString().toLowerCase();
-            return fullName.contains(_searchQuery.toLowerCase());
+          _leadAgents.where((group) {
+            final List agents = group['agents'] ?? [];
+            return agents.any((agent) {
+              final fullName =
+                  (agent['fullName'] ?? '').toString().toLowerCase();
+              return fullName.contains(_searchQuery.toLowerCase());
+            });
           }).toList();
     });
   }
@@ -72,79 +91,336 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
     }
   }
 
+  void _updateAgentStatus(String agentKey, String newStatus) async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+
+    Map<String, dynamic> updates = {
+      'status': newStatus,
+      '${newStatus}UpdatedAt': formattedDate,
+    };
+
+    try {
+      await _database.child(agentKey).update(updates);
+      _fetchLeadAgents();
+    } catch (e) {
+      print("Gagal memperbarui status: $e");
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal memperbarui status')));
+    }
+  }
+
+  void _showCancelConfirmation(String agentKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Cancel Pendaftaran?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Pendaftaran will be canceled and\nmoved to “Cancel”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateAgentStatus(agentKey, 'cancel');
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _showProcessConfirmation(String agentKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Process Pendaftaran?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Pendaftaran will be processed and\nmoved to “Process”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateAgentStatus(agentKey, 'process');
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
   Widget _buildAgentCard(Map agent) {
     final String status = agent['status'] ?? 'Belum diproses';
     final bool isLead = agent['lead'] == true;
 
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade300,
-            blurRadius: 4,
-            offset: Offset(0, 2),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PendaftaranDetailScreen(agentData: agent),
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          DefaultTextStyle.merge(
-            style: TextStyle(fontSize: 14, color: Colors.black87),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Nama        : ${agent['fullName'] ?? '-'}",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 4),
-                Text("Email         : ${agent['email'] ?? '-'}"),
-                SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () => _launchWhatsApp(agent['phone'] ?? ''),
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
-                      children: [
-                        TextSpan(text: "No. Telp     : "),
-                        TextSpan(
-                          text: agent['phone'] ?? '-',
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                      ],
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            DefaultTextStyle.merge(
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Nama        : ${agent['fullName'] ?? '-'}",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 4),
+                  Text("Email         : ${agent['email'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () => _launchWhatsApp(agent['phone'] ?? ''),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          TextSpan(text: "No. Telp     : "),
+                          TextSpan(
+                            text: agent['phone'] ?? '-',
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text("Alamat      : ${agent['address'] ?? '-'}"),
-                SizedBox(height: 4),
-                Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
-                SizedBox(height: 8),
-                if (!(isLead && status == 'lead'))
-                  Text("Status       : $status"),
-              ],
-            ),
-          ),
-          if (agent['lead'] == true)
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: EdgeInsets.only(top: 8, right: 36),
-                child: Transform.scale(
-                  scaleY: 1.3,
-                  child: Icon(
-                    Icons.bookmark,
-                    size: 24,
-                    color: Color(0xFF0E5C36),
-                  ),
-                ),
+                  SizedBox(height: 4),
+                  Text("Alamat      : ${agent['address'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
+                  SizedBox(height: 8),
+                  if (!(isLead && status == 'lead'))
+                    Text("Status       : $status"),
+                ],
               ),
             ),
-        ],
+            if (agent['lead'] == true)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => _showCancelConfirmation(agent['key']),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF0E5C36),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.cancel, size: 16, color: Colors.white),
+                          SizedBox(height: 4),
+                          Text(
+                            'Cancel',
+                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                    ElevatedButton(
+                      onPressed: () => _showProcessConfirmation(agent['key']),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF0E5C36),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.hourglass_top,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Process',
+                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -368,6 +644,7 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
                           width: 300,
                           height: 200,
                           fit: BoxFit.contain,
+                          alignment: Alignment.topCenter,
                         ),
                         SizedBox(height: 8),
                         Text(
@@ -393,8 +670,26 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
                   : ListView.builder(
                     itemCount: _leadAgents.length,
                     itemBuilder: (ctx, idx) {
-                      final agent = _leadAgents[idx];
-                      return _buildAgentCard(agent);
+                      final group = _leadAgents[idx];
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                            child: Text(
+                              'Date: ${group['date'] ?? 'Unknown date'}',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                          ...group['agents']
+                              .map<Widget>((agent) => _buildAgentCard(agent))
+                              .toList(),
+                        ],
+                      );
                     },
                   ),
         ),
