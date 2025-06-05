@@ -86,7 +86,6 @@ class _GenerateQRPendaftaranState extends State<GenerateQRPendaftaran> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Tambahkan judul dan subjudul di atas QR Code
                     Text(
                       'QR Code',
                       style: TextStyle(
@@ -103,7 +102,7 @@ class _GenerateQRPendaftaranState extends State<GenerateQRPendaftaran> {
                       textAlign: TextAlign.center,
                     ),
 
-                    SizedBox(height: 20), // kasih jarak ke QR Code
+                    SizedBox(height: 20),
 
                     RepaintBoundary(
                       key: _qrKey,

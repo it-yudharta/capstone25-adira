@@ -1040,28 +1040,31 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
               ),
             ),
             if (isLead)
-              Positioned(
-                top: 12,
-                left: 240,
-                child: GestureDetector(
-                  onTap: () async {
-                    await _updateLeadStatus(orderKey, false);
-                    await _fetchFilteredOrders();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Status lead dibatalkan')),
-                    );
-                  },
-                  child: Transform.scale(
-                    scaleY: 1.3,
-                    scaleX: 1.0,
-                    child: Icon(
-                      Icons.bookmark,
-                      size: 24,
-                      color: Color(0xFF0E5C36),
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 8, right: 36),
+                  child: GestureDetector(
+                    onTap: () async {
+                      await _updateLeadStatus(orderKey, false);
+                      await _fetchFilteredOrders();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Status lead dibatalkan')),
+                      );
+                    },
+                    child: Transform.scale(
+                      scaleY: 1.3,
+                      scaleX: 1.0,
+                      child: Icon(
+                        Icons.bookmark,
+                        size: 24,
+                        color: Color(0xFF0E5C36),
+                      ),
                     ),
                   ),
                 ),
               ),
+
             Positioned(
               top: 0,
               right: 0,

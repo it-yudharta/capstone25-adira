@@ -7,6 +7,7 @@ import 'pendaftaran_detail_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 const platform = MethodChannel('com.fundrain.adiraapp/download');
 
@@ -937,12 +938,13 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
 
       for (final child in snapshot.children) {
         final data = Map<String, dynamic>.from(child.value as Map);
-
         data['key'] = child.key;
         agentsToExport.add(data);
       }
 
       if (agentsToExport.isEmpty) {
+        Navigator.of(context, rootNavigator: true).pop();
+        setState(() => _isExporting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -964,20 +966,24 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         'Telepon',
         'Alamat',
         'Kode Pos',
-        'KK (URL)',
-        'KTP (URL)',
-        'NPWP (URL)',
-        'Lead',
+        'KK',
+        'KTP',
+        'NPWP',
       ];
 
       for (int col = 0; col < headers.length; col++) {
         sheet.getRangeByIndex(1, col + 1).setText(headers[col]);
       }
 
+      for (int col in [8, 9, 10]) {
+        sheet.getRangeByIndex(1, col).columnWidth = 20;
+      }
+
       for (int i = 0; i < agentsToExport.length; i++) {
         final agent = Map<String, dynamic>.from(agentsToExport[i]);
         final row = i + 2;
 
+        sheet.getRangeByIndex(row, 1).rowHeight = 80;
         sheet.getRangeByIndex(row, 1).setText(agent['tanggal'] ?? '');
         sheet.getRangeByIndex(row, 2).setText(agent['status'] ?? '');
         sheet.getRangeByIndex(row, 3).setText(agent['fullName'] ?? '');
@@ -985,13 +991,41 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         sheet.getRangeByIndex(row, 5).setText(agent['phone'] ?? '');
         sheet.getRangeByIndex(row, 6).setText(agent['address'] ?? '');
         sheet.getRangeByIndex(row, 7).setText(agent['postalCode'] ?? '');
-        sheet.getRangeByIndex(row, 8).setText(agent['kk'] ?? '');
-        sheet.getRangeByIndex(row, 9).setText(agent['ktp'] ?? '');
-        sheet.getRangeByIndex(row, 10).setText(agent['npwp'] ?? '');
-        sheet.getRangeByIndex(row, 11).setText(agent['lead']?.toString() ?? '');
+
+        final kkImage = await _downloadImage(agent['kk']);
+        final ktpImage = await _downloadImage(agent['ktp']);
+        final npwpImage = await _downloadImage(agent['npwp']);
+
+        if (kkImage != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            8,
+            base64Encode(kkImage),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
+        if (ktpImage != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            9,
+            base64Encode(ktpImage),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
+        if (npwpImage != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            10,
+            base64Encode(npwpImage),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
       }
 
-      final List<int> bytes = workbook.saveAsStream();
+      final bytes = workbook.saveAsStream();
       workbook.dispose();
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
