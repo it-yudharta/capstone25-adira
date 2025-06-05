@@ -657,7 +657,7 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'No data saved pendaftaran found',
+                          'No data lead pendaftaran found',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
