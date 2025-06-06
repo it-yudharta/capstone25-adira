@@ -77,7 +77,6 @@ class _StatusSavedPendaftaranScreenState
 
   void _applySearch() {
     setState(() {
-      // Perbarui daftar berdasarkan pencarian
       groupedPendaftarans.clear();
 
       for (var item in _filteredPendaftarans) {
@@ -224,8 +223,6 @@ class _StatusSavedPendaftaranScreenState
 
     return InkWell(
       onTap: () {
-        // Navigasi ke detail jika ada halaman detail saved pendaftaran
-        // Kalau belum ada, bisa dihapus atau disesuaikan
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -258,7 +255,6 @@ class _StatusSavedPendaftaranScreenState
                   GestureDetector(
                     onTap: () async {
                       try {
-                        // Fungsi whatsapp, sesuaikan jika perlu
                         await _launchWhatsApp(phone);
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -292,7 +288,6 @@ class _StatusSavedPendaftaranScreenState
                   Text("Status       : $status"),
                   const SizedBox(height: 16),
 
-                  // Contoh tombol cancel jika ada status tertentu
                   if (status.toLowerCase() == 'process' &&
                       widget.status != 'trash')
                     Align(
@@ -329,16 +324,13 @@ class _StatusSavedPendaftaranScreenState
               ),
             ),
 
-            // Bookmark icon, bisa di tap untuk toggle
             Positioned(
               top: 0,
               right: 36,
               child: GestureDetector(
                 onTap: () async {
                   await _toggleBookmarkStatus(key, !isBookmarked);
-                  setState(() {
-                    // Update local state sesuai kebutuhan
-                  });
+                  setState(() {});
                 },
                 child: Icon(
                   isBookmarked ? Icons.bookmark : Icons.bookmark_border,
@@ -348,7 +340,6 @@ class _StatusSavedPendaftaranScreenState
               ),
             ),
 
-            // Menu titik tiga dengan opsi
             Positioned(
               top: 0,
               right: 0,
@@ -471,7 +462,7 @@ class _StatusSavedPendaftaranScreenState
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
-                  _applySearch(); // Pastikan method ini sudah ada untuk filter data
+                  _applySearch();
                 });
               },
               decoration: InputDecoration(
@@ -515,10 +506,8 @@ class _StatusSavedPendaftaranScreenState
           ),
         ),
 
-        // Status menu horizontal
         _buildStatusMenu(),
 
-        // Header dan tombol aksi
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
@@ -601,7 +590,6 @@ class _StatusSavedPendaftaranScreenState
           ),
         ),
 
-        // Konten daftar
         Expanded(
           child:
               _isLoading
@@ -620,7 +608,6 @@ class _StatusSavedPendaftaranScreenState
                       int currentIndex = 0;
                       for (final date in orderedDates) {
                         if (index == currentIndex) {
-                          // Header tanggal
                           return Padding(
                             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                             child: Text(
