@@ -291,6 +291,53 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
     );
   }
 
+  void _confirmDeleteSingleToTrash(String key) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Data Ini?'),
+            content: Text('Yakin ingin menghapus data ini ke Trash Bin?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final now = DateTime.now();
+                  final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+                  try {
+                    await _database.child(key).update({
+                      'trash': true,
+                      'trashUpdatedAt': formattedDate,
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Data berhasil dipindahkan ke Trash'),
+                      ),
+                    );
+                    _fetchLeadAgents();
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal menghapus data: $e')),
+                    );
+                  }
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _updateAgentLeadStatus(String agentKey, bool isLead) async {
+    await FirebaseDatabase.instance.ref('agent-form/$agentKey').update({
+      'lead': isLead,
+    });
+  }
+
   Widget _buildAgentCard(Map agent) {
     final String status = agent['status'] ?? 'Belum diproses';
     final bool isLead = agent['lead'] == true;
@@ -354,69 +401,152 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
                   SizedBox(height: 8),
                   if (!(isLead && status == 'lead'))
                     Text("Status       : $status"),
-                ],
-              ),
-            ),
-            if (agent['lead'] == true)
-              Align(
-                alignment: Alignment.centerRight,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () => _showCancelConfirmation(agent['key']),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF0E5C36),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                      ),
-                      child: Column(
+                  if (agent['lead'] == true) ...[
+                    SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.cancel, size: 16, color: Colors.white),
-                          SizedBox(height: 4),
-                          Text(
-                            'Cancel',
-                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          ElevatedButton(
+                            onPressed:
+                                () => _showCancelConfirmation(agent['key']),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.cancel,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: 6),
-                    ElevatedButton(
-                      onPressed: () => _showProcessConfirmation(agent['key']),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF0E5C36),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.hourglass_top,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Process',
-                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          SizedBox(width: 6),
+                          ElevatedButton(
+                            onPressed:
+                                () => _showProcessConfirmation(agent['key']),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.hourglass_top,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Process',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ],
+                ],
+              ),
+            ),
+
+            Positioned(
+              top: 0,
+              right: 0,
+              child: PopupMenuButton<String>(
+                onSelected: (value) async {
+                  if (value == 'lead') {
+                    setState(() => agent['lead'] = true);
+                    await FirebaseDatabase.instance
+                        .ref('agent-form/${agent['key']}')
+                        .update({'lead': true});
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Ditandai sebagai lead')),
+                    );
+                  } else if (value == 'delete') {
+                    _confirmDeleteSingleToTrash(agent['key']);
+                  }
+                },
+                itemBuilder: (BuildContext context) {
+                  return [
+                    if (!isLead)
+                      PopupMenuItem<String>(value: 'lead', child: Text('Lead')),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ];
+                },
+              ),
+            ),
+            if (isLead)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 8, right: 36),
+                  child: GestureDetector(
+                    onTap: () async {
+                      await FirebaseDatabase.instance
+                          .ref('agent-form/${agent['key']}')
+                          .update({'lead': false});
+
+                      setState(() {
+                        for (var group in _leadAgents) {
+                          group['agents'].removeWhere(
+                            (a) => a['key'] == agent['key'],
+                          );
+                        }
+
+                        _leadAgents.removeWhere(
+                          (group) => (group['agents'] as List).isEmpty,
+                        );
+                      });
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Status lead dibatalkan')),
+                      );
+                    },
+                    child: Transform.scale(
+                      scaleY: 1.3,
+                      scaleX: 1.0,
+                      child: Icon(
+                        Icons.bookmark,
+                        size: 24,
+                        color: Color(0xFF0E5C36),
+                      ),
+                    ),
+                  ),
                 ),
               ),
           ],
