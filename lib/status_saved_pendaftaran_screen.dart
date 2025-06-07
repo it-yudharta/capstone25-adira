@@ -199,20 +199,60 @@ class _StatusSavedPendaftaranScreenState
     }
   }
 
-  void _showCancelConfirmation(String key) {
-    // Implementasi konfirmasi cancel
-  }
-
-  Future<void> _updateLeadStatusPendaftaran(String key, bool isLead) async {
-    // Implementasi update status lead
-  }
-
   void _confirmDeleteSingleToTrashPendaftaran(String key) {
-    // Implementasi delete ke trash
-  }
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Hapus Data Ini?'),
+            content: const Text('Yakin ingin menghapus data ini ke Trash Bin?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final now = DateTime.now();
+                  final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+                  try {
+                    await FirebaseDatabase.instance
+                        .ref('agent-form/$key')
+                        .update({
+                          'trash': true,
+                          'trashUpdatedAt': formattedDate,
+                        });
 
-  void exportData(Map data) {
-    // Implementasi export data
+                    setState(() {
+                      for (var date in orderedDates) {
+                        groupedPendaftarans[date]?.removeWhere(
+                          (item) => item['key'] == key,
+                        );
+                      }
+                      orderedDates.removeWhere(
+                        (date) =>
+                            groupedPendaftarans[date] == null ||
+                            groupedPendaftarans[date]!.isEmpty,
+                      );
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Data berhasil dipindahkan ke Trash'),
+                      ),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Gagal menghapus data: $e')),
+                    );
+                  }
+                },
+                child: const Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
   }
 
   Widget _buildSavedPendaftaranCard(
@@ -333,7 +373,7 @@ class _StatusSavedPendaftaranScreenState
               child: PopupMenuButton<String>(
                 onSelected: (value) async {
                   if (value == 'lead') {
-                    await _updateLeadStatusPendaftaran(key, true);
+                    (key, true);
                     setState(() {});
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Status lead ditandai')),
@@ -395,6 +435,124 @@ class _StatusSavedPendaftaranScreenState
           ],
         ),
       ),
+    );
+  }
+
+  void _showCancelConfirmation(String agentKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Cancel Pendaftaran?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Pendaftaran will be canceled and\nmoved to “Cancel”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            final now = DateTime.now();
+                            final formattedDate = DateFormat(
+                              'dd-MM-yyyy',
+                            ).format(now);
+                            await FirebaseDatabase.instance
+                                .ref('agent-form/$agentKey')
+                                .update({
+                                  'status': 'cancel',
+                                  'updatedAt': formattedDate,
+                                });
+
+                            setState(() {
+                              for (var date in orderedDates) {
+                                groupedPendaftarans[date]?.removeWhere(
+                                  (item) => item['key'] == agentKey,
+                                );
+                              }
+                              orderedDates.removeWhere(
+                                (date) =>
+                                    groupedPendaftarans[date] == null ||
+                                    groupedPendaftarans[date]!.isEmpty,
+                              );
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Pendaftaran dibatalkan'),
+                              ),
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
     );
   }
 
