@@ -938,8 +938,12 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
 
       for (final child in snapshot.children) {
         final data = Map<String, dynamic>.from(child.value as Map);
+
+        // Kalau ingin filter lead juga, aktifkan ini:
+        // if (data['lead'] == true) {
         data['key'] = child.key;
         agentsToExport.add(data);
+        // }
       }
 
       if (agentsToExport.isEmpty) {
@@ -958,9 +962,16 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
       final workbook = xlsio.Workbook();
       final sheet = workbook.worksheets[0];
 
+      // Header sama dengan saved pendaftaran
       final headers = [
         'Tanggal',
         'Status',
+        'Tanggal Cancel',
+        'Tanggal Process',
+        'Tanggal Pending',
+        'Tanggal Reject',
+        'Tanggal Approve',
+        'Tanggal QR Given',
         'Nama Lengkap',
         'Email',
         'Telepon',
@@ -975,7 +986,8 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         sheet.getRangeByIndex(1, col + 1).setText(headers[col]);
       }
 
-      for (int col in [8, 9, 10]) {
+      // Atur lebar kolom gambar
+      for (int col in [14, 15, 16]) {
         sheet.getRangeByIndex(1, col).columnWidth = 20;
       }
 
@@ -986,12 +998,22 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         sheet.getRangeByIndex(row, 1).rowHeight = 80;
         sheet.getRangeByIndex(row, 1).setText(agent['tanggal'] ?? '');
         sheet.getRangeByIndex(row, 2).setText(agent['status'] ?? '');
-        sheet.getRangeByIndex(row, 3).setText(agent['fullName'] ?? '');
-        sheet.getRangeByIndex(row, 4).setText(agent['email'] ?? '');
-        sheet.getRangeByIndex(row, 5).setText(agent['phone'] ?? '');
-        sheet.getRangeByIndex(row, 6).setText(agent['address'] ?? '');
-        sheet.getRangeByIndex(row, 7).setText(agent['postalCode'] ?? '');
 
+        // Isi kolom tanggal status update
+        sheet.getRangeByIndex(row, 3).setText(agent['cancelUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 4).setText(agent['processUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 5).setText(agent['pendingUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 6).setText(agent['rejectUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 7).setText(agent['approveUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 8).setText(agent['qr_givenUpdatedAt'] ?? '');
+
+        sheet.getRangeByIndex(row, 9).setText(agent['fullName'] ?? '');
+        sheet.getRangeByIndex(row, 10).setText(agent['email'] ?? '');
+        sheet.getRangeByIndex(row, 11).setText(agent['phone'] ?? '');
+        sheet.getRangeByIndex(row, 12).setText(agent['address'] ?? '');
+        sheet.getRangeByIndex(row, 13).setText(agent['postalCode'] ?? '');
+
+        // Tambah gambar
         final kkImage = await _downloadImage(agent['kk']);
         final ktpImage = await _downloadImage(agent['ktp']);
         final npwpImage = await _downloadImage(agent['npwp']);
@@ -999,7 +1021,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         if (kkImage != null) {
           final picture = sheet.pictures.addBase64(
             row,
-            8,
+            14,
             base64Encode(kkImage),
           );
           picture.height = 80;
@@ -1008,7 +1030,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         if (ktpImage != null) {
           final picture = sheet.pictures.addBase64(
             row,
-            9,
+            15,
             base64Encode(ktpImage),
           );
           picture.height = 80;
@@ -1017,7 +1039,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         if (npwpImage != null) {
           final picture = sheet.pictures.addBase64(
             row,
-            10,
+            16,
             base64Encode(npwpImage),
           );
           picture.height = 80;
@@ -1045,7 +1067,6 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
           );
         }
       } on PlatformException catch (e) {
-        print("Gagal menyimpan file: ${e.message}");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Gagal menyimpan file: ${e.message}')),
         );
@@ -1053,9 +1074,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
 
       Navigator.of(context, rootNavigator: true).pop();
       setState(() => _isExporting = false);
-    } catch (e, stacktrace) {
-      print('Error export: $e');
-      print(stacktrace);
+    } catch (e) {
       Navigator.of(context, rootNavigator: true).pop();
       setState(() => _isExporting = false);
       ScaffoldMessenger.of(

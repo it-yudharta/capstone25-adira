@@ -406,7 +406,6 @@ class _StatusSavedPendaftaranScreenState
       {'label': 'Reject', 'status': 'reject', 'icon': Icons.highlight_off},
       {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
       {'label': 'QR Given', 'status': 'qr_given', 'icon': Icons.qr_code},
-      {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
     ];
 
     return Container(
@@ -461,6 +460,61 @@ class _StatusSavedPendaftaranScreenState
         ),
       ),
     );
+  }
+
+  void _confirmDeleteAllLeadToTrash() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Semua?'),
+            content: Text('Yakin ingin menghapus semua data ke trash bin?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _markAllStatusPendaftaranAsTrashed();
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _markAllStatusPendaftaranAsTrashed() async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+
+    int trashedCount = 0;
+
+    for (final data in _filteredPendaftarans) {
+      final key = data['key'];
+      if (key != null) {
+        try {
+          await _dbRef.child(key).update({
+            'trash': true,
+            'trashUpdatedAt': formattedDate,
+          });
+          trashedCount++;
+        } catch (e) {
+          debugPrint("Gagal menandai pendaftaran $key sebagai trash: $e");
+        }
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Berhasil menandai $trashedCount data sebagai trash'),
+        ),
+      );
+      _fetchData();
+    }
   }
 
   Widget _buildMainPage() {
@@ -540,69 +594,68 @@ class _StatusSavedPendaftaranScreenState
                 ),
               ),
 
-              if (currentStatus != 'trash')
-                Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF0E5C36),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: _confirmDeleteAllLeadToTrash,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.delete_outline,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Delete All',
-                            style: TextStyle(fontSize: 12, color: Colors.white),
-                          ),
-                        ],
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFF0E5C36),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.delete_outline,
+                          size: 16,
+                          color: Colors.white,
                         ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
+                        SizedBox(height: 4),
+                        Text(
+                          'Delete All',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
                         ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.asset(
-                            'assets/icon/export_icon.png',
-                            width: 16,
-                            height: 16,
-                            color: Colors.white,
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Export by',
-                            style: TextStyle(fontSize: 12, color: Colors.white),
-                          ),
-                        ],
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
                       ),
                     ),
-                  ],
-                ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/icon/export_icon.png',
+                          width: 16,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Export by',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),

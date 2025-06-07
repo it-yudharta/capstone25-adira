@@ -4,6 +4,13 @@ import 'package:url_launcher/url_launcher.dart';
 import 'status_saved_pendaftaran_screen.dart';
 import 'pendaftaran_detail_screen.dart';
 import 'package:intl/intl.dart';
+import 'dart:typed_data';
+import 'package:flutter/services.dart';
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+const platform = MethodChannel('com.fundrain.adiraapp/download');
 
 class SavedPendaftaranScreen extends StatefulWidget {
   @override
@@ -15,6 +22,7 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
     'agent-form',
   );
   bool _isLoading = false;
+  bool _isExporting = false;
   List<Map<dynamic, dynamic>> _leadAgents = [];
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -567,7 +575,6 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
       {'label': 'Reject', 'status': 'reject', 'icon': Icons.block},
       {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
       {'label': 'QR Given', 'status': 'qr_given', 'icon': Icons.qr_code},
-      {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
     ];
 
     return Container(
@@ -724,7 +731,7 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
                   ),
                   SizedBox(width: 8),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _showExportAgentDatePickerDialog,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF0E5C36),
                       shape: RoundedRectangleBorder(
@@ -825,6 +832,261 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
         ),
       ],
     );
+  }
+
+  void _showExportAgentDatePickerDialog() async {
+    final ref = FirebaseDatabase.instance.ref("agent-form");
+
+    try {
+      final snapshot = await ref.get();
+
+      if (!snapshot.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tidak ada data pendaftaran untuk diekspor')),
+        );
+        return;
+      }
+
+      final Set<String> uniqueDates = {};
+
+      for (final child in snapshot.children) {
+        final data = Map<String, dynamic>.from(child.value as Map);
+        final tanggal = data['tanggal'];
+        if (tanggal != null) {
+          uniqueDates.add(tanggal);
+        }
+      }
+
+      final sortedDates =
+          uniqueDates.toList()..sort((a, b) {
+            final dateA = DateTime.parse(_toIsoDate(a));
+            final dateB = DateTime.parse(_toIsoDate(b));
+            return dateB.compareTo(dateA);
+          });
+
+      showDialog(
+        context: context,
+        builder:
+            (_) => AlertDialog(
+              title: Text("Pilih Tanggal untuk Export Pendaftaran"),
+              content: Container(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: sortedDates.length,
+                  itemBuilder: (ctx, index) {
+                    final date = sortedDates[index];
+                    return ListTile(
+                      title: Text(date),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _exportAgentsByDate(date);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengambil tanggal: $e')));
+    }
+  }
+
+  Future<void> _exportAgentsByDate(String selectedDate) async {
+    setState(() => _isExporting = true);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(child: CircularProgressIndicator()),
+    );
+
+    final ref = FirebaseDatabase.instance.ref("agent-form");
+
+    try {
+      final snapshot =
+          await ref.orderByChild("tanggal").equalTo(selectedDate).get();
+
+      if (!snapshot.exists) {
+        Navigator.of(context, rootNavigator: true).pop();
+        setState(() => _isExporting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Tidak ada data pendaftaran pada tanggal $selectedDate',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final List<Map> agentsToExport = [];
+
+      for (final child in snapshot.children) {
+        final data = Map<String, dynamic>.from(child.value as Map);
+
+        // Filter data dengan status lead (sesuai original)
+        if (data['lead'] == true) {
+          data['key'] = child.key;
+          agentsToExport.add(data);
+        }
+      }
+
+      if (agentsToExport.isEmpty) {
+        Navigator.of(context, rootNavigator: true).pop();
+        setState(() => _isExporting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Tidak ada data pendaftaran dengan status lead pada tanggal $selectedDate',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final workbook = xlsio.Workbook();
+      final sheet = workbook.worksheets[0];
+
+      // Tambahkan kolom tanggal status update seperti contoh status pendaftaran
+      final headers = [
+        'Tanggal',
+        'Status',
+        'Tanggal Cancel',
+        'Tanggal Process',
+        'Tanggal Pending',
+        'Tanggal Reject',
+        'Tanggal Approve',
+        'Tanggal QR Given',
+        'Nama Lengkap',
+        'Email',
+        'Telepon',
+        'Alamat',
+        'Kode Pos',
+        'KK',
+        'KTP',
+        'NPWP',
+      ];
+
+      for (int col = 0; col < headers.length; col++) {
+        sheet.getRangeByIndex(1, col + 1).setText(headers[col]);
+      }
+
+      // Set column width untuk gambar
+      for (int col in [14, 15, 16]) {
+        sheet.getRangeByIndex(1, col).columnWidth = 20;
+      }
+
+      for (int i = 0; i < agentsToExport.length; i++) {
+        final agent = Map<String, dynamic>.from(agentsToExport[i]);
+        final row = i + 2;
+
+        sheet.getRangeByIndex(row, 1).rowHeight = 80;
+        sheet.getRangeByIndex(row, 1).setText(agent['tanggal'] ?? '');
+        sheet.getRangeByIndex(row, 2).setText(agent['status'] ?? '');
+
+        // Isi kolom tanggal status update, jika ada
+        sheet.getRangeByIndex(row, 3).setText(agent['cancelUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 4).setText(agent['processUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 5).setText(agent['pendingUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 6).setText(agent['rejectUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 7).setText(agent['approveUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 8).setText(agent['qr_givenUpdatedAt'] ?? '');
+
+        sheet.getRangeByIndex(row, 9).setText(agent['fullName'] ?? '');
+        sheet.getRangeByIndex(row, 10).setText(agent['email'] ?? '');
+        sheet.getRangeByIndex(row, 11).setText(agent['phone'] ?? '');
+        sheet.getRangeByIndex(row, 12).setText(agent['address'] ?? '');
+        sheet.getRangeByIndex(row, 13).setText(agent['postalCode'] ?? '');
+
+        // Gambar KK, KTP, NPWP
+        final kkImage = await _downloadImage(agent['kk']);
+        final ktpImage = await _downloadImage(agent['ktp']);
+        final npwpImage = await _downloadImage(agent['npwp']);
+
+        if (kkImage != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            14,
+            base64Encode(kkImage),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
+        if (ktpImage != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            15,
+            base64Encode(ktpImage),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
+        if (npwpImage != null) {
+          final picture = sheet.pictures.addBase64(
+            row,
+            16,
+            base64Encode(npwpImage),
+          );
+          picture.height = 80;
+          picture.width = 120;
+        }
+      }
+
+      final bytes = workbook.saveAsStream();
+      workbook.dispose();
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      try {
+        final savedPath = await platform
+            .invokeMethod<String>('saveFileToDownloads', {
+              'fileName': 'saved_pendaftaran_${selectedDate}_$timestamp.xlsx',
+              'bytes': bytes,
+            });
+
+        if (savedPath != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('File berhasil disimpan di $savedPath')),
+          );
+        }
+      } on PlatformException catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menyimpan file: ${e.message}')),
+        );
+      }
+
+      Navigator.of(context, rootNavigator: true).pop();
+      setState(() => _isExporting = false);
+    } catch (e) {
+      Navigator.of(context, rootNavigator: true).pop();
+      setState(() => _isExporting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengekspor: $e')));
+    }
+  }
+
+  String _toIsoDate(String date) {
+    try {
+      final parts = date.split('-');
+      return '${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}';
+    } catch (_) {
+      return date;
+    }
+  }
+
+  Future<Uint8List?> _downloadImage(String? url) async {
+    if (url == null || url.isEmpty) return null;
+    try {
+      final response = await http.get(Uri.parse(url));
+      return response.bodyBytes;
+    } catch (e) {
+      print('Gagal download gambar: $e');
+      return null;
+    }
   }
 
   void _confirmDeleteAllToTrash() {
