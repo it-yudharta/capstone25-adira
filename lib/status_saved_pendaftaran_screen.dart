@@ -196,10 +196,6 @@ class _StatusSavedPendaftaranScreenState
     // Implementasi konfirmasi cancel
   }
 
-  Future<void> _toggleBookmarkStatus(String key, bool newStatus) async {
-    // Implementasi toggle bookmark
-  }
-
   Future<void> _updateLeadStatusPendaftaran(String key, bool isLead) async {
     // Implementasi update status lead
   }
@@ -218,8 +214,8 @@ class _StatusSavedPendaftaranScreenState
     TextStyle? baseStyle,
   ) {
     final phone = data['phone'] ?? '-';
-    final bool isBookmarked = data['isBookmarked'] == true;
     final status = data['status'] ?? '-';
+    final bool isLead = data['lead'] == true;
 
     return InkWell(
       onTap: () {
@@ -326,22 +322,6 @@ class _StatusSavedPendaftaranScreenState
 
             Positioned(
               top: 0,
-              right: 36,
-              child: GestureDetector(
-                onTap: () async {
-                  await _toggleBookmarkStatus(key, !isBookmarked);
-                  setState(() {});
-                },
-                child: Icon(
-                  isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                  size: 24,
-                  color: const Color(0xFF0E5C36),
-                ),
-              ),
-            ),
-
-            Positioned(
-              top: 0,
               right: 0,
               child: PopupMenuButton<String>(
                 onSelected: (value) async {
@@ -371,6 +351,49 @@ class _StatusSavedPendaftaranScreenState
                 },
               ),
             ),
+
+            if (isLead)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8, right: 36),
+                  child: GestureDetector(
+                    onTap: () async {
+                      await FirebaseDatabase.instance
+                          .ref('agent-form/$key')
+                          .update({'lead': false});
+
+                      // Hapus item dari list di UI tanpa fetch ulang
+                      setState(() {
+                        for (var date in orderedDates) {
+                          groupedPendaftarans[date]?.removeWhere(
+                            (item) => item['key'] == key,
+                          );
+                        }
+                        // Hapus tanggal yang datanya kosong
+                        orderedDates.removeWhere(
+                          (date) =>
+                              groupedPendaftarans[date] == null ||
+                              groupedPendaftarans[date]!.isEmpty,
+                        );
+                      });
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Status lead dibatalkan')),
+                      );
+                    },
+                    child: Transform.scale(
+                      scaleY: 1.3,
+                      scaleX: 1.0,
+                      child: const Icon(
+                        Icons.bookmark,
+                        size: 24,
+                        color: Color(0xFF0E5C36),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -594,7 +617,7 @@ class _StatusSavedPendaftaranScreenState
           child:
               _isLoading
                   ? Center(child: CircularProgressIndicator())
-                  : _pendaftarans.isEmpty
+                  : (orderedDates.isEmpty || groupedPendaftarans.isEmpty)
                   ? Center(child: Text("Tidak ada data saved pendaftaran"))
                   : _filteredPendaftarans.isEmpty
                   ? Center(child: Text("Tidak ada hasil pencarian"))
