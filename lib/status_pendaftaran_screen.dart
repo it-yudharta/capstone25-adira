@@ -987,6 +987,54 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     }
   }
 
+  void _confirmDeleteAllTrashPermanently() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Konfirmasi Hapus Permanen'),
+            content: const Text(
+              'Apakah Anda yakin ingin menghapus semua data di Trash secara permanen? Tindakan ini tidak bisa dibatalkan.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _deleteAllTrashPermanently();
+                },
+                child: const Text('Hapus Semua'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _deleteAllTrashPermanently() async {
+    setState(() => _isLoading = true);
+
+    final ref = FirebaseDatabase.instance.ref().child('agent-form');
+    final snapshot = await ref.once();
+    final data = snapshot.snapshot.value as Map<dynamic, dynamic>?;
+
+    if (data != null) {
+      for (var entry in data.entries) {
+        final key = entry.key;
+        final pendaftaran = Map<String, dynamic>.from(entry.value);
+        if (pendaftaran['trash'] == true) {
+          await ref.child(key).remove();
+        }
+      }
+    }
+
+    setState(() => _isLoading = false);
+    _fetchPendaftarans();
+  }
+
   Widget _buildMainPage() {
     final baseStyle = Theme.of(context).textTheme.bodyMedium;
 
@@ -1064,7 +1112,29 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                 ),
               ),
 
-              if (widget.status != 'trash')
+              if (widget.status == 'trash')
+                ElevatedButton(
+                  onPressed: _confirmDeleteAllTrashPermanently,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF0E5C36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.delete_forever, size: 16, color: Colors.white),
+                      SizedBox(height: 4),
+                      Text(
+                        'Delete All',
+                        style: TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                )
+              else
                 Row(
                   children: [
                     ElevatedButton(
