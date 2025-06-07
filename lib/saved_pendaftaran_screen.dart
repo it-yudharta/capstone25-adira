@@ -695,7 +695,7 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
               Row(
                 children: [
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _confirmDeleteAllToTrash,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF0E5C36),
                       shape: RoundedRectangleBorder(
@@ -825,6 +825,64 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
         ),
       ],
     );
+  }
+
+  void _confirmDeleteAllToTrash() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Hapus Semua?'),
+            content: Text('Yakin ingin menghapus semua data lead pendaftaran?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _markAllAsTrashed();
+                },
+                child: Text('Ya, Hapus'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _markAllAsTrashed() async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('dd-MM-yyyy').format(now);
+
+    int trashedCount = 0;
+
+    for (final group in _leadAgents) {
+      for (final agent in group['agents']) {
+        final key = agent['key'];
+
+        if (key != null) {
+          try {
+            await _database.child(key).update({
+              'trash': true,
+              'trashUpdatedAt': formattedDate,
+            });
+            trashedCount++;
+          } catch (e) {
+            debugPrint("Gagal menandai agent $key sebagai trash: $e");
+          }
+        }
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Berhasil menandai $trashedCount data sebagai trash'),
+        ),
+      );
+      _fetchLeadAgents();
+    }
   }
 
   @override

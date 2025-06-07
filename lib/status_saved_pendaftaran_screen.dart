@@ -333,16 +333,10 @@ class _StatusSavedPendaftaranScreenState
                     );
                   } else if (value == 'delete') {
                     _confirmDeleteSingleToTrashPendaftaran(key);
-                  } else if (value == 'export') {
-                    exportData(data);
                   }
                 },
                 itemBuilder: (BuildContext context) {
                   return [
-                    PopupMenuItem<String>(
-                      value: 'export',
-                      child: Text('Export'),
-                    ),
                     PopupMenuItem<String>(
                       value: 'delete',
                       child: Text('Delete'),
@@ -546,7 +540,7 @@ class _StatusSavedPendaftaranScreenState
                 ),
               ),
 
-              if (widget.status != 'trash')
+              if (currentStatus != 'trash')
                 Row(
                   children: [
                     ElevatedButton(
