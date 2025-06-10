@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'change_password_screen.dart';
-import 'main_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_pengajuan_screen.dart';
 import 'admin_pendaftaran_screen.dart';
@@ -63,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (role == 'supervisor') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => MainPage()),
+            MaterialPageRoute(builder: (_) => MainSupervisor()),
           );
         } else if (role == 'admin_pengajuan') {
           Navigator.pushReplacement(

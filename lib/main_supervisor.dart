@@ -74,11 +74,11 @@ class _MainSupervisorState extends State<MainSupervisor> {
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 children: [
                   TextSpan(
-                    text: 'Supervisor ',
+                    text: 'Fundra',
                     style: TextStyle(color: Color(0xFF0E5C36)),
                   ),
                   TextSpan(
-                    text: 'Mode',
+                    text: 'IN',
                     style: TextStyle(color: Color(0xFFE67D13)),
                   ),
                 ],
