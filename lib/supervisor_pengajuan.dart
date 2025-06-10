@@ -18,11 +18,20 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
   String _searchQuery = '';
   late List<String> orderedDates;
   late Map<String, List<Map>> groupedOrders;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _fetchOrders();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _focusNode.dispose();
+    super.dispose();
   }
 
   void _fetchOrders() async {
@@ -277,6 +286,8 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
             width: 250,
             height: 40,
             child: TextField(
+              controller: _searchController,
+              focusNode: _focusNode,
               onChanged: (value) {
                 setState(() {
                   _searchQuery = value;
@@ -306,10 +317,57 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
                 ),
                 filled: true,
                 fillColor: Colors.white,
-                suffixIcon: Icon(Icons.search, color: Colors.grey.shade600),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    Icons.search,
+                    color:
+                        _focusNode.hasFocus
+                            ? Color(0xFF0E5C36)
+                            : Colors.grey.shade600,
+                  ),
+                  onPressed:
+                      () => FocusScope.of(context).requestFocus(_focusNode),
+                ),
               ),
               style: TextStyle(fontSize: 14),
             ),
+          ),
+        ),
+        SizedBox(height: 8),
+        _buildStatusMenu(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF0E5C36),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/icon/export_icon.png',
+                      width: 16,
+                      height: 16,
+                      color: Colors.white,
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Export by',
+                      style: TextStyle(fontSize: 12, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
         SizedBox(height: 12),
