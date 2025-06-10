@@ -927,7 +927,6 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
       for (final child in snapshot.children) {
         final data = Map<String, dynamic>.from(child.value as Map);
 
-        // Filter data dengan status lead (sesuai original)
         if (data['lead'] == true) {
           data['key'] = child.key;
           agentsToExport.add(data);
@@ -950,7 +949,6 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
       final workbook = xlsio.Workbook();
       final sheet = workbook.worksheets[0];
 
-      // Tambahkan kolom tanggal status update seperti contoh status pendaftaran
       final headers = [
         'Tanggal',
         'Status',
@@ -974,7 +972,6 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
         sheet.getRangeByIndex(1, col + 1).setText(headers[col]);
       }
 
-      // Set column width untuk gambar
       for (int col in [14, 15, 16]) {
         sheet.getRangeByIndex(1, col).columnWidth = 20;
       }
@@ -987,7 +984,6 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
         sheet.getRangeByIndex(row, 1).setText(agent['tanggal'] ?? '');
         sheet.getRangeByIndex(row, 2).setText(agent['status'] ?? '');
 
-        // Isi kolom tanggal status update, jika ada
         sheet.getRangeByIndex(row, 3).setText(agent['cancelUpdatedAt'] ?? '');
         sheet.getRangeByIndex(row, 4).setText(agent['processUpdatedAt'] ?? '');
         sheet.getRangeByIndex(row, 5).setText(agent['pendingUpdatedAt'] ?? '');
@@ -1001,7 +997,6 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
         sheet.getRangeByIndex(row, 12).setText(agent['address'] ?? '');
         sheet.getRangeByIndex(row, 13).setText(agent['postalCode'] ?? '');
 
-        // Gambar KK, KTP, NPWP
         final kkImage = await _downloadImage(agent['kk']);
         final ktpImage = await _downloadImage(agent['ktp']);
         final npwpImage = await _downloadImage(agent['npwp']);

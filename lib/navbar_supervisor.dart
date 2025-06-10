@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'admin_pendaftaran_screen.dart';
 
-class BottomNavBarPendaftaran extends StatelessWidget {
+class BottomNavBarSupervisor extends StatelessWidget {
   final String currentRoute;
   final Function(int)? onTapIndex;
   final double pageOffset;
 
-  const BottomNavBarPendaftaran({
+  const BottomNavBarSupervisor({
     required this.currentRoute,
     this.onTapIndex,
     this.pageOffset = 0.0,
@@ -15,7 +14,7 @@ class BottomNavBarPendaftaran extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final routes = ['/pendaftaran', '/qr', '/saved_pendaftaran'];
+    final routes = ['/pengajuan', '/pendaftaran', '/lead'];
     final activeIndex = routes.indexOf(currentRoute);
     final bool isMainScreen = activeIndex != -1;
     final safeIndex = isMainScreen ? activeIndex : 0;
@@ -39,45 +38,28 @@ class BottomNavBarPendaftaran extends StatelessWidget {
           if (isMainScreen) {
             if (onTapIndex != null) {
               onTapIndex!(index);
-            } else if (index != activeIndex) {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AdminPendaftaranScreen(initialPage: index),
-                ),
-                (route) => false,
-              );
             }
-          } else {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (_) => AdminPendaftaranScreen(initialPage: index),
-              ),
-              (route) => false,
-            );
           }
         },
-
         items: [
           _buildNavItem(
-            icon: Icons.app_registration,
-            label: 'Pendaftaran',
-            isSelected: currentRoute == '/pendaftaran',
+            icon: Icons.assignment,
+            label: 'Pengajuan',
+            isSelected: currentRoute == '/pengajuan',
             isMainScreen: isMainScreen,
             itemIndex: 0,
           ),
           _buildNavItem(
-            icon: Icons.qr_code,
-            label: 'QR Code',
-            isSelected: currentRoute == '/qr',
+            icon: Icons.app_registration,
+            label: 'Pendaftaran',
+            isSelected: currentRoute == '/pendaftaran',
             isMainScreen: isMainScreen,
             itemIndex: 1,
           ),
           _buildNavItem(
             icon: Icons.bookmark,
             label: 'Lead',
-            isSelected: currentRoute == '/saved_pendaftaran',
+            isSelected: currentRoute == '/lead',
             isMainScreen: isMainScreen,
             itemIndex: 2,
           ),

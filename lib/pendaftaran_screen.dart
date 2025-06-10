@@ -986,7 +986,6 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         sheet.getRangeByIndex(1, col + 1).setText(headers[col]);
       }
 
-      // Atur lebar kolom gambar
       for (int col in [14, 15, 16]) {
         sheet.getRangeByIndex(1, col).columnWidth = 20;
       }
@@ -999,7 +998,6 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         sheet.getRangeByIndex(row, 1).setText(agent['tanggal'] ?? '');
         sheet.getRangeByIndex(row, 2).setText(agent['status'] ?? '');
 
-        // Isi kolom tanggal status update
         sheet.getRangeByIndex(row, 3).setText(agent['cancelUpdatedAt'] ?? '');
         sheet.getRangeByIndex(row, 4).setText(agent['processUpdatedAt'] ?? '');
         sheet.getRangeByIndex(row, 5).setText(agent['pendingUpdatedAt'] ?? '');
@@ -1013,7 +1011,6 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         sheet.getRangeByIndex(row, 12).setText(agent['address'] ?? '');
         sheet.getRangeByIndex(row, 13).setText(agent['postalCode'] ?? '');
 
-        // Tambah gambar
         final kkImage = await _downloadImage(agent['kk']);
         final ktpImage = await _downloadImage(agent['ktp']);
         final npwpImage = await _downloadImage(agent['npwp']);

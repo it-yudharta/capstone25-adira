@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'admin_pengajuan_screen.dart';
 import 'admin_pendaftaran_screen.dart';
 import 'agent_screen.dart';
+import 'main_supervisor.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -138,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (role == 'supervisor') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => MainPage()),
+            MaterialPageRoute(builder: (_) => MainSupervisor()),
           );
         } else if (role == 'admin_pengajuan') {
           Navigator.pushReplacement(
@@ -326,7 +327,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       emailController.text = 'demo@appkamu.com';
                       passwordController.text = 'Demo1234';
-                      login(); // Langsung login dengan akun demo
+                      login();
                     },
                     child: Text('Gunakan akun demo'),
                   ),
