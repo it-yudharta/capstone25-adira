@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'main_supervisor.dart';
 
 class BottomNavBarSupervisor extends StatelessWidget {
   final String currentRoute;
@@ -38,7 +39,23 @@ class BottomNavBarSupervisor extends StatelessWidget {
           if (isMainScreen) {
             if (onTapIndex != null) {
               onTapIndex!(index);
+            } else if (index != activeIndex) {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MainSupervisor(initialPage: index),
+                ),
+                (route) => false,
+              );
             }
+          } else {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MainSupervisor(initialPage: index),
+              ),
+              (route) => false,
+            );
           }
         },
         items: [

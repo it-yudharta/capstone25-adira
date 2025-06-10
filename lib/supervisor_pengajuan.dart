@@ -144,6 +144,7 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
 
   Widget _buildOrderCard(Map order, String key, TextStyle? baseStyle) {
     final String phoneNumber = order['phone'] ?? '-';
+    final bool isLead = order['lead'] == true;
 
     return InkWell(
       onTap: () {
@@ -156,7 +157,7 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
       },
       child: Container(
         width: double.infinity,
-        margin: EdgeInsets.only(left: 10, right: 10, top: 4, bottom: 10),
+        margin: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -169,35 +170,63 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            Text(
-              "Agent         : ${order['agentName'] ?? '-'}",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 4),
-            Text("Nama         : ${order['name'] ?? '-'}"),
-            Text("Alamat       : ${order['domicile'] ?? '-'}"),
-            GestureDetector(
-              onTap: () async {
-                try {
-                  await _launchWhatsApp(phoneNumber);
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error launching WhatsApp: $e')),
-                  );
-                }
-              },
-              child: Text(
-                "No. Telp     : $phoneNumber",
-                style: TextStyle(color: Colors.blue),
+            DefaultTextStyle.merge(
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Agent         : ${order['agentName'] ?? '-'}",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 4),
+                  Text("Nama         : ${order['name'] ?? '-'}"),
+                  Text("Alamat       : ${order['domicile'] ?? '-'}"),
+                  GestureDetector(
+                    onTap: () async {
+                      try {
+                        await _launchWhatsApp(phoneNumber);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error launching WhatsApp: $e'),
+                          ),
+                        );
+                      }
+                    },
+                    child: Text(
+                      "No. Telp     : $phoneNumber",
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                  ),
+                  Text("Pekerjaan  : ${order['job'] ?? '-'}"),
+                  Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                  SizedBox(height: 8),
+                  Text(
+                    "Status        : ${order['status'] ?? 'Belum diproses'}",
+                  ),
+                ],
               ),
             ),
-            Text("Pekerjaan  : ${order['job'] ?? '-'}"),
-            Text("Pengajuan : ${order['installment'] ?? '-'}"),
-            SizedBox(height: 8),
-            Text("Status        : ${order['status'] ?? 'Belum diproses'}"),
+
+            if (isLead)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 8, right: 20),
+                  child: Transform.scale(
+                    scaleY: 1.3,
+                    scaleX: 1.0,
+                    child: Icon(
+                      Icons.bookmark,
+                      size: 24,
+                      color: Color(0xFF0E5C36),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
