@@ -944,6 +944,9 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                                             await dbRef.update({
                                               'note': note,
                                               'status': 'pending',
+                                              'pendingUpdatedAt': DateFormat(
+                                                'dd-MM-yyyy',
+                                              ).format(DateTime.now()),
                                             });
 
                                             Navigator.pop(context);
@@ -961,6 +964,10 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                                             setState(() {
                                               order['note'] = note;
                                               order['status'] = 'pending';
+                                              order['pendingUpdatedAt'] =
+                                                  DateFormat(
+                                                    'dd-MM-yyyy',
+                                                  ).format(DateTime.now());
                                             });
                                           }
                                         },

@@ -310,10 +310,10 @@ class OrderDetailScreen extends StatelessWidget {
   List<Widget> _buildStatusTimestamps(Map orderData) {
     final statusLabels = {
       'process': 'Tanggal Process',
-      'approved': 'Tanggal Disetujui',
-      'rejected': 'Tanggal Ditolak',
-      'cancel': 'Tanggal Dibatalkan',
+      'cancel': 'Tanggal Cancel',
       'pending': 'Tanggal Pending',
+      'approved': 'Tanggal Approve',
+      'rejected': 'Tanggal Reject',
     };
 
     List<Widget> widgets = [];
@@ -325,10 +325,10 @@ class OrderDetailScreen extends StatelessWidget {
           tanggalStatus = orderData['processUpdatedAt'] ?? '-';
           break;
         case 'approved':
-          tanggalStatus = orderData['approvedUpdatedAt'] ?? '-';
+          tanggalStatus = orderData['approveUpdatedAt'] ?? '-';
           break;
         case 'rejected':
-          tanggalStatus = orderData['rejectedUpdatedAt'] ?? '-';
+          tanggalStatus = orderData['rejectUpdatedAt'] ?? '-';
           break;
         case 'cancel':
           tanggalStatus = orderData['cancelUpdatedAt'] ?? '-';

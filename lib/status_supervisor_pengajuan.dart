@@ -3,6 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/services.dart';
 import 'navbar_supervisor.dart';
 import 'package:intl/intl.dart';
+import 'order_detail_screen.dart';
 
 class StatusSupervisorPengajuan extends StatefulWidget {
   final String status;
@@ -416,9 +417,14 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
     };
 
     try {
-      late final DatabaseReference _database = FirebaseDatabase.instance
+      final dbRef = FirebaseDatabase.instance
           .ref()
-          .child('orders');
+          .child('orders')
+          .child(orderKey);
+      await dbRef.update(updates);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Status berhasil diperbarui ke $newStatus')),
+      );
       _fetchOrders();
     } catch (e) {
       print("Gagal memperbarui status: $e");
@@ -435,7 +441,15 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
     final key = order['key'];
 
     return InkWell(
-      onTap: () {},
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => OrderDetailScreen(orderData: order, orderKey: key),
+          ),
+        );
+      },
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         padding: EdgeInsets.all(12),
@@ -457,9 +471,7 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
                 Text("Email         : ${order['email'] ?? '-'}"),
                 SizedBox(height: 4),
                 GestureDetector(
-                  onTap: () async {
-                    // Bisa tambahkan fungsi WhatsApp kalau mau
-                  },
+                  onTap: () async {},
                   child: RichText(
                     text: TextSpan(
                       style: TextStyle(fontSize: 14, color: Colors.black87),
@@ -474,14 +486,27 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
                   ),
                 ),
                 SizedBox(height: 4),
-                Text("Alamat      : ${order['address'] ?? '-'}"),
+                Text("Alamat      : ${order['domicile'] ?? '-'}"),
                 SizedBox(height: 4),
                 Text("Kode Pos  : ${order['postalCode'] ?? '-'}"),
                 SizedBox(height: 4),
-                Text("Status       : $status"),
+                Text(
+                  "Status        : ${order['status'] ?? 'Belum diproses'}",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                if (order['note'] != null &&
+                    order['note'].toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: Text(
+                      "Note           : ${order['note']}",
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 SizedBox(height: 16),
-
-                /// TOMBOL APPROVE / REJECT untuk status pending
                 if (status == 'pending')
                   Align(
                     alignment: Alignment.centerRight,
