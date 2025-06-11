@@ -174,11 +174,20 @@ class OrderDetailScreen extends StatelessWidget {
                           }
                         }
                       },
-                      child: Text(
-                        "No. Telp: ${orderData['agentPhone'] ?? '-'}",
-                        style: TextStyle(color: Colors.blue),
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                          children: [
+                            TextSpan(text: "No. Telp: "),
+                            TextSpan(
+                              text: orderData['agentPhone'] ?? '-',
+                              style: TextStyle(color: Colors.blue),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+
                     SizedBox(height: 16),
 
                     Text(
@@ -203,7 +212,7 @@ class OrderDetailScreen extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: () async {
-                        final phone = orderData['phone'] ?? '';
+                        final phone = orderData['agentPhone'] ?? '';
                         if (phone.isNotEmpty) {
                           final url =
                               'https://wa.me/${normalizePhoneNumber(phone)}';
@@ -218,9 +227,17 @@ class OrderDetailScreen extends StatelessWidget {
                           }
                         }
                       },
-                      child: Text(
-                        "No. Telp: ${orderData['phone'] ?? '-'}",
-                        style: TextStyle(color: Colors.blue),
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                          children: [
+                            TextSpan(text: "No. Telp: "),
+                            TextSpan(
+                              text: orderData['agentPhone'] ?? '-',
+                              style: TextStyle(color: Colors.blue),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     Text("E-mail: ${orderData['email'] ?? '-'}"),
@@ -268,6 +285,18 @@ class OrderDetailScreen extends StatelessWidget {
                       "Status: ${orderData['status'] ?? '-'}",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
+                    if (orderData['note'] != null &&
+                        orderData['note'].toString().trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          "Note: ${orderData['note']}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

@@ -834,11 +834,20 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                         );
                       }
                     },
-                    child: Text(
-                      "No. Telp     : $phoneNumber",
-                      style: TextStyle(color: Colors.blue),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          TextSpan(text: "No. Telp     : "),
+                          TextSpan(
+                            text: phoneNumber,
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
                   Text("Pengajuan : ${order['installment'] ?? '-'}"),
                   SizedBox(height: 8),
@@ -998,26 +1007,28 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
               ),
             ),
             if (isLead)
-              Positioned(
-                top: 12,
-                left: 280,
-                child: GestureDetector(
-                  onTap: () async {
-                    setState(() {
-                      order['lead'] = false;
-                    });
-                    await _updateLeadStatus(orderKey, false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Status lead dibatalkan')),
-                    );
-                  },
-                  child: Transform.scale(
-                    scaleY: 1.3,
-                    scaleX: 1.0,
-                    child: Icon(
-                      Icons.bookmark,
-                      size: 24,
-                      color: Color(0xFF0E5C36),
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 8, right: 36),
+                  child: GestureDetector(
+                    onTap: () async {
+                      setState(() {
+                        order['lead'] = false;
+                      });
+                      await _updateLeadStatus(orderKey, false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Status lead dibatalkan')),
+                      );
+                    },
+                    child: Transform.scale(
+                      scaleY: 1.3,
+                      scaleX: 1.0,
+                      child: Icon(
+                        Icons.bookmark,
+                        size: 24,
+                        color: Color(0xFF0E5C36),
+                      ),
                     ),
                   ),
                 ),
