@@ -845,6 +845,19 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                   if (!(isLead && (order['status'] == 'lead')))
                     Text(
                       "Status        : ${order['status'] ?? 'Belum diproses'}",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  if (order['note'] != null &&
+                      order['note'].toString().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        "Note           : ${order['note']}",
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   SizedBox(height: 16),
                   if (widget.status == 'process')
@@ -918,17 +931,28 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                                                 .child(
                                                   'orders/${order['key']}',
                                                 );
-                                            await dbRef.update({'note': note});
+
+                                            await dbRef.update({
+                                              'note': note,
+                                              'status': 'pending',
+                                            });
+
                                             Navigator.pop(context);
+
                                             ScaffoldMessenger.of(
                                               context,
                                             ).showSnackBar(
                                               SnackBar(
                                                 content: Text(
-                                                  'Catatan berhasil ditambahkan',
+                                                  'Catatan ditambahkan & status diperbarui ke pending',
                                                 ),
                                               ),
                                             );
+
+                                            setState(() {
+                                              order['note'] = note;
+                                              order['status'] = 'pending';
+                                            });
                                           }
                                         },
                                         child: Text('Simpan'),
@@ -998,7 +1022,6 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                   ),
                 ),
               ),
-
             Positioned(
               top: 0,
               right: 0,
