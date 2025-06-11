@@ -215,7 +215,7 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
               Align(
                 alignment: Alignment.topRight,
                 child: Padding(
-                  padding: EdgeInsets.only(top: 8, right: 20),
+                  padding: EdgeInsets.only(top: 8, right: 8),
                   child: Transform.scale(
                     scaleY: 1.3,
                     scaleX: 1.0,
@@ -267,10 +267,8 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
                   context,
                   MaterialPageRoute(
                     builder:
-                        (_) => StatusSupervisorPengajuan(
-                          status: item['status'],
-                          title: item['label'],
-                        ),
+                        (_) =>
+                            StatusSupervisorPengajuan(status: item['status']),
                   ),
                 );
               },
