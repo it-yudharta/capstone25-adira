@@ -119,8 +119,17 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
         }).toList();
 
     groupedOrders.clear();
+
     for (var order in _filteredOrders) {
-      final date = order['tanggal'] ?? '';
+      String date;
+
+      if (widget.status == 'trash') {
+        date = order['tanggal'] ?? 'Unknown';
+      } else {
+        final statusUpdatedAtKey = '${widget.status}UpdatedAt';
+        date = order[statusUpdatedAtKey] ?? order['tanggal'] ?? 'Unknown';
+      }
+
       if (!groupedOrders.containsKey(date)) {
         groupedOrders[date] = [];
       }
@@ -130,12 +139,16 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
     orderedDates =
         groupedOrders.keys.toList()..sort((a, b) {
           DateTime parseDate(String d) {
-            final parts = d.split('-');
-            return DateTime(
-              int.parse(parts[2]),
-              int.parse(parts[1]),
-              int.parse(parts[0]),
-            );
+            try {
+              final parts = d.split('-');
+              return DateTime(
+                int.parse(parts[2]),
+                int.parse(parts[1]),
+                int.parse(parts[0]),
+              );
+            } catch (e) {
+              return DateTime(2000);
+            }
           }
 
           return parseDate(b).compareTo(parseDate(a));
