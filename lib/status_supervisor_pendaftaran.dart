@@ -180,7 +180,6 @@ class _StatusSupervisorPendaftaranState
             'dd-MM-yyyy',
           ).format(DateTime.now()),
         });
-    // reload/refresh data
     await _fetchPendaftarans();
     setState(() {});
     ScaffoldMessenger.of(

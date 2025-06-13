@@ -3,6 +3,14 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:url_launcher/url_launcher.dart';
 import "status_supervisor_pendaftaran.dart";
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
+import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart';
+
+const platform = MethodChannel('com.fundrain.adiraapp/download');
 
 class PendaftaranSupervisor extends StatefulWidget {
   @override
@@ -14,6 +22,7 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
     'agent-form',
   );
   bool _isLoading = false;
+  bool _isExporting = false;
   List<Map<dynamic, dynamic>> _agents = [];
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -356,7 +365,7 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
                 ),
               ),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: _showExportSupervisorDatePickerDialog,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF0E5C36),
                   shape: RoundedRectangleBorder(
@@ -429,5 +438,210 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
         ),
       ],
     );
+  }
+
+  void _showExportSupervisorDatePickerDialog() async {
+    final ref = FirebaseDatabase.instance.ref("agent-form");
+
+    try {
+      final snapshot = await ref.get();
+      if (!snapshot.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tidak ada data pendaftaran untuk diekspor')),
+        );
+        return;
+      }
+
+      final uniqueDates = <String>{};
+      for (final child in snapshot.children) {
+        final data = Map<String, dynamic>.from(child.value as Map);
+        final t = data['tanggal'];
+        if (t != null) uniqueDates.add(t);
+      }
+
+      final sortedDates =
+          uniqueDates.toList()..sort((a, b) {
+            final da = DateTime.parse(_toIsoDate(a));
+            final db = DateTime.parse(_toIsoDate(b));
+            return db.compareTo(da);
+          });
+
+      showDialog(
+        context: context,
+        builder:
+            (_) => AlertDialog(
+              title: Text("Pilih Tanggal untuk Export"),
+              content: Container(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: sortedDates.length,
+                  itemBuilder: (_, i) {
+                    final date = sortedDates[i];
+                    return ListTile(
+                      title: Text(date),
+                      onTap: () {
+                        Navigator.pop(context);
+                        _exportSupervisorByDate(date);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengambil tanggal: $e')));
+    }
+  }
+
+  Future<void> _exportSupervisorByDate(String selectedDate) async {
+    setState(() => _isExporting = true);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final ref = FirebaseDatabase.instance.ref("agent-form");
+      final snapshot =
+          await ref.orderByChild("tanggal").equalTo(selectedDate).get();
+
+      if (!snapshot.exists) {
+        Navigator.of(context, rootNavigator: true).pop();
+        setState(() => _isExporting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tidak ada data pada tanggal $selectedDate')),
+        );
+        return;
+      }
+
+      final List<Map<String, dynamic>> items = [];
+      for (final ch in snapshot.children) {
+        final d = Map<String, dynamic>.from(ch.value as Map);
+        d['key'] = ch.key;
+        items.add(d);
+      }
+
+      final wb = xlsio.Workbook();
+      final sheet = wb.worksheets[0];
+
+      final headers = [
+        'Tanggal',
+        'Status',
+        'CancelAt',
+        'ProcessAt',
+        'PendingAt',
+        'RejectAt',
+        'ApproveAt',
+        'QRAt',
+        'Nama',
+        'Email',
+        'Telepon',
+        'Alamat',
+        'Kode Pos',
+        'KK',
+        'KTP',
+        'NPWP',
+      ];
+
+      for (int col = 0; col < headers.length; col++) {
+        sheet.getRangeByIndex(1, col + 1).setText(headers[col]);
+      }
+
+      for (int col in [14, 15, 16]) {
+        sheet.getRangeByIndex(1, col).columnWidth = 20;
+      }
+
+      for (int i = 0; i < items.length; i++) {
+        final agent = items[i];
+        final row = i + 2;
+
+        sheet.getRangeByIndex(row, 1).rowHeight = 80;
+        sheet.getRangeByIndex(row, 1).setText(agent['tanggal'] ?? '');
+        sheet.getRangeByIndex(row, 2).setText(agent['status'] ?? '');
+
+        sheet.getRangeByIndex(row, 3).setText(agent['cancelUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 4).setText(agent['processUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 5).setText(agent['pendingUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 6).setText(agent['rejectUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 7).setText(agent['approveUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 8).setText(agent['qr_givenUpdatedAt'] ?? '');
+
+        sheet.getRangeByIndex(row, 9).setText(agent['fullName'] ?? '');
+        sheet.getRangeByIndex(row, 10).setText(agent['email'] ?? '');
+        sheet.getRangeByIndex(row, 11).setText(agent['phone'] ?? '');
+        sheet.getRangeByIndex(row, 12).setText(agent['address'] ?? '');
+        sheet.getRangeByIndex(row, 13).setText(agent['postalCode'] ?? '');
+
+        final kkImage = await _downloadImage(agent['kk']);
+        final ktpImage = await _downloadImage(agent['ktp']);
+        final npwpImage = await _downloadImage(agent['npwp']);
+
+        if (kkImage != null) {
+          final pic = sheet.pictures.addBase64(row, 14, base64Encode(kkImage));
+          pic.height = 80;
+          pic.width = 120;
+        }
+        if (ktpImage != null) {
+          final pic = sheet.pictures.addBase64(row, 15, base64Encode(ktpImage));
+          pic.height = 80;
+          pic.width = 120;
+        }
+        if (npwpImage != null) {
+          final pic = sheet.pictures.addBase64(
+            row,
+            16,
+            base64Encode(npwpImage),
+          );
+          pic.height = 80;
+          pic.width = 120;
+        }
+      }
+      final bytes = wb.saveAsStream();
+      wb.dispose();
+      final savedPath = await platform.invokeMethod<
+        String
+      >('saveFileToDownloads', {
+        'fileName':
+            'supervisor_pendaftaran_${selectedDate}_${DateTime.now().millisecondsSinceEpoch}.xlsx',
+        'bytes': bytes,
+      });
+      if (savedPath != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('File disimpan di $savedPath')));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengekspor: $e')));
+    } finally {
+      Navigator.of(context, rootNavigator: true).pop();
+      setState(() => _isExporting = false);
+    }
+  }
+
+  String _toIsoDate(String date) {
+    try {
+      final p = date.split('-');
+      return '${p[2]}-${p[1].padLeft(2, '0')}-${p[0].padLeft(2, '0')}';
+    } catch (_) {
+      return date;
+    }
+  }
+
+  Future<Uint8List?> _downloadImage(String? url) async {
+    if (url == null || url.isEmpty) return null;
+    try {
+      final resp = await http.get(Uri.parse(url));
+      return resp.bodyBytes;
+    } catch (e) {
+      print('Gagal download gambar: $e');
+      return null;
+    }
   }
 }
