@@ -673,9 +673,17 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(width: 8),
+              Text(
+                'Data Pengajuan',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
               ElevatedButton(
                 onPressed: _showExportDatePickerDialog,
                 style: ElevatedButton.styleFrom(
@@ -705,6 +713,7 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
             ],
           ),
         ),
+
         SizedBox(height: 12),
         Expanded(
           child:

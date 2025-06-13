@@ -344,8 +344,17 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              Text(
+                'Data Pendaftaran',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
               ElevatedButton(
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
