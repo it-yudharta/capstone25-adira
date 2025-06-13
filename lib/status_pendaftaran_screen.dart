@@ -535,39 +535,162 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                   Text("Kode Pos  : ${pendaftaran['postalCode'] ?? '-'}"),
                   SizedBox(height: 4),
                   if (!(isLead && status == 'lead'))
-                    Text("Status       : $status"),
+                    Text(
+                      "Status       : $status",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  if (pendaftaran['note'] != null &&
+                      pendaftaran['note'].toString().isNotEmpty)
+                    Text(
+                      "Note          : ${pendaftaran['note']}",
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   SizedBox(height: 16),
 
-                  if ((status.toLowerCase() == 'process') &&
-                      widget.status != 'trash')
+                  if (status == 'process' && widget.status != 'trash')
                     Align(
                       alignment: Alignment.centerRight,
-                      child: ElevatedButton(
-                        onPressed: () => _showCancelConfirmation(key),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF0E5C36),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.cancel, size: 16, color: Colors.white),
-                            SizedBox(height: 4),
-                            Text(
-                              'Cancel',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _showCancelConfirmation(key),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
                               ),
                             ),
-                          ],
-                        ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.cancel,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 6),
+
+                          ElevatedButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) {
+                                  final _noteController =
+                                      TextEditingController();
+                                  return AlertDialog(
+                                    title: Text('Add Note'),
+                                    content: TextField(
+                                      controller: _noteController,
+                                      decoration: InputDecoration(
+                                        hintText: 'Tulis catatan...',
+                                      ),
+                                      maxLines: 3,
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: Text('Batal'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () async {
+                                          final note =
+                                              _noteController.text.trim();
+                                          if (note.isNotEmpty) {
+                                            final dbRef = FirebaseDatabase
+                                                .instance
+                                                .ref()
+                                                .child('agent-form')
+                                                .child(key);
+
+                                            await dbRef.update({
+                                              'note': note,
+                                              'status': 'pending',
+                                              'pendingUpdatedAt': DateFormat(
+                                                'dd-MM-yyyy',
+                                              ).format(DateTime.now()),
+                                            });
+
+                                            Navigator.pop(context);
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Catatan ditambahkan & status diperbarui ke pending',
+                                                ),
+                                              ),
+                                            );
+
+                                            setState(() {
+                                              pendaftaran['note'] = note;
+                                              pendaftaran['status'] = 'pending';
+                                              pendaftaran['pendingUpdatedAt'] =
+                                                  DateFormat(
+                                                    'dd-MM-yyyy',
+                                                  ).format(DateTime.now());
+                                              _applySearch();
+                                            });
+                                          }
+                                        },
+                                        child: Text('Simpan'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.note_add,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Add Note',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],

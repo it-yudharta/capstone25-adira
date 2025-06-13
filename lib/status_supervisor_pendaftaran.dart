@@ -36,7 +36,7 @@ class _StatusSupervisorPendaftaranState
     _fetchPendaftarans();
   }
 
-  void _fetchPendaftarans() {
+  Future<void> _fetchPendaftarans() async {
     final dbRef = FirebaseDatabase.instance.ref().child('agent-form');
 
     dbRef.onValue.listen((event) {
@@ -169,8 +169,28 @@ class _StatusSupervisorPendaftaranState
     }
   }
 
+  Future<void> _updatePendaftaranStatus(String key, String newStatus) async {
+    await FirebaseDatabase.instance
+        .ref()
+        .child('agent-form')
+        .child(key)
+        .update({
+          'status': newStatus,
+          '${newStatus}UpdatedAt': DateFormat(
+            'dd-MM-yyyy',
+          ).format(DateTime.now()),
+        });
+    // reload/refresh data
+    await _fetchPendaftarans();
+    setState(() {});
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Status diubah menjadi $newStatus')));
+  }
+
   Widget _buildCard(Map pendaftaran, String key, TextStyle? baseStyle) {
     final String status = pendaftaran['status'] ?? 'Belum diproses';
+
     return Container(
       width: double.infinity,
       margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -187,7 +207,7 @@ class _StatusSupervisorPendaftaranState
         ],
       ),
       child: DefaultTextStyle.merge(
-        style: TextStyle(fontSize: 14, color: Colors.black87),
+        style: baseStyle ?? TextStyle(fontSize: 14, color: Colors.black87),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -218,7 +238,89 @@ class _StatusSupervisorPendaftaranState
             SizedBox(height: 4),
             Text("Kode Pos  : ${pendaftaran['postalCode'] ?? '-'}"),
             SizedBox(height: 4),
-            Text("Status       : $status"),
+            Text(
+              "Status       : $status",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+
+            if (pendaftaran['note'] != null &&
+                pendaftaran['note'].toString().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  "Note        : ${pendaftaran['note']}",
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+            SizedBox(height: 16),
+
+            if (status.toLowerCase() == 'pending' && _currentStatus != 'trash')
+              Align(
+                alignment: Alignment.centerRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => _updatePendaftaranStatus(key, 'reject'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF0E5C36),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.cancel, size: 16, color: Colors.white),
+                          SizedBox(height: 4),
+                          Text(
+                            'Reject',
+                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 6),
+
+                    ElevatedButton(
+                      onPressed: () => _updatePendaftaranStatus(key, 'approve'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF0E5C36),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Approve',
+                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
