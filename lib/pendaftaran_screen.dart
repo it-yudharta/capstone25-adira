@@ -321,39 +321,111 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: Text('Hapus Data Ini?'),
-            content: Text('Yakin ingin menghapus data ini ke Trash Bin?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Batal'),
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  final now = DateTime.now();
-                  final formattedDate = DateFormat('dd-MM-yyyy').format(now);
-                  try {
-                    await _database.child(key).update({
-                      'trash': true,
-                      'trashUpdatedAt': formattedDate,
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Data berhasil dipindahkan ke Trash'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delete Data Pengajuan?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data will first be moved to “Trash Bin”. From there,\nyou can recover them or permanently delete them.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                    );
-                    _fetchAgents();
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Gagal menghapus data: $e')),
-                    );
-                  }
-                },
-                child: Text('Ya, Hapus'),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            final now = DateTime.now();
+                            final formattedDate = DateFormat(
+                              'dd-MM-yyyy',
+                            ).format(now);
+                            try {
+                              await _database.child(key).update({
+                                'trash': true,
+                                'trashUpdatedAt': formattedDate,
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Data berhasil dipindahkan ke Trash',
+                                  ),
+                                ),
+                              );
+                              _fetchAgents();
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Gagal menghapus data: $e'),
+                                ),
+                              );
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Delete',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
     );
   }
@@ -546,13 +618,37 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                     _confirmDeleteSinglePendaftaranToTrash(agent['key']);
                   }
                 },
+                color: Colors.white,
                 itemBuilder: (BuildContext context) {
                   return [
                     if (agent['lead'] != true)
-                      PopupMenuItem<String>(value: 'lead', child: Text('Lead')),
+                      PopupMenuItem<String>(
+                        value: 'lead',
+                        child: Row(
+                          children: [
+                            Icon(Icons.bookmark, color: Color(0xFF0E5C36)),
+                            SizedBox(width: 10),
+                            Text(
+                              'Lead',
+                              style: TextStyle(color: Color(0xFF0E5C36)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (agent['lead'] != true) PopupMenuDivider(),
+
                     PopupMenuItem<String>(
                       value: 'delete',
-                      child: Text('Delete'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Color(0xFF0E5C36)),
+                          SizedBox(width: 10),
+                          Text(
+                            'Delete',
+                            style: TextStyle(color: Color(0xFF0E5C36)),
+                          ),
+                        ],
+                      ),
                     ),
                   ];
                 },
@@ -1370,7 +1466,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                             padding: EdgeInsets.symmetric(vertical: 12),
                           ),
                           child: Text(
-                            'Confirm',
+                            'Delete All',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
