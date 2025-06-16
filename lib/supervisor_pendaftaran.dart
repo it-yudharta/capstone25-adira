@@ -338,8 +338,7 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset:
-          false, // Tambahkan ini untuk mencegah dorongan saat keyboard muncul
+      resizeToAvoidBottomInset: false,
       backgroundColor: const Color(0xFFF0F4F5),
       body: SafeArea(child: _buildMainPage()),
     );
