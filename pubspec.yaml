@@ -91,6 +91,7 @@ flutter:
     - assets/icon/navbar_pendaftaran.svg
     - assets/icon/navbar_pengajuan.svg
     - assets/icon/navbar_lead.svg
+    - assets/images/Checkmark.svg
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

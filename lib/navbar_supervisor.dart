@@ -118,8 +118,8 @@ class BottomNavBarSupervisor extends StatelessWidget {
                 svgPath != null
                     ? SvgPicture.asset(
                       svgPath,
-                      width: 20,
-                      height: 20,
+                      width: 19,
+                      height: 19,
                       color:
                           isSelected ? const Color(0xFF0E5C36) : Colors.black,
                     )
