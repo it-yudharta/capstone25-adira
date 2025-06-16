@@ -33,6 +33,7 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
   late FocusNode _focusNode;
   late String _currentStatus;
   bool _isExporting = false;
+  String? _selectedExportDate;
 
   @override
   void initState() {
@@ -573,7 +574,6 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
       }
 
       final Set<String> uniqueDates = {};
-
       for (final child in snapshot.children) {
         final data = Map<String, dynamic>.from(child.value as Map);
         final updatedAtKey = '${status}UpdatedAt';
@@ -598,29 +598,192 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
         return;
       }
 
+      _selectedExportDate = null; // reset sebelumnya
+
       showDialog(
         context: context,
-        builder:
-            (_) => AlertDialog(
-              title: Text("Pilih Tanggal Perubahan Status"),
-              content: Container(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: sortedDates.length,
-                  itemBuilder: (ctx, index) {
-                    final date = sortedDates[index];
-                    return ListTile(
-                      title: Text(date),
-                      onTap: () {
-                        Navigator.pop(context);
-                        _exportOrdersByStatusUpdatedAtSupervisor(date, status);
-                      },
-                    );
-                  },
+        builder: (_) {
+          bool showError = false;
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Pilih Tanggal Data Pengajuan Status $status",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Container(
+                        height: 300,
+                        width: double.maxFinite,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: sortedDates.length,
+                          itemBuilder: (_, i) {
+                            final date = sortedDates[i];
+                            final isSelected = date == _selectedExportDate;
+
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedExportDate = date;
+                                });
+                                setStateDialog(() {
+                                  showError = false;
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color:
+                                        isSelected
+                                            ? const Color(0xFF0E5C36)
+                                            : (showError
+                                                ? Colors.red
+                                                : Colors.grey),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "By Date $date",
+                                      style: TextStyle(
+                                        color:
+                                            isSelected
+                                                ? const Color(0xFF0E5C36)
+                                                : (showError
+                                                    ? Colors.red
+                                                    : Colors.black),
+                                        fontWeight:
+                                            isSelected
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color:
+                                              isSelected
+                                                  ? const Color(0xFF0E5C36)
+                                                  : (showError
+                                                      ? Colors.red
+                                                      : Colors.black),
+                                        ),
+                                        color:
+                                            isSelected
+                                                ? const Color(0xFF0E5C36)
+                                                : Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      if (showError)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              "Tanggal harus dipilih",
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: TextButton.styleFrom(
+                                backgroundColor: Color(0xFFE67D13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () async {
+                                if (_selectedExportDate != null) {
+                                  Navigator.pop(context);
+                                  await _exportOrdersByStatusUpdatedAtSupervisor(
+                                    _selectedExportDate!,
+                                    status,
+                                  );
+                                } else {
+                                  setStateDialog(() {
+                                    showError = true;
+                                  });
+                                }
+                              },
+                              style: TextButton.styleFrom(
+                                backgroundColor: Color(0xFF0E5C36),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: Text(
+                                'Export',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
+          );
+        },
       );
     } catch (e) {
       ScaffoldMessenger.of(
