@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'main_supervisor.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class BottomNavBarSupervisor extends StatelessWidget {
   final String currentRoute;
@@ -95,6 +96,17 @@ class BottomNavBarSupervisor extends StatelessWidget {
     final double distance = (pageOffset - itemIndex).abs().clamp(0.0, 1.0);
     final double verticalOffset = isMainScreen ? (8 * distance) : 0;
 
+    final String lowerLabel = label.toLowerCase();
+    String? svgPath;
+
+    if (lowerLabel == 'pengajuan') {
+      svgPath = 'assets/icon/navbar_pengajuan.svg';
+    } else if (lowerLabel == 'pendaftaran') {
+      svgPath = 'assets/icon/navbar_pendaftaran.svg';
+    } else if (lowerLabel == 'lead') {
+      svgPath = 'assets/icon/navbar_lead.svg';
+    }
+
     return BottomNavigationBarItem(
       icon: Column(
         mainAxisSize: MainAxisSize.min,
@@ -102,11 +114,21 @@ class BottomNavBarSupervisor extends StatelessWidget {
         children: [
           Transform.translate(
             offset: Offset(0, verticalOffset),
-            child: Icon(
-              icon,
-              size: 24,
-              color: isSelected ? const Color(0xFF0E5C36) : Colors.black,
-            ),
+            child:
+                svgPath != null
+                    ? SvgPicture.asset(
+                      svgPath,
+                      width: 20,
+                      height: 20,
+                      color:
+                          isSelected ? const Color(0xFF0E5C36) : Colors.black,
+                    )
+                    : Icon(
+                      icon,
+                      size: 22,
+                      color:
+                          isSelected ? const Color(0xFF0E5C36) : Colors.black,
+                    ),
           ),
           const SizedBox(height: 2),
           AnimatedOpacity(

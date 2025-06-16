@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 const platform = MethodChannel('com.fundrain.adiraapp/download');
 
@@ -214,17 +215,13 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
 
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
-      {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
-      {'label': 'Process', 'status': 'process', 'icon': Icons.hourglass_bottom},
-      {
-        'label': 'Pending',
-        'status': 'pending',
-        'icon': Icons.pause_circle_filled,
-      },
-      {'label': 'Reject', 'status': 'reject', 'icon': Icons.block},
-      {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
-      {'label': 'QR Given', 'status': 'qr_given', 'icon': Icons.qr_code},
-      {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
+      {'label': 'Cancel', 'status': 'cancel', 'icon': 'custom_cancel_icon'},
+      {'label': 'Process', 'status': 'process', 'icon': 'custom_process_icon'},
+      {'label': 'Pending', 'status': 'pending', 'icon': 'custom_pending_icon'},
+      {'label': 'Reject', 'status': 'reject', 'icon': 'custom_reject_icon'},
+      {'label': 'Approve', 'status': 'approve', 'icon': 'custom_approve_icon'},
+      {'label': 'QR Given', 'status': 'qr_given', 'icon': 'custom_qr_icon'},
+      {'label': 'Trash Bin', 'status': 'trash', 'icon': 'custom_bin_icon'},
     ];
 
     return Container(
@@ -264,10 +261,65 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
                         BoxShadow(color: Colors.grey.shade300, blurRadius: 4),
                       ],
                     ),
-                    child: Icon(
-                      item['icon'],
-                      size: 21,
-                      color: Color(0xFF0E5C36),
+                    child: Builder(
+                      builder: (_) {
+                        if (item['icon'] == 'custom_qr_icon') {
+                          return SvgPicture.asset(
+                            'assets/icon/qr_icon.svg',
+                            width: 21,
+                            height: 21,
+                            color: Color(0xFF0E5C36),
+                          );
+                        } else if (item['icon'] == 'custom_approve_icon') {
+                          return SvgPicture.asset(
+                            'assets/icon/approve.svg',
+                            width: 21,
+                            height: 21,
+                            color: Color(0xFF0E5C36),
+                          );
+                        } else if (item['icon'] == 'custom_reject_icon') {
+                          return SvgPicture.asset(
+                            'assets/icon/reject.svg',
+                            width: 21,
+                            height: 21,
+                            color: Color(0xFF0E5C36),
+                          );
+                        } else if (item['icon'] == 'custom_pending_icon') {
+                          return SvgPicture.asset(
+                            'assets/icon/pending.svg',
+                            width: 21,
+                            height: 21,
+                            color: Color(0xFF0E5C36),
+                          );
+                        } else if (item['icon'] == 'custom_process_icon') {
+                          return SvgPicture.asset(
+                            'assets/icon/process.svg',
+                            width: 21,
+                            height: 21,
+                            color: Color(0xFF0E5C36),
+                          );
+                        } else if (item['icon'] == 'custom_cancel_icon') {
+                          return SvgPicture.asset(
+                            'assets/icon/cancel.svg',
+                            width: 21,
+                            height: 21,
+                            color: Color(0xFF0E5C36),
+                          );
+                        } else if (item['icon'] == 'custom_bin_icon') {
+                          return SvgPicture.asset(
+                            'assets/icon/bin.svg',
+                            width: 21,
+                            height: 21,
+                            color: Color(0xFF0E5C36),
+                          );
+                        } else {
+                          return Icon(
+                            item['icon'],
+                            size: 21,
+                            color: Color(0xFF0E5C36),
+                          );
+                        }
+                      },
                     ),
                   ),
                   SizedBox(height: 4),
