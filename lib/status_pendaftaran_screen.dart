@@ -10,6 +10,7 @@ import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:typed_data';
+import 'generate_qr_pengajuan.dart';
 
 class StatusPendaftaranScreen extends StatefulWidget {
   String status;
@@ -552,6 +553,40 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                       ),
                     ),
                   SizedBox(height: 16),
+                  if (status == 'approve' && widget.status != 'trash')
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => GenerateQRPengajuan(
+                                    fullName: pendaftaran['fullName'] ?? '',
+                                    email: pendaftaran['email'] ?? '',
+                                    phone: pendaftaran['phone'] ?? '',
+                                    pendaftaranKey: key,
+                                  ),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF0E5C36),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                        ),
+                        child: Text(
+                          'Generate QR',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ),
+                    ),
 
                   if (status == 'process' && widget.status != 'trash')
                     Align(

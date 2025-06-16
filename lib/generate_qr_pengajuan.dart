@@ -9,8 +9,22 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:ui' as ui;
 import 'bottom_nav_bar_pendaftaran.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:intl/intl.dart';
 
 class GenerateQRPengajuan extends StatefulWidget {
+  final String? fullName;
+  final String? email;
+  final String? phone;
+  final String? pendaftaranKey;
+
+  const GenerateQRPengajuan({
+    Key? key,
+    this.fullName,
+    this.email,
+    this.phone,
+    this.pendaftaranKey,
+  }) : super(key: key);
   @override
   _GenerateQRPengajuanState createState() => _GenerateQRPengajuanState();
 }
@@ -34,6 +48,17 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
   @override
   void initState() {
     super.initState();
+
+    if (widget.fullName != null && agentNameController.text.isEmpty) {
+      agentNameController.text = widget.fullName!;
+    }
+    if (widget.email != null && emailController.text.isEmpty) {
+      emailController.text = widget.email!;
+    }
+    if (widget.phone != null && phoneController.text.isEmpty) {
+      phoneController.text = widget.phone!;
+    }
+
     agentNameController.addListener(_resetOnEdit);
     emailController.addListener(_resetOnEdit);
     phoneController.addListener(_resetOnEdit);
@@ -177,17 +202,12 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
     }
   }
 
-  // Fungsi untuk render QR + email + password jadi image Uint8List
   Future<Uint8List> _captureQrWithText() async {
-    // Dapatkan boundary QR original
     RenderRepaintBoundary boundary =
         _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
 
-    // Render QR image asli sebagai ui.Image
     ui.Image qrImage = await boundary.toImage(pixelRatio: 3.0);
 
-    // Tentukan ukuran canvas baru:
-    // Tinggi canvas = tinggi QR + tinggi area teks (misal 80)
     int width = qrImage.width;
     int height = qrImage.height + 80;
 
@@ -197,17 +217,14 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
       Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
     );
 
-    // Background putih
     final paint = Paint()..color = Colors.white;
     canvas.drawRect(
       Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
       paint,
     );
 
-    // Gambar QR code di posisi atas (0,0)
     canvas.drawImage(qrImage, Offset.zero, Paint());
 
-    // Prepare text painter untuk email dan password
     final textStyle = ui.TextStyle(
       color: ui.Color(0xFF0E5C36),
       fontSize: 20,
@@ -215,7 +232,6 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
     );
     final paragraphStyle = ui.ParagraphStyle(textAlign: TextAlign.center);
 
-    // Email
     final emailParagraphBuilder =
         ui.ParagraphBuilder(paragraphStyle)
           ..pushStyle(textStyle)
@@ -224,7 +240,6 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
         emailParagraphBuilder.build()
           ..layout(ui.ParagraphConstraints(width: width.toDouble()));
 
-    // Password
     final passParagraphBuilder =
         ui.ParagraphBuilder(paragraphStyle)
           ..pushStyle(textStyle)
@@ -233,7 +248,6 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
         passParagraphBuilder.build()
           ..layout(ui.ParagraphConstraints(width: width.toDouble()));
 
-    // Gambar teks di bawah QR code, misal jarak 10 px dari bawah QR
     canvas.drawParagraph(
       emailParagraph,
       Offset(0, qrImage.height.toDouble() + 5),
@@ -243,7 +257,6 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
       Offset(0, qrImage.height.toDouble() + 35),
     );
 
-    // Selesai gambar
     final picture = recorder.endRecording();
     final img = await picture.toImage(width, height);
     final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
@@ -260,7 +273,6 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
         return;
       }
 
-      // Gunakan fungsi baru untuk ambil image QR + teks
       Uint8List pngBytes = await _captureQrWithText();
 
       final result = await platform.invokeMethod("saveFileToDownloads", {
@@ -272,6 +284,18 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('QR Code berhasil disimpan ke $result')),
       );
+
+      if (widget.pendaftaranKey != null) {
+        final DatabaseReference ref = FirebaseDatabase.instance
+            .ref()
+            .child('agent-form')
+            .child(widget.pendaftaranKey!);
+
+        await ref.update({
+          'status': 'qr_given',
+          'qr_givenUpdatedAt': DateFormat('dd-MM-yyyy').format(DateTime.now()),
+        });
+      }
 
       await Future.delayed(Duration(milliseconds: 500));
       _showQrSavedPopup();

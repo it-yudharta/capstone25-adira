@@ -938,12 +938,8 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
 
       for (final child in snapshot.children) {
         final data = Map<String, dynamic>.from(child.value as Map);
-
-        // Kalau ingin filter lead juga, aktifkan ini:
-        // if (data['lead'] == true) {
         data['key'] = child.key;
         agentsToExport.add(data);
-        // }
       }
 
       if (agentsToExport.isEmpty) {
@@ -962,7 +958,6 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
       final workbook = xlsio.Workbook();
       final sheet = workbook.worksheets[0];
 
-      // Header sama dengan saved pendaftaran
       final headers = [
         'Tanggal',
         'Status',
