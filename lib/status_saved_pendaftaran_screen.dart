@@ -666,22 +666,88 @@ class _StatusSavedPendaftaranScreenState
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: Text('Hapus Semua?'),
-            content: Text('Yakin ingin menghapus semua data ke trash bin?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Batal'),
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _markAllStatusPendaftaranAsTrashed();
-                },
-                child: Text('Ya, Hapus'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delete All Data Pendaftaran?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data akan dipindahkan dulu ke “Trash Bin”.\nDari sana kamu bisa memulihkan atau menghapus permanen.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13), // Orange
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _markAllStatusPendaftaranAsTrashed();
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36), // Dark green
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Delete All',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
     );
   }
@@ -1005,7 +1071,7 @@ class _StatusSavedPendaftaranScreenState
                 });
               },
               decoration: InputDecoration(
-                hintText: 'Search Data',
+                hintText: 'Search data',
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 4,
@@ -1051,7 +1117,6 @@ class _StatusSavedPendaftaranScreenState
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 'Lead Pendaftaran',
@@ -1061,7 +1126,6 @@ class _StatusSavedPendaftaranScreenState
                   color: Colors.black87,
                 ),
               ),
-
               Row(
                 children: [
                   ElevatedButton(
@@ -1132,12 +1196,52 @@ class _StatusSavedPendaftaranScreenState
           ),
         ),
 
+        SizedBox(height: 14),
+
         Expanded(
           child:
               _isLoading
                   ? Center(child: CircularProgressIndicator())
                   : (orderedDates.isEmpty || groupedPendaftarans.isEmpty)
-                  ? Center(child: Text("Tidak ada data saved pendaftaran"))
+                  ? IgnorePointer(
+                    ignoring: true,
+                    child: SingleChildScrollView(
+                      physics: NeverScrollableScrollPhysics(),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              'assets/images/EmptyState.png',
+                              width: 300,
+                              height: 200,
+                              fit: BoxFit.contain,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'No Data Found',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'No data lead pendaftaran found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
                   : _filteredPendaftarans.isEmpty
                   ? Center(child: Text("Tidak ada hasil pencarian"))
                   : ListView.builder(

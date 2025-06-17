@@ -13,6 +13,7 @@ import 'dart:typed_data';
 import 'generate_qr_pengajuan.dart';
 import 'circular_loading_indicator.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'note_pendaftaran.dart';
 
 class StatusPendaftaranScreen extends StatefulWidget {
   String status;
@@ -744,72 +745,32 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
 
                           ElevatedButton(
                             onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) {
-                                  final _noteController =
-                                      TextEditingController();
-                                  return AlertDialog(
-                                    title: Text('Add Note'),
-                                    content: TextField(
-                                      controller: _noteController,
-                                      decoration: InputDecoration(
-                                        hintText: 'Tulis catatan...',
+                              Navigator.push<String?>(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => NotePendaftaranScreen(
+                                        pendaftaranKey: key,
+                                        initialNote:
+                                            pendaftaran['note'] as String?,
                                       ),
-                                      maxLines: 3,
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: Text('Batal'),
-                                      ),
-                                      ElevatedButton(
-                                        onPressed: () async {
-                                          final note =
-                                              _noteController.text.trim();
-                                          if (note.isNotEmpty) {
-                                            final dbRef = FirebaseDatabase
-                                                .instance
-                                                .ref()
-                                                .child('agent-form')
-                                                .child(key);
-
-                                            await dbRef.update({
-                                              'note': note,
-                                              'status': 'pending',
-                                              'pendingUpdatedAt': DateFormat(
-                                                'dd-MM-yyyy',
-                                              ).format(DateTime.now()),
-                                            });
-
-                                            Navigator.pop(context);
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Catatan ditambahkan & status diperbarui ke pending',
-                                                ),
-                                              ),
-                                            );
-
-                                            setState(() {
-                                              pendaftaran['note'] = note;
-                                              pendaftaran['status'] = 'pending';
-                                              pendaftaran['pendingUpdatedAt'] =
-                                                  DateFormat(
-                                                    'dd-MM-yyyy',
-                                                  ).format(DateTime.now());
-                                              _applySearch();
-                                            });
-                                          }
-                                        },
-                                        child: Text('Simpan'),
-                                      ),
-                                    ],
+                                ),
+                              ).then((newNote) {
+                                if (newNote != null) {
+                                  setState(() {
+                                    pendaftaran['note'] = newNote;
+                                    pendaftaran['status'] = 'pending';
+                                    pendaftaran['pendingUpdatedAt'] =
+                                        DateFormat(
+                                          'dd-MM-yyyy',
+                                        ).format(DateTime.now());
+                                    _applySearch();
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Catatan disimpan')),
                                   );
-                                },
-                              );
+                                }
+                              });
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Color(0xFF0E5C36),
