@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PendaftaranDetailScreen extends StatelessWidget {
   final Map agentData;
@@ -45,6 +46,27 @@ class PendaftaranDetailScreen extends StatelessWidget {
             ),
           ),
     );
+  }
+
+  String normalizePhoneNumber(String phone) {
+    if (phone.startsWith('0')) {
+      return '62${phone.substring(1)}';
+    }
+    return phone;
+  }
+
+  Future<void> _launchWhatsApp(BuildContext context, String phoneNumber) async {
+    final normalizedPhone = normalizePhoneNumber(phoneNumber);
+    final url = 'https://wa.me/$normalizedPhone';
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+    }
   }
 
   Widget buildImageRow(BuildContext context, String label, String url) {
@@ -148,7 +170,29 @@ class PendaftaranDetailScreen extends StatelessWidget {
                       ],
                     ),
                     Text("E-mail: ${agentData['email'] ?? '-'}"),
-                    Text("No. Telp: ${agentData['phone'] ?? '-'}"),
+                    GestureDetector(
+                      onTap: () {
+                        if (agentData['phone'] != null) {
+                          _launchWhatsApp(context, agentData['phone']);
+                        }
+                      },
+                      child: RichText(
+                        text: TextSpan(
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.black87,
+                          ),
+                          children: [
+                            const TextSpan(text: "No. Telp: "),
+                            TextSpan(
+                              text: agentData['phone'] ?? '-',
+                              style: const TextStyle(color: Colors.blue),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
                     Text("Alamat: ${agentData['address'] ?? '-'}"),
                     Text("Kode Pos: ${agentData['postalCode'] ?? '-'}"),
 

@@ -328,7 +328,7 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Hapus Data Ini?',
+                    'Delete Data Pendaftaran?',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -337,7 +337,8 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'Data akan dipindahkan ke Trash Bin. Dari sana, kamu bisa memulihkan atau menghapusnya secara permanen.',
+                    'Data will first be moved to “Trash Bin”. From there, '
+                    'you can recover them or permanently delete them.',
                     style: TextStyle(fontSize: 14, color: Colors.black87),
                   ),
                   SizedBox(height: 20),

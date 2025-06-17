@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'bottom_nav_bar_pendaftaran.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NotePendaftaranScreen extends StatefulWidget {
   final Map pendaftaran;
@@ -82,6 +83,27 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
                 ),
               ),
     );
+  }
+
+  String normalizePhoneNumber(String phone) {
+    if (phone.startsWith('0')) {
+      return '62${phone.substring(1)}';
+    }
+    return phone;
+  }
+
+  Future<void> _launchWhatsApp(String phoneNumber) async {
+    final normalizedPhone = normalizePhoneNumber(phoneNumber);
+    final url = 'https://wa.me/$normalizedPhone';
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+    }
   }
 
   @override
@@ -180,11 +202,38 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
                   children: [
                     _detailRow("Nama", p['fullName']?.toString()),
                     _detailRow("Email", p['email']?.toString()),
-                    _detailRow(
-                      "No. Telp",
-                      p['phone']?.toString(),
-                      onTap: () {},
-                    ),
+                    if (p['phone'] != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: GestureDetector(
+                          onTap: () async {
+                            try {
+                              await _launchWhatsApp(p['phone'].toString());
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error launching WhatsApp: $e'),
+                                ),
+                              );
+                            }
+                          },
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black87,
+                              ),
+                              children: [
+                                TextSpan(text: "No. Telp : "),
+                                TextSpan(
+                                  text: p['phone'],
+                                  style: TextStyle(color: Colors.blue),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     _detailRow("Alamat", p['address']?.toString()),
                     _detailRow("Kode Pos", p['postalCode']?.toString()),
                     _detailRow("Status", p['status']?.toString()),
