@@ -10,6 +10,7 @@ import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class StatusSavedPendaftaranScreen extends StatefulWidget {
   const StatusSavedPendaftaranScreen({required this.status});
@@ -558,20 +559,16 @@ class _StatusSavedPendaftaranScreenState
 
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
-      {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
-      {'label': 'Process', 'status': 'process', 'icon': Icons.hourglass_top},
-      {
-        'label': 'Pending',
-        'status': 'pending',
-        'icon': Icons.pause_circle_filled,
-      },
-      {'label': 'Reject', 'status': 'reject', 'icon': Icons.highlight_off},
-      {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
-      {'label': 'QR Given', 'status': 'qr_given', 'icon': Icons.qr_code},
+      {'label': 'Cancel', 'status': 'cancel', 'icon': 'custom_cancel_icon'},
+      {'label': 'Process', 'status': 'process', 'icon': 'custom_process_icon'},
+      {'label': 'Pending', 'status': 'pending', 'icon': 'custom_pending_icon'},
+      {'label': 'Reject', 'status': 'reject', 'icon': 'custom_reject_icon'},
+      {'label': 'Approve', 'status': 'approve', 'icon': 'custom_approve_icon'},
+      {'label': 'QR Given', 'status': 'qr_given', 'icon': 'custom_qr_icon'},
     ];
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
       padding: EdgeInsets.symmetric(horizontal: 19, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -599,7 +596,7 @@ class _StatusSavedPendaftaranScreenState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: EdgeInsets.all(6),
+                    padding: EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: isActive ? Color(0xFF0E5C36) : Colors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -607,20 +604,61 @@ class _StatusSavedPendaftaranScreenState
                         BoxShadow(color: Colors.grey.shade300, blurRadius: 4),
                       ],
                     ),
-                    child: Icon(
-                      item['icon'],
-                      size: 21,
-                      color: isActive ? Colors.white : Color(0xFF0E5C36),
-                    ),
+                    child: _buildSvgIcon(item['icon'], isActive),
                   ),
                   SizedBox(height: 4),
-                  Text(item['label'], style: TextStyle(fontSize: 10)),
+                  Text(
+                    item['label'],
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: isActive ? Color(0xFF0E5C36) : Colors.black,
+                      fontWeight:
+                          isActive ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
                 ],
               ),
             );
           }),
         ),
       ),
+    );
+  }
+
+  Widget _buildSvgIcon(String iconKey, bool isActive) {
+    String assetPath;
+    switch (iconKey) {
+      case 'custom_qr_icon':
+        assetPath = 'assets/icon/qr_icon.svg';
+        break;
+      case 'custom_approve_icon':
+        assetPath = 'assets/icon/approve.svg';
+        break;
+      case 'custom_reject_icon':
+        assetPath = 'assets/icon/reject.svg';
+        break;
+      case 'custom_pending_icon':
+        assetPath = 'assets/icon/pending.svg';
+        break;
+      case 'custom_process_icon':
+        assetPath = 'assets/icon/process.svg';
+        break;
+      case 'custom_cancel_icon':
+        assetPath = 'assets/icon/cancel.svg';
+        break;
+      default:
+        return Icon(
+          Icons.help,
+          size: 21,
+          color: isActive ? Colors.white : Color(0xFF0E5C36),
+        );
+    }
+
+    return SvgPicture.asset(
+      assetPath,
+      width: 21,
+      height: 21,
+      color: isActive ? Colors.white : Color(0xFF0E5C36),
     );
   }
 
