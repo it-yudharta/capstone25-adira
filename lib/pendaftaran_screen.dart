@@ -9,6 +9,7 @@ import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'circular_loading_indicator.dart';
 
 const platform = MethodChannel('com.fundrain.adiraapp/download');
 
@@ -27,6 +28,8 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _isExporting = false;
   String? _selectedExportDate;
+  double _exportProgress = 0.0;
+  late void Function(void Function()) _setExportDialogState;
 
   @override
   void initState() {
@@ -525,7 +528,12 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.cancel, size: 16, color: Colors.white),
+                              SvgPicture.asset(
+                                'assets/icon/button_cancel.svg',
+                                width: 16,
+                                height: 16,
+                                color: Colors.white,
+                              ),
                               SizedBox(height: 4),
                               Text(
                                 'Cancel',
@@ -554,9 +562,10 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                Icons.hourglass_top,
-                                size: 16,
+                              SvgPicture.asset(
+                                'assets/icon/button_process.svg',
+                                width: 16,
+                                height: 16,
                                 color: Colors.white,
                               ),
                               SizedBox(height: 4),
@@ -1210,7 +1219,21 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(child: CircularProgressIndicator()),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            _setExportDialogState = setStateDialog;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularExportIndicator(progress: _exportProgress),
+              ),
+            );
+          },
+        );
+      },
     );
 
     final ref = FirebaseDatabase.instance.ref("agent-form");
@@ -1286,6 +1309,11 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
       for (int i = 0; i < agentsToExport.length; i++) {
         final agent = Map<String, dynamic>.from(agentsToExport[i]);
         final row = i + 2;
+        _setExportDialogState(() {
+          _exportProgress = (i + 1) / agentsToExport.length;
+        });
+
+        await Future.delayed(Duration(milliseconds: 10));
 
         sheet.getRangeByIndex(row, 1).rowHeight = 80;
         sheet.getRangeByIndex(row, 1).setText(agent['tanggal'] ?? '');

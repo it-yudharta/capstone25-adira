@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'admin_pendaftaran_screen.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class BottomNavBarPendaftaran extends StatelessWidget {
   final String currentRoute;
@@ -61,21 +62,21 @@ class BottomNavBarPendaftaran extends StatelessWidget {
 
         items: [
           _buildNavItem(
-            icon: Icons.app_registration,
+            svgPath: 'assets/icon/navbar_pendaftaran.svg',
             label: 'Pendaftaran',
             isSelected: currentRoute == '/pendaftaran',
             isMainScreen: isMainScreen,
             itemIndex: 0,
           ),
           _buildNavItem(
-            icon: Icons.qr_code,
+            svgPath: 'assets/icon/navbar_qr.svg',
             label: 'QR Code',
             isSelected: currentRoute == '/qr',
             isMainScreen: isMainScreen,
             itemIndex: 1,
           ),
           _buildNavItem(
-            icon: Icons.bookmark,
+            svgPath: 'assets/icon/navbar_lead.svg',
             label: 'Lead',
             isSelected: currentRoute == '/saved_pendaftaran',
             isMainScreen: isMainScreen,
@@ -87,7 +88,7 @@ class BottomNavBarPendaftaran extends StatelessWidget {
   }
 
   BottomNavigationBarItem _buildNavItem({
-    required IconData icon,
+    required String svgPath,
     required String label,
     required bool isSelected,
     required bool isMainScreen,
@@ -103,9 +104,10 @@ class BottomNavBarPendaftaran extends StatelessWidget {
         children: [
           Transform.translate(
             offset: Offset(0, verticalOffset),
-            child: Icon(
-              icon,
-              size: 24,
+            child: SvgPicture.asset(
+              svgPath,
+              width: 19,
+              height: 19,
               color: isSelected ? const Color(0xFF0E5C36) : Colors.black,
             ),
           ),
