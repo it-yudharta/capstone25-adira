@@ -799,8 +799,10 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                   _applySearch();
                 });
               },
+              style: TextStyle(fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Search data',
+                hintStyle: TextStyle(fontSize: 14),
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 4,
@@ -1171,7 +1173,6 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                             child: TextButton(
                               onPressed: () async {
                                 if (_selectedExportDate != null) {
-                                  Navigator.pop(context);
                                   await _exportAgentsByDate(
                                     _selectedExportDate!,
                                   );

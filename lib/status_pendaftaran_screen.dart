@@ -11,6 +11,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:typed_data';
 import 'generate_qr_pengajuan.dart';
+import 'circular_loading_indicator.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class StatusPendaftaranScreen extends StatefulWidget {
   String status;
@@ -39,6 +41,9 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
   Map<String, List<Map<dynamic, dynamic>>> groupedPendaftarans = {};
   List<String> orderedDates = [];
   String _searchQuery = '';
+  String? _selectedExportDate;
+  late void Function(void Function()) _setExportDialogState;
+  double _exportProgress = 0.0;
 
   @override
   void initState() {
@@ -340,21 +345,17 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
 
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
-      {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
-      {'label': 'Process', 'status': 'process', 'icon': Icons.hourglass_top},
-      {
-        'label': 'Pending',
-        'status': 'pending',
-        'icon': Icons.pause_circle_filled,
-      },
-      {'label': 'Reject', 'status': 'reject', 'icon': Icons.highlight_off},
-      {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
-      {'label': 'QR Given', 'status': 'qr_given', 'icon': Icons.qr_code},
-      {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
+      {'label': 'Cancel', 'status': 'cancel', 'icon': 'custom_cancel_icon'},
+      {'label': 'Process', 'status': 'process', 'icon': 'custom_process_icon'},
+      {'label': 'Pending', 'status': 'pending', 'icon': 'custom_pending_icon'},
+      {'label': 'Reject', 'status': 'reject', 'icon': 'custom_reject_icon'},
+      {'label': 'Approve', 'status': 'approve', 'icon': 'custom_approve_icon'},
+      {'label': 'QR Given', 'status': 'qr_given', 'icon': 'custom_qr_icon'},
+      {'label': 'Trash Bin', 'status': 'trash', 'icon': 'custom_bin_icon'},
     ];
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
       padding: EdgeInsets.symmetric(horizontal: 19, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -371,15 +372,13 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
 
             return InkWell(
               onTap: () {
-                if (!isActive) {
-                  _changeStatus(item['status']);
-                }
+                if (!isActive) _changeStatus(item['status']);
               },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: EdgeInsets.all(6),
+                    padding: EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: isActive ? Color(0xFF0E5C36) : Colors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -387,20 +386,64 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                         BoxShadow(color: Colors.grey.shade300, blurRadius: 4),
                       ],
                     ),
-                    child: Icon(
-                      item['icon'],
-                      size: 21,
-                      color: isActive ? Colors.white : Color(0xFF0E5C36),
-                    ),
+                    child: _buildSvgIcon(item['icon'], isActive),
                   ),
                   SizedBox(height: 4),
-                  Text(item['label'], style: TextStyle(fontSize: 10)),
+                  Text(
+                    item['label'],
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: isActive ? Color(0xFF0E5C36) : Colors.black,
+                      fontWeight:
+                          isActive ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
                 ],
               ),
             );
           }),
         ),
       ),
+    );
+  }
+
+  Widget _buildSvgIcon(String iconKey, bool isActive) {
+    String assetPath;
+    switch (iconKey) {
+      case 'custom_qr_icon':
+        assetPath = 'assets/icon/qr_icon.svg';
+        break;
+      case 'custom_approve_icon':
+        assetPath = 'assets/icon/approve.svg';
+        break;
+      case 'custom_reject_icon':
+        assetPath = 'assets/icon/reject.svg';
+        break;
+      case 'custom_pending_icon':
+        assetPath = 'assets/icon/pending.svg';
+        break;
+      case 'custom_process_icon':
+        assetPath = 'assets/icon/process.svg';
+        break;
+      case 'custom_cancel_icon':
+        assetPath = 'assets/icon/cancel.svg';
+        break;
+      case 'custom_bin_icon':
+        assetPath = 'assets/icon/bin.svg';
+        break;
+      default:
+        return Icon(
+          Icons.help,
+          size: 21,
+          color: isActive ? Colors.white : Color(0xFF0E5C36),
+        );
+    }
+
+    return SvgPicture.asset(
+      assetPath,
+      width: 21,
+      height: 21,
+      color: isActive ? Colors.white : Color(0xFF0E5C36),
     );
   }
 
@@ -423,43 +466,115 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: Text('Hapus Data Ini?'),
-            content: Text('Yakin ingin menghapus data ini ke Trash Bin?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Batal'),
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  final now = DateTime.now();
-                  final formattedDate = DateFormat('dd-MM-yyyy').format(now);
-                  try {
-                    await FirebaseDatabase.instance
-                        .ref()
-                        .child('agent-form')
-                        .child(key)
-                        .update({
-                          'trash': true,
-                          'trashUpdatedAt': formattedDate,
-                        });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Data berhasil dipindahkan ke Trash'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delete Data Pendaftaran?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data will first be moved to “Trash Bin”. From there,\nyou can recover them or permanently delete them.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                    );
-                    _fetchPendaftarans();
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Gagal menghapus data: $e')),
-                    );
-                  }
-                },
-                child: Text('Ya, Hapus'),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            final now = DateTime.now();
+                            final formattedDate = DateFormat(
+                              'dd-MM-yyyy',
+                            ).format(now);
+                            try {
+                              await FirebaseDatabase.instance
+                                  .ref()
+                                  .child('agent-form')
+                                  .child(key)
+                                  .update({
+                                    'trash': true,
+                                    'trashUpdatedAt': formattedDate,
+                                  });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Data berhasil dipindahkan ke Trash',
+                                  ),
+                                ),
+                              );
+                              _fetchPendaftarans();
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Gagal menghapus data: $e'),
+                                ),
+                              );
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Delete',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
     );
   }
@@ -770,20 +885,18 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
               top: 0,
               right: 0,
               child: PopupMenuButton<String>(
+                color: Colors.white,
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 onSelected: (value) async {
                   if (value == 'lead') {
                     await _updateLeadStatusPendaftaran(key, true);
-
                     setState(() {
-                      final index = _pendaftarans.indexWhere(
-                        (item) => item['key'] == key,
-                      );
-                      if (index != -1) {
-                        _pendaftarans[index]['lead'] = true;
-                        _applySearch();
-                      }
+                      pendaftaran['lead'] = true;
+                      _applySearch();
                     });
-
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Status lead ditandai')),
                     );
@@ -791,16 +904,38 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                     _confirmDeleteSingleToTrashPendaftaran(key);
                   }
                 },
-                itemBuilder: (BuildContext context) {
-                  return [
-                    if (!isLead)
-                      PopupMenuItem<String>(value: 'lead', child: Text('Lead')),
-                    PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Text('Delete'),
-                    ),
-                  ];
-                },
+                itemBuilder:
+                    (context) => <PopupMenuEntry<String>>[
+                      if (!isLead) ...[
+                        PopupMenuItem<String>(
+                          value: 'lead',
+                          child: Row(
+                            children: [
+                              Icon(Icons.bookmark, color: Color(0xFF0E5C36)),
+                              SizedBox(width: 10),
+                              Text(
+                                'Lead',
+                                style: TextStyle(color: Color(0xFF0E5C36)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuDivider(),
+                      ],
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, color: Color(0xFF0E5C36)),
+                            SizedBox(width: 10),
+                            Text(
+                              'Delete',
+                              style: TextStyle(color: Color(0xFF0E5C36)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
               ),
             ),
 
@@ -809,6 +944,11 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                 top: 0,
                 right: 0,
                 child: PopupMenuButton<String>(
+                  color: Colors.white,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   onSelected: (value) async {
                     if (value == 'restore') {
                       try {
@@ -830,18 +970,36 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                       _confirmDeleteSinglePermanently(key);
                     }
                   },
-                  itemBuilder: (BuildContext context) {
-                    return [
-                      PopupMenuItem<String>(
-                        value: 'restore',
-                        child: Text('Restore'),
-                      ),
-                      PopupMenuItem<String>(
-                        value: 'delete_permanent',
-                        child: Text('Delete Permanen'),
-                      ),
-                    ];
-                  },
+                  itemBuilder:
+                      (context) => <PopupMenuEntry<String>>[
+                        PopupMenuItem<String>(
+                          value: 'restore',
+                          child: Row(
+                            children: [
+                              Icon(Icons.restore, color: Color(0xFF0E5C36)),
+                              SizedBox(width: 10),
+                              Text(
+                                'Restore',
+                                style: TextStyle(color: Color(0xFF0E5C36)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PopupMenuDivider(),
+                        PopupMenuItem<String>(
+                          value: 'delete_permanent',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, color: Color(0xFF0E5C36)),
+                              SizedBox(width: 10),
+                              Text(
+                                'Delete',
+                                style: TextStyle(color: Color(0xFF0E5C36)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                 ),
               ),
           ],
@@ -915,7 +1073,6 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
       }
 
       final Set<String> uniqueDates = {};
-
       for (final child in snapshot.children) {
         final data = Map<String, dynamic>.from(child.value as Map);
         final updatedAtKey = '${status}UpdatedAt';
@@ -942,27 +1099,186 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
 
       showDialog(
         context: context,
-        builder:
-            (_) => AlertDialog(
-              title: Text("Pilih Tanggal Perubahan Status"),
-              content: Container(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: sortedDates.length,
-                  itemBuilder: (ctx, index) {
-                    final date = sortedDates[index];
-                    return ListTile(
-                      title: Text(date),
-                      onTap: () {
-                        Navigator.pop(context);
-                        _exportPendaftaranByStatusUpdatedAt(date, status);
-                      },
-                    );
-                  },
+        builder: (_) {
+          bool showError = false;
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Pilih Tanggal Status \"$status\" untuk diExport",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Container(
+                        height: 300,
+                        width: double.maxFinite,
+                        child: ListView.builder(
+                          itemCount: sortedDates.length,
+                          itemBuilder: (_, i) {
+                            final date = sortedDates[i];
+                            final isSelected = date == _selectedExportDate;
+
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedExportDate = date;
+                                });
+                                setStateDialog(() {
+                                  showError = false;
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color:
+                                        isSelected
+                                            ? const Color(0xFF0E5C36)
+                                            : (showError
+                                                ? Colors.red
+                                                : Colors.grey),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "By Date $date",
+                                      style: TextStyle(
+                                        color:
+                                            isSelected
+                                                ? const Color(0xFF0E5C36)
+                                                : (showError
+                                                    ? Colors.red
+                                                    : Colors.black),
+                                        fontWeight:
+                                            isSelected
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color:
+                                              isSelected
+                                                  ? const Color(0xFF0E5C36)
+                                                  : (showError
+                                                      ? Colors.red
+                                                      : Colors.black),
+                                        ),
+                                        color:
+                                            isSelected
+                                                ? const Color(0xFF0E5C36)
+                                                : Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      if (showError)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              "Tanggal harus dipilih",
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: TextButton.styleFrom(
+                                backgroundColor: Color(0xFFE67D13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () async {
+                                if (_selectedExportDate != null) {
+                                  await _exportPendaftaranByStatusUpdatedAt(
+                                    _selectedExportDate!,
+                                    status,
+                                  );
+                                } else {
+                                  setStateDialog(() {
+                                    showError = true;
+                                  });
+                                }
+                              },
+                              style: TextButton.styleFrom(
+                                backgroundColor: Color(0xFF0E5C36),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: Text(
+                                'Export',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
+          );
+        },
       );
     } catch (e) {
       ScaffoldMessenger.of(
@@ -979,7 +1295,21 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(child: CircularProgressIndicator()),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            _setExportDialogState = setStateDialog;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularExportIndicator(progress: _exportProgress),
+              ),
+            );
+          },
+        );
+      },
     );
 
     final ref = FirebaseDatabase.instance.ref("agent-form");
@@ -1052,6 +1382,11 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
       for (int i = 0; i < agentsToExport.length; i++) {
         final agent = Map<String, dynamic>.from(agentsToExport[i]);
         final row = i + 2;
+        _setExportDialogState(() {
+          _exportProgress = (i + 1) / agentsToExport.length;
+        });
+
+        await Future.delayed(Duration(milliseconds: 10));
 
         sheet.getRangeByIndex(row, 1).rowHeight = 80;
         sheet.getRangeByIndex(row, 1).setText(agent['tanggal'] ?? '');
@@ -1194,8 +1529,6 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
   }
 
   Widget _buildMainPage() {
-    final baseStyle = Theme.of(context).textTheme.bodyMedium;
-
     return Column(
       children: [
         Padding(
@@ -1213,7 +1546,7 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                 });
               },
               decoration: InputDecoration(
-                hintText: 'Search Data',
+                hintText: 'Search data',
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 4,
@@ -1259,7 +1592,6 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 'Data Pendaftaran',
@@ -1362,12 +1694,52 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
           ),
         ),
 
+        SizedBox(height: 12),
+
         Expanded(
           child:
               _isLoading
                   ? Center(child: CircularProgressIndicator())
                   : _pendaftarans.isEmpty
-                  ? Center(child: Text("Tidak ada data pendaftaran"))
+                  ? IgnorePointer(
+                    ignoring: true,
+                    child: SingleChildScrollView(
+                      physics: NeverScrollableScrollPhysics(),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              'assets/images/EmptyState.png',
+                              width: 300,
+                              height: 200,
+                              fit: BoxFit.contain,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'No Data Found',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'No data pendaftaran found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
                   : _filteredPendaftarans.isEmpty
                   ? Center(child: Text("Tidak ada hasil pencarian"))
                   : ListView.builder(
@@ -1392,14 +1764,13 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                           );
                         }
                         currentIndex++;
-
                         final items = groupedPendaftarans[date]!;
                         if (index - currentIndex < items.length) {
                           final item = items[index - currentIndex];
                           return _buildPendaftaranCard(
                             item,
                             item['key'],
-                            baseStyle,
+                            Theme.of(context).textTheme.bodyMedium,
                           );
                         }
                         currentIndex += items.length;
@@ -1416,24 +1787,88 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: Text('Hapus Semua?'),
-            content: Text(
-              'Yakin ingin menghapus semua data pendaftaran (non-lead)?',
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delete All Data Pendaftaran?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data akan dipindahkan dulu ke “Trash Bin”.\nDari sana kamu bisa memulihkan atau menghapus permanen.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _markAllRegistrationsAsTrashedStatus();
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Delete All',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Batal'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _markAllRegistrationsAsTrashedStatus();
-                },
-                child: Text('Ya, Hapus'),
-              ),
-            ],
           ),
     );
   }

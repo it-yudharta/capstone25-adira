@@ -4,23 +4,52 @@ import 'package:flutter/material.dart';
 class CircularExportIndicator extends StatelessWidget {
   final double progress;
 
-  const CircularExportIndicator({required this.progress});
+  const CircularExportIndicator({required this.progress, Key? key})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final percentText = '${(progress * 100).toInt()}%';
 
-    return CustomPaint(
-      painter: _CircularProgressPainter(progress),
-      child: Center(
-        child: Text(
-          percentText,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black, // hitam bold
+    return Container(
+      width: 100,
+      height: 120,
+      decoration: BoxDecoration(
+        color: Colors.white, // Latar belakang putih
+        borderRadius: BorderRadius.circular(12), // Sudut membulat
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: Offset(0, 2),
           ),
-        ),
+        ],
+      ),
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Expanded(
+            child: CustomPaint(
+              painter: _CircularProgressPainter(progress),
+              child: Center(
+                child: Text(
+                  percentText,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Exporting Data',
+            style: TextStyle(fontSize: 12, color: Colors.black),
+          ),
+        ],
       ),
     );
   }
@@ -35,16 +64,13 @@ class _CircularProgressPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final Offset center = Offset(size.width / 2, size.height / 2);
     final double radius = min(size.width, size.height) / 2 - 4;
-
-    // Gambar background lingkaran penuh (fill)
     final Paint backgroundPaint =
         Paint()
-          ..color = const Color(0x4D0E5C36) // 30% opacity fill
+          ..color = const Color(0x4D0E5C36)
           ..style = PaintingStyle.fill;
 
     canvas.drawCircle(center, radius, backgroundPaint);
 
-    // Gambar lingkaran progress (stroke)
     final Paint progressPaint =
         Paint()
           ..color = const Color(0xFF0E5C36)
