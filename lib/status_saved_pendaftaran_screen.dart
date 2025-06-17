@@ -705,7 +705,7 @@ class _StatusSavedPendaftaranScreenState
                         child: TextButton(
                           onPressed: () => Navigator.pop(context),
                           style: TextButton.styleFrom(
-                            backgroundColor: Color(0xFFE67D13), // Orange
+                            backgroundColor: Color(0xFFE67D13),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(6),
                             ),
@@ -728,7 +728,7 @@ class _StatusSavedPendaftaranScreenState
                             _markAllStatusPendaftaranAsTrashed();
                           },
                           style: TextButton.styleFrom(
-                            backgroundColor: Color(0xFF0E5C36), // Dark green
+                            backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(6),
                             ),

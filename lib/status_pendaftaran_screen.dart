@@ -750,9 +750,9 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                                 MaterialPageRoute(
                                   builder:
                                       (_) => NotePendaftaranScreen(
-                                        pendaftaranKey: key,
-                                        initialNote:
-                                            pendaftaran['note'] as String?,
+                                        pendaftaran:
+                                            pendaftaran, // map yang sama seperti di card
+                                        pendaftaranKey: key, // key yang sama
                                       ),
                                 ),
                               ).then((newNote) {
