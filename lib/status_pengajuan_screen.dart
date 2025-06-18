@@ -1154,10 +1154,216 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildMainPage() {
     final baseStyle = Theme.of(context).textTheme.bodyMedium;
 
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: SizedBox(
+            width: 250,
+            height: 40,
+            child: TextField(
+              controller: _searchController,
+              focusNode: _focusNode,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                  _applySearch();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search data',
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.black, width: 1.2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.grey.shade500,
+                    width: 1.2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF0E5C36),
+                    width: 1.5,
+                  ),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    Icons.search,
+                    color:
+                        _focusNode.hasFocus
+                            ? const Color(0xFF0E5C36)
+                            : Colors.grey.shade600,
+                  ),
+                  onPressed:
+                      () => FocusScope.of(context).requestFocus(_focusNode),
+                ),
+              ),
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ),
+
+        _buildStatusMenu(),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (widget.status != 'trash')
+                ElevatedButton(
+                  onPressed: _confirmDeleteAllToTrash,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0E5C36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.delete_outline, size: 16, color: Colors.white),
+                      SizedBox(height: 4),
+                      Text(
+                        'Delete All',
+                        style: TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(width: 8),
+              if (widget.status != 'trash')
+                ElevatedButton(
+                  onPressed:
+                      () => _showExportByStatusUpdatedDatePickerDialog(
+                        widget.status,
+                      ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0E5C36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        'assets/icon/export_icon.png',
+                        width: 16,
+                        height: 16,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Export by',
+                        style: TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              if (widget.status == 'trash')
+                ElevatedButton(
+                  onPressed: _confirmDeleteAllTrashPermanently,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0E5C36),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.delete_outline, size: 16, color: Colors.white),
+                      SizedBox(height: 4),
+                      Text(
+                        'Delete All',
+                        style: TextStyle(fontSize: 12, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        Expanded(
+          child:
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _orders.isEmpty
+                  ? const Center(child: Text("Tidak ada pengajuan baru"))
+                  : _filteredOrders.isEmpty
+                  ? const Center(child: Text("Tidak ada hasil pencarian"))
+                  : ListView.builder(
+                    itemCount: orderedDates.fold<int>(
+                      0,
+                      (sum, date) => sum + groupedOrders[date]!.length + 1,
+                    ),
+                    itemBuilder: (context, index) {
+                      int currentIndex = 0;
+                      for (final date in orderedDates) {
+                        if (index == currentIndex) {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                            child: Text(
+                              'Date: $date',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          );
+                        }
+                        currentIndex++;
+                        final orders = groupedOrders[date]!;
+                        if (index - currentIndex < orders.length) {
+                          final order = orders[index - currentIndex];
+                          return _buildOrderCard(
+                            order,
+                            order['key'],
+                            baseStyle,
+                          );
+                        }
+                        currentIndex += orders.length;
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F5),
       appBar: AppBar(
@@ -1195,216 +1401,7 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-            child: SizedBox(
-              width: 250,
-              height: 40,
-              child: TextField(
-                controller: _searchController,
-                focusNode: _focusNode,
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                    _applySearch();
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Search data',
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.black, width: 1.2),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(
-                      color: Colors.grey.shade500,
-                      width: 1.2,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF0E5C36),
-                      width: 1.5,
-                    ),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      Icons.search,
-                      color:
-                          _focusNode.hasFocus
-                              ? Color(0xFF0E5C36)
-                              : Colors.grey.shade600,
-                    ),
-                    onPressed:
-                        () => FocusScope.of(context).requestFocus(_focusNode),
-                  ),
-                ),
-                style: TextStyle(fontSize: 14),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildStatusMenu(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (widget.status != 'trash')
-                  ElevatedButton(
-                    onPressed: _confirmDeleteAllToTrash,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF0E5C36),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.delete_outline,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Delete All',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                SizedBox(width: 8),
-
-                if (widget.status != 'trash')
-                  ElevatedButton(
-                    onPressed:
-                        () => _showExportByStatusUpdatedDatePickerDialog(
-                          widget.status,
-                        ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Color(0xFF0E5C36),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          'assets/icon/export_icon.png',
-                          width: 16,
-                          height: 16,
-                          color: Colors.white,
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Export by',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (widget.status == 'trash')
-                  ElevatedButton(
-                    onPressed: _confirmDeleteAllTrashPermanently,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0E5C36),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(
-                          Icons.delete_outline,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Delete All',
-                          style: TextStyle(fontSize: 12, color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child:
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _orders.isEmpty
-                    ? const Center(child: Text("Tidak ada pengajuan baru"))
-                    : _filteredOrders.isEmpty
-                    ? const Center(child: Text("Tidak ada hasil pencarian"))
-                    : ListView.builder(
-                      itemCount: orderedDates.fold<int>(
-                        0,
-                        (sum, date) => sum + groupedOrders[date]!.length + 1,
-                      ),
-                      itemBuilder: (context, index) {
-                        int currentIndex = 0;
-                        for (final date in orderedDates) {
-                          if (index == currentIndex) {
-                            return Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                              child: Text(
-                                'Date: $date',
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            );
-                          }
-                          currentIndex++;
-
-                          final orders = groupedOrders[date]!;
-                          if (index - currentIndex < orders.length) {
-                            final order = orders[index - currentIndex];
-                            return _buildOrderCard(
-                              order,
-                              order['key'],
-                              baseStyle,
-                            );
-                          }
-                          currentIndex += orders.length;
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-          ),
-        ],
-      ),
+      body: _buildMainPage(),
       bottomNavigationBar: const CustomBottomNavBar(currentRoute: 'other'),
     );
   }

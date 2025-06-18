@@ -11,6 +11,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'circular_loading_indicator.dart';
 
 const platform = MethodChannel('com.fundrain.adiraapp/download');
 
@@ -34,6 +36,9 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
   bool _isLoading = false;
   bool _isExporting = false;
   final FocusNode _focusNode = FocusNode();
+  String? _selectedExportDate;
+  double _exportProgress = 0;
+  void Function(void Function())? _setExportDialogState;
 
   List<String> get orderedDates {
     final grouped = groupedOrders;
@@ -321,7 +326,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                       children: [
                         ElevatedButton(
                           onPressed:
-                              () => _updateOrderStatus(order['key'], 'cancel'),
+                              () => _showCancelConfirmation(order['key']),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
@@ -335,7 +340,12 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.cancel, size: 16, color: Colors.white),
+                              SvgPicture.asset(
+                                'assets/icon/button_cancel.svg',
+                                width: 16,
+                                height: 16,
+                                color: Colors.white,
+                              ),
                               SizedBox(height: 4),
                               Text(
                                 'Cancel',
@@ -350,7 +360,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                         SizedBox(width: 6),
                         ElevatedButton(
                           onPressed:
-                              () => _updateOrderStatus(order['key'], 'process'),
+                              () => _showProcessConfirmation(order['key']),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
@@ -364,9 +374,10 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                Icons.hourglass_bottom,
-                                size: 16,
+                              SvgPicture.asset(
+                                'assets/icon/button_process.svg',
+                                width: 16,
+                                height: 16,
                                 color: Colors.white,
                               ),
                               SizedBox(height: 4),
@@ -387,26 +398,28 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
               ),
             ),
             if (isLead)
-              Positioned(
-                top: 12,
-                left: 280,
-                child: GestureDetector(
-                  onTap: () async {
-                    setState(() {
-                      order['lead'] = false;
-                    });
-                    await _updateLeadStatus(orderKey, false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Status lead dibatalkan')),
-                    );
-                  },
-                  child: Transform.scale(
-                    scaleY: 1.3,
-                    scaleX: 1.0,
-                    child: Icon(
-                      Icons.bookmark,
-                      size: 24,
-                      color: Color(0xFF0E5C36),
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 8, right: 36),
+                  child: GestureDetector(
+                    onTap: () async {
+                      setState(() {
+                        order['lead'] = false;
+                      });
+                      await _updateLeadStatus(orderKey, false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Status lead dibatalkan')),
+                      );
+                    },
+                    child: Transform.scale(
+                      scaleY: 1.3,
+                      scaleX: 1.0,
+                      child: Icon(
+                        Icons.bookmark,
+                        size: 24,
+                        color: Color(0xFF0E5C36),
+                      ),
                     ),
                   ),
                 ),
@@ -416,10 +429,14 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
               top: 0,
               right: 0,
               child: PopupMenuButton<String>(
+                color: Colors.white,
                 onSelected: (value) async {
                   if (value == 'lead') {
                     setState(() => order['lead'] = true);
                     await _updateLeadStatus(orderKey, true);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Status lead ditandai')),
+                    );
                   } else if (value == 'delete') {
                     _confirmDeleteSingleToTrash(orderKey);
                   }
@@ -427,10 +444,32 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                 itemBuilder: (BuildContext context) {
                   return [
                     if (!isLead)
-                      PopupMenuItem<String>(value: 'lead', child: Text('Lead')),
+                      PopupMenuItem<String>(
+                        value: 'lead',
+                        child: Row(
+                          children: [
+                            Icon(Icons.bookmark, color: Color(0xFF0E5C36)),
+                            SizedBox(width: 10),
+                            Text(
+                              'Lead',
+                              style: TextStyle(color: Color(0xFF0E5C36)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (!isLead) PopupMenuDivider(),
                     PopupMenuItem<String>(
                       value: 'delete',
-                      child: Text('Delete'),
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, color: Color(0xFF0E5C36)),
+                          SizedBox(width: 10),
+                          Text(
+                            'Delete',
+                            style: TextStyle(color: Color(0xFF0E5C36)),
+                          ),
+                        ],
+                      ),
                     ),
                   ];
                 },
@@ -442,22 +481,198 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     );
   }
 
+  void _showCancelConfirmation(String orderKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Cancel Pengajuan?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Pengajuan akan dibatalkan dan\npindah ke “Cancel”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateOrderStatus(orderKey, 'cancel');
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _showProcessConfirmation(String orderKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Process Pengajuan?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Pengajuan akan diproses dan\npindah ke “Process”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateOrderStatus(orderKey, 'process');
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
-      {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
-      {'label': 'Process', 'status': 'process', 'icon': Icons.hourglass_bottom},
-      {
-        'label': 'Pending',
-        'status': 'pending',
-        'icon': Icons.pause_circle_filled,
-      },
-      {'label': 'Reject', 'status': 'reject', 'icon': Icons.block},
-      {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
-      {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
+      {'label': 'Cancel', 'status': 'cancel', 'icon': 'custom_cancel_icon'},
+      {'label': 'Process', 'status': 'process', 'icon': 'custom_process_icon'},
+      {'label': 'Pending', 'status': 'pending', 'icon': 'custom_pending_icon'},
+      {'label': 'Reject', 'status': 'reject', 'icon': 'custom_reject_icon'},
+      {'label': 'Approve', 'status': 'approve', 'icon': 'custom_approve_icon'},
+      {'label': 'Trash Bin', 'status': 'trash', 'icon': 'custom_bin_icon'},
     ];
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 5),
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
       padding: EdgeInsets.symmetric(horizontal: 19, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -495,10 +710,59 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                         BoxShadow(color: Colors.grey.shade300, blurRadius: 4),
                       ],
                     ),
-                    child: Icon(
-                      item['icon'],
-                      size: 21,
-                      color: Color(0xFF0E5C36),
+                    child: Builder(
+                      builder: (_) {
+                        switch (item['icon']) {
+                          case 'custom_cancel_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/cancel.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          case 'custom_process_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/process.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          case 'custom_pending_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/pending.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          case 'custom_reject_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/reject.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          case 'custom_approve_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/approve.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          case 'custom_bin_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/bin.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          default:
+                            return Icon(
+                              Icons.help_outline,
+                              size: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                        }
+                      },
                     ),
                   ),
                   SizedBox(height: 4),
@@ -517,6 +781,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
     return Column(
       children: [
+        // ▶ Search bar
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
           child: Container(
@@ -531,15 +796,17 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                   _applySearch();
                 });
               },
+              style: const TextStyle(fontSize: 14),
               decoration: InputDecoration(
                 hintText: 'Search data',
-                contentPadding: EdgeInsets.symmetric(
+                hintStyle: const TextStyle(fontSize: 14),
+                contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 4,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: Colors.black, width: 1.2),
+                  borderSide: const BorderSide(color: Colors.black, width: 1.2),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -550,7 +817,10 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide(color: Color(0xFF0E5C36), width: 1.5),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF0E5C36),
+                    width: 1.5,
+                  ),
                 ),
                 filled: true,
                 fillColor: Colors.white,
@@ -559,84 +829,114 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                     Icons.search,
                     color:
                         _focusNode.hasFocus
-                            ? Color(0xFF0E5C36)
+                            ? const Color(0xFF0E5C36)
                             : Colors.grey.shade600,
                   ),
                   onPressed:
                       () => FocusScope.of(context).requestFocus(_focusNode),
                 ),
               ),
-              style: TextStyle(fontSize: 14),
             ),
           ),
         ),
-        SizedBox(height: 8),
+
+        const SizedBox(height: 8),
+
+        // ▶ Status menu
         _buildStatusMenu(),
+
+        // ▶ Header & action buttons
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              ElevatedButton(
-                onPressed: _confirmDeleteAllToTrash,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF0E5C36),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.delete_outline, size: 16, color: Colors.white),
-                    SizedBox(height: 4),
-                    Text(
-                      'Delete All',
-                      style: TextStyle(fontSize: 12, color: Colors.white),
-                    ),
-                  ],
+              Text(
+                'Data Pengajuan',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
               ),
-              SizedBox(width: 8),
-              ElevatedButton(
-                onPressed: _showExportDatePickerDialog,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF0E5C36),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: _confirmDeleteAllToTrash,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(
+                          Icons.delete_outline,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Delete All',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'assets/icon/export_icon.png',
-                      width: 16,
-                      height: 16,
-                      color: Colors.white,
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _showExportDatePickerDialog,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Export by',
-                      style: TextStyle(fontSize: 12, color: Colors.white),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/icon/export_icon.png',
+                          width: 16,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Export by',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        SizedBox(height: 12),
+
+        const SizedBox(height: 12),
+
+        // ▶ List of orders grouped by date
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? const Center(child: CircularProgressIndicator())
                   : _orders.isEmpty
-                  ? Center(child: Text("Tidak ada pengajuan baru"))
+                  ? const Center(child: Text("Tidak ada pengajuan baru"))
                   : _filteredOrders.isEmpty
-                  ? Center(child: Text("Tidak ada hasil pencarian"))
+                  ? const Center(child: Text("Tidak ada hasil pencarian"))
                   : ListView.builder(
                     itemCount: orderedDates.fold<int>(
                       0,
@@ -650,7 +950,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                             child: Text(
                               'Date: $date',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black87,
@@ -659,7 +959,6 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                           );
                         }
                         currentIndex++;
-
                         final orders = groupedOrders[date]!;
                         if (index - currentIndex < orders.length) {
                           final order = orders[index - currentIndex];
@@ -671,7 +970,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                         }
                         currentIndex += orders.length;
                       }
-                      return SizedBox.shrink();
+                      return const SizedBox.shrink();
                     },
                   ),
         ),
@@ -683,22 +982,88 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: Text('Hapus Semua?'),
-            content: Text('Yakin ingin menghapus semua data (non-lead)?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Batal'),
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _markAllNonLeadAsTrashed();
-                },
-                child: Text('Ya, Hapus'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delete All Data Pengajuan?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data will first be moved to “Trash Bin”. From there,\nyou can recover them or permanently delete them.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _markAllNonLeadAsTrashed();
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Delete All',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
     );
   }
@@ -744,7 +1109,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
       if (!snapshot.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tidak ada data untuk diekspor')),
+          SnackBar(content: Text('Tidak ada data pengajuan untuk diekspor')),
         );
         return;
       }
@@ -768,27 +1133,187 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
       showDialog(
         context: context,
-        builder:
-            (_) => AlertDialog(
-              title: Text("Pilih Tanggal untuk Export"),
-              content: Container(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: sortedDates.length,
-                  itemBuilder: (ctx, index) {
-                    final date = sortedDates[index];
-                    return ListTile(
-                      title: Text(date),
-                      onTap: () {
-                        Navigator.pop(context);
-                        _exportOrdersByDate(date);
-                      },
-                    );
-                  },
+        builder: (_) {
+          bool showError = false;
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Pilih Tanggal Data Pengajuan yang ingin diExport",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Container(
+                        height: 300,
+                        width: double.maxFinite,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: sortedDates.length,
+                          itemBuilder: (_, i) {
+                            final date = sortedDates[i];
+                            final isSelected = date == _selectedExportDate;
+
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedExportDate = date;
+                                });
+                                setStateDialog(() {
+                                  showError = false;
+                                });
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color:
+                                        isSelected
+                                            ? const Color(0xFF0E5C36)
+                                            : (showError
+                                                ? Colors.red
+                                                : Colors.grey),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "By Date $date",
+                                      style: TextStyle(
+                                        color:
+                                            isSelected
+                                                ? const Color(0xFF0E5C36)
+                                                : (showError
+                                                    ? Colors.red
+                                                    : Colors.black),
+                                        fontWeight:
+                                            isSelected
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color:
+                                              isSelected
+                                                  ? const Color(0xFF0E5C36)
+                                                  : (showError
+                                                      ? Colors.red
+                                                      : Colors.black),
+                                        ),
+                                        color:
+                                            isSelected
+                                                ? const Color(0xFF0E5C36)
+                                                : Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      if (showError)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              "Tanggal harus dipilih",
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: TextButton.styleFrom(
+                                backgroundColor: Color(0xFFE67D13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: TextButton(
+                              onPressed: () async {
+                                if (_selectedExportDate != null) {
+                                  await _exportOrdersByDate(
+                                    _selectedExportDate!,
+                                  );
+                                  Navigator.pop(context);
+                                } else {
+                                  setStateDialog(() {
+                                    showError = true;
+                                  });
+                                }
+                              },
+                              style: TextButton.styleFrom(
+                                backgroundColor: Color(0xFF0E5C36),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                padding: EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: Text(
+                                'Export',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
+          );
+        },
       );
     } catch (e) {
       ScaffoldMessenger.of(
@@ -822,7 +1347,21 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(child: CircularProgressIndicator()),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            _setExportDialogState = setStateDialog;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularExportIndicator(progress: _exportProgress),
+              ),
+            );
+          },
+        );
+      },
     );
 
     final ref = FirebaseDatabase.instance.ref("orders");
@@ -903,6 +1442,11 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         final dynamicOrder = ordersToExport[i];
         final order = Map<String, dynamic>.from(dynamicOrder);
         final row = i + 2;
+        _setExportDialogState?.call(() {
+          _exportProgress = (i + 1) / ordersToExport.length;
+        });
+
+        await Future.delayed(Duration(milliseconds: 10));
 
         sheet.getRangeByIndex(row, 1).rowHeight = 80;
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'admin_pengajuan_screen.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class CustomBottomNavBar extends StatelessWidget {
   final String currentRoute;
@@ -53,14 +54,14 @@ class CustomBottomNavBar extends StatelessWidget {
         unselectedFontSize: 14,
         items: [
           _buildNavItem(
-            icon: Icons.insert_drive_file,
+            iconPath: 'assets/icon/navbar_pengajuan.svg',
             label: 'Pengajuan',
             isSelected: currentRoute == '/pengajuan',
             isMainScreen: true,
             itemIndex: 0,
           ),
           _buildNavItem(
-            icon: Icons.bookmark,
+            iconPath: 'assets/icon/navbar_lead.svg',
             label: 'Lead',
             isSelected: currentRoute == '/saved',
             isMainScreen: true,
@@ -72,7 +73,7 @@ class CustomBottomNavBar extends StatelessWidget {
   }
 
   BottomNavigationBarItem _buildNavItem({
-    required IconData icon,
+    required String iconPath,
     required String label,
     required bool isSelected,
     required bool isMainScreen,
@@ -88,9 +89,9 @@ class CustomBottomNavBar extends StatelessWidget {
         children: [
           Transform.translate(
             offset: Offset(0, verticalOffset),
-            child: Icon(
-              icon,
-              size: 24,
+            child: SvgPicture.asset(
+              iconPath,
+              height: 19,
               color: isSelected ? const Color(0xFF0E5C36) : Colors.black,
             ),
           ),
