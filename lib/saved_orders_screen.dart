@@ -11,6 +11,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/gestures.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'circular_loading_indicator.dart';
 
 const platform = MethodChannel('com.fundrain.adiraapp/download');
 
@@ -30,6 +33,8 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
   bool _isExporting = false;
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  double _exportProgress = 0.0;
+  void Function(void Function())? _setExportDialogState;
 
   @override
   void initState() {
@@ -158,151 +163,194 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
 
   Widget _buildStatusMenu() {
     final List<Map<String, dynamic>> statusButtons = [
-      {'label': 'Cancel', 'status': 'cancel', 'icon': Icons.cancel},
-      {'label': 'Process', 'status': 'process', 'icon': Icons.hourglass_bottom},
-      {
-        'label': 'Pending',
-        'status': 'pending',
-        'icon': Icons.pause_circle_filled,
-      },
-      {'label': 'Reject', 'status': 'reject', 'icon': Icons.block},
-      {'label': 'Approve', 'status': 'approve', 'icon': Icons.check_circle},
-      {'label': 'Trash Bin', 'status': 'trash', 'icon': Icons.delete},
+      {'label': 'Cancel', 'status': 'cancel', 'icon': 'custom_cancel_icon'},
+      {'label': 'Process', 'status': 'process', 'icon': 'custom_process_icon'},
+      {'label': 'Pending', 'status': 'pending', 'icon': 'custom_pending_icon'},
+      {'label': 'Reject', 'status': 'reject', 'icon': 'custom_reject_icon'},
+      {'label': 'Approve', 'status': 'approve', 'icon': 'custom_approve_icon'},
     ];
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 0),
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
       padding: EdgeInsets.symmetric(horizontal: 19, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 5)],
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children:
-            statusButtons.map((item) {
-              return Expanded(
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (_) => StatusSavedOrderScreen(
-                              status: item['status'],
-                              title: item['label'],
-                            ),
-                      ),
-                    );
-                  },
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.shade300,
-                              blurRadius: 4,
-                            ),
-                          ],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: List.generate(statusButtons.length * 2 - 1, (index) {
+            if (index.isOdd) return SizedBox(width: 31);
+            final item = statusButtons[index ~/ 2];
+            return InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => StatusSavedOrderScreen(
+                          status: item['status'],
+                          title: item['label'],
                         ),
-                        child: Icon(
-                          item['icon'],
-                          size: 21,
-                          color: Color(0xFF0E5C36),
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      FittedBox(
-                        child: Text(
-                          item['label'],
-                          style: TextStyle(fontSize: 10),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
                   ),
-                ),
-              );
-            }).toList(),
+                );
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(color: Colors.grey.shade300, blurRadius: 4),
+                      ],
+                    ),
+                    child: Builder(
+                      builder: (_) {
+                        switch (item['icon']) {
+                          case 'custom_cancel_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/cancel.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          case 'custom_process_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/process.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          case 'custom_pending_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/pending.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          case 'custom_reject_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/reject.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          case 'custom_approve_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/approve.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          case 'custom_bin_icon':
+                            return SvgPicture.asset(
+                              'assets/icon/bin.svg',
+                              width: 21,
+                              height: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                          default:
+                            return Icon(
+                              Icons.help_outline,
+                              size: 21,
+                              color: Color(0xFF0E5C36),
+                            );
+                        }
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(item['label'], style: TextStyle(fontSize: 10)),
+                ],
+              ),
+            );
+          }),
+        ),
       ),
     );
   }
 
   Widget _buildMainPage() {
-    return _isLoading
-        ? Center(child: CircularProgressIndicator())
-        : Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Container(
-                width: 250,
-                height: 40,
-                child: TextField(
-                  controller: _searchController,
-                  focusNode: _focusNode,
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                      _applySearch();
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Search data',
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 4,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: Colors.black, width: 1.2),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                        color: Colors.grey.shade500,
-                        width: 1.2,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(
-                        color: Color(0xFF0E5C36),
-                        width: 1.5,
-                      ),
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        Icons.search,
-                        color:
-                            _focusNode.hasFocus
-                                ? Color(0xFF0E5C36)
-                                : Colors.grey.shade600,
-                      ),
-                      onPressed:
-                          () => FocusScope.of(context).requestFocus(_focusNode),
-                    ),
+    final baseStyle = Theme.of(context).textTheme.bodyMedium;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: Container(
+            width: 250,
+            height: 40,
+            child: TextField(
+              controller: _searchController,
+              focusNode: _focusNode,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                  _applySearch();
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Search data',
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.black, width: 1.2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(
+                    color: Colors.grey.shade500,
+                    width: 1.2,
                   ),
-                  style: TextStyle(fontSize: 14),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Color(0xFF0E5C36), width: 1.5),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    Icons.search,
+                    color:
+                        _focusNode.hasFocus
+                            ? Color(0xFF0E5C36)
+                            : Colors.grey.shade600,
+                  ),
+                  onPressed:
+                      () => FocusScope.of(context).requestFocus(_focusNode),
                 ),
               ),
+              style: TextStyle(fontSize: 14),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-              child: _buildStatusMenu(),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        _buildStatusMenu(),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Lead Pengajuan',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              Row(
                 children: [
                   ElevatedButton(
                     onPressed: _confirmDeleteAllToTrash,
@@ -356,7 +404,7 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Export All',
+                          'Export by',
                           style: TextStyle(fontSize: 12, color: Colors.white),
                         ),
                       ],
@@ -364,75 +412,180 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                   ),
                 ],
               ),
-            ),
-            SizedBox(height: 12),
-            Expanded(
-              child:
-                  _savedOrders.isEmpty
-                      ? Center(child: Text("No saved orders"))
-                      : ListView.builder(
-                        itemCount: orderedDates.fold<int>(
-                          0,
-                          (sum, date) => sum + groupedOrders[date]!.length + 1,
-                        ),
-                        itemBuilder: (context, index) {
-                          int currentIndex = 0;
-                          for (final date in orderedDates) {
-                            if (index == currentIndex) {
-                              return Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  12,
-                                  16,
-                                  4,
-                                ),
-                                child: Text(
-                                  'Date: $date',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              );
-                            }
-                            currentIndex++;
+            ],
+          ),
+        ),
 
-                            final orders = groupedOrders[date]!;
-                            if (index - currentIndex < orders.length) {
-                              final order = orders[index - currentIndex];
-                              return _buildOrderCard(order, null);
-                            }
-                            currentIndex += orders.length;
-                          }
-                          return SizedBox.shrink();
-                        },
+        SizedBox(height: 12),
+
+        Expanded(
+          child:
+              _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : _savedOrders.isEmpty
+                  ? IgnorePointer(
+                    ignoring: true,
+                    child: SingleChildScrollView(
+                      physics: NeverScrollableScrollPhysics(),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              'assets/images/EmptyState.png',
+                              width: 300,
+                              height: 200,
+                              fit: BoxFit.contain,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'No Data Found',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'No saved orders found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-            ),
-          ],
-        );
+                    ),
+                  )
+                  : ListView.builder(
+                    itemCount: orderedDates.fold<int>(
+                      0,
+                      (sum, date) => sum + groupedOrders[date]!.length + 1,
+                    ),
+                    itemBuilder: (context, index) {
+                      int currentIndex = 0;
+                      for (final date in orderedDates) {
+                        if (index == currentIndex) {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                            child: Text(
+                              'Date: $date',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          );
+                        }
+                        currentIndex++;
+
+                        final orders = groupedOrders[date]!;
+                        if (index - currentIndex < orders.length) {
+                          final order = orders[index - currentIndex];
+                          return _buildOrderCard(order, null);
+                        }
+                        currentIndex += orders.length;
+                      }
+                      return SizedBox.shrink();
+                    },
+                  ),
+        ),
+      ],
+    );
   }
 
   void _confirmDeleteAllToTrash() {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: Text('Hapus Semua?'),
-            content: Text('Yakin ingin menghapus semua data?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Batal'),
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _markAllAsTrashed();
-                },
-                child: Text('Ya, Hapus'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delete All Data Pengajuan?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data will first be moved to “Trash Bin”. From there,\nyou can recover them or permanently delete them.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _markAllAsTrashed();
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Delete All',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
     );
   }
@@ -474,7 +627,6 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
 
     try {
       final snapshot = await ref.get();
-
       if (!snapshot.exists) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Tidak ada data untuk diekspor')),
@@ -483,44 +635,198 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
       }
 
       final Set<String> uniqueDates = {};
-
       for (final child in snapshot.children) {
         final data = Map<String, dynamic>.from(child.value as Map);
         final tanggal = data['tanggal'];
-        if (tanggal != null) {
-          uniqueDates.add(tanggal);
-        }
+        if (tanggal != null) uniqueDates.add(tanggal);
       }
 
       final sortedDates =
           uniqueDates.toList()..sort((a, b) {
-            final dateA = DateTime.parse(_toIsoDate(a));
-            final dateB = DateTime.parse(_toIsoDate(b));
-            return dateB.compareTo(dateA);
+            final da = DateTime.parse(_toIsoDate(a));
+            final db = DateTime.parse(_toIsoDate(b));
+            return db.compareTo(da);
           });
+
+      String? _selectedDate;
+      bool showError = false;
 
       showDialog(
         context: context,
         builder:
-            (_) => AlertDialog(
-              title: Text("Pilih Tanggal untuk Export"),
-              content: Container(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: sortedDates.length,
-                  itemBuilder: (ctx, index) {
-                    final date = sortedDates[index];
-                    return ListTile(
-                      title: Text(date),
-                      onTap: () {
-                        Navigator.pop(context);
-                        _exportSavedOrdersByDate(date);
-                      },
-                    );
-                  },
-                ),
-              ),
+            (_) => StatefulBuilder(
+              builder: (context, setStateDialog) {
+                return Dialog(
+                  backgroundColor: Colors.transparent,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Pilih Tanggal untuk Export Saved Orders",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        Container(
+                          height: 300,
+                          width: double.maxFinite,
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: sortedDates.length,
+                            itemBuilder: (_, i) {
+                              final date = sortedDates[i];
+                              final isSel = date == _selectedDate;
+                              return GestureDetector(
+                                onTap: () {
+                                  setStateDialog(() {
+                                    _selectedDate = date;
+                                    showError = false;
+                                  });
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    vertical: 6,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color:
+                                          isSel
+                                              ? const Color(0xFF0E5C36)
+                                              : (showError
+                                                  ? Colors.red
+                                                  : Colors.grey),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        "By Date $date",
+                                        style: TextStyle(
+                                          color:
+                                              isSel
+                                                  ? const Color(0xFF0E5C36)
+                                                  : (showError
+                                                      ? Colors.red
+                                                      : Colors.black),
+                                          fontWeight:
+                                              isSel
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                        ),
+                                      ),
+                                      Container(
+                                        width: 20,
+                                        height: 20,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color:
+                                                isSel
+                                                    ? const Color(0xFF0E5C36)
+                                                    : (showError
+                                                        ? Colors.red
+                                                        : Colors.black),
+                                          ),
+                                          color:
+                                              isSel
+                                                  ? const Color(0xFF0E5C36)
+                                                  : Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        if (showError)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                "Tanggal harus dipilih",
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: TextButton.styleFrom(
+                                  backgroundColor: Color(0xFFE67D13),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                ),
+                                child: Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: TextButton(
+                                onPressed: () async {
+                                  if (_selectedDate != null) {
+                                    await _exportSavedOrdersByDate(
+                                      _selectedDate!,
+                                    );
+                                  } else {
+                                    setStateDialog(() => showError = true);
+                                  }
+                                },
+                                style: TextButton.styleFrom(
+                                  backgroundColor: Color(0xFF0E5C36),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                ),
+                                child: Text(
+                                  'Export',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
       );
     } catch (e) {
@@ -555,7 +861,21 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(child: CircularProgressIndicator()),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            _setExportDialogState = setStateDialog;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularExportIndicator(progress: _exportProgress),
+              ),
+            );
+          },
+        );
+      },
     );
 
     final ref = FirebaseDatabase.instance.ref("orders");
@@ -637,6 +957,9 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
         final dynamicOrder = ordersToExport[i];
         final order = Map<String, dynamic>.from(dynamicOrder);
         final row = i + 2;
+        _setExportDialogState?.call(() {
+          _exportProgress = (i + 1) / ordersToExport.length;
+        });
 
         sheet.getRangeByIndex(row, 1).rowHeight = 80;
 
@@ -762,17 +1085,26 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
     }
   }
 
-  Future<void> _launchWhatsApp(String phoneNumber) async {
-    final normalizedPhone = normalizePhoneNumber(phoneNumber);
-    final url = 'https://wa.me/$normalizedPhone';
-    final uri = Uri.parse(url);
+  String normalizePhone(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('0')) {
+      return '62${digits.substring(1)}';
+    } else if (digits.startsWith('62')) {
+      return digits;
+    } else {
+      return '62$digits';
+    }
+  }
 
+  Future<void> _launchWhatsApp(String phone) async {
+    final normalized = normalizePhone(phone);
+    final uri = Uri.parse('https://wa.me/$normalized');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat membuka WhatsApp')),
+      );
     }
   }
 
@@ -800,39 +1132,111 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: Text('Hapus Data Ini?'),
-            content: Text('Yakin ingin menghapus data ini ke Trash Bin?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Batal'),
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  final now = DateTime.now();
-                  final formattedDate = DateFormat('dd-MM-yyyy').format(now);
-                  try {
-                    await _database.child(key).update({
-                      'trash': true,
-                      'trashUpdatedAt': formattedDate,
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Data berhasil dipindahkan ke Trash'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delete Data Pengajuan?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data will first be moved to “Trash Bin”. From there,\nyou can recover them or permanently delete them.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                    );
-                    _fetchSavedOrders();
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Gagal menghapus data: $e')),
-                    );
-                  }
-                },
-                child: Text('Ya, Hapus'),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            final now = DateTime.now();
+                            final formattedDate = DateFormat(
+                              'dd-MM-yyyy',
+                            ).format(now);
+                            try {
+                              await _database.child(key).update({
+                                'trash': true,
+                                'trashUpdatedAt': formattedDate,
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Data berhasil dipindahkan ke Trash',
+                                  ),
+                                ),
+                              );
+                              _fetchSavedOrders();
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Gagal menghapus data: $e'),
+                                ),
+                              );
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Delete',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
     );
   }
@@ -841,6 +1245,186 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
     await FirebaseDatabase.instance.ref('orders/$orderKey').update({
       'lead': isLead,
     });
+  }
+
+  void _showCancelConfirmation(String orderKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Cancel Pengajuan?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Pengajuan akan dibatalkan dan\npindah ke “Cancel”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateOrderStatus(orderKey, 'cancel');
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _showProcessConfirmation(String orderKey) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Process Pengajuan?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Pengajuan akan diproses dan\npindah ke “Process”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateOrderStatus(orderKey, 'process');
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
   }
 
   Widget _buildOrderCard(Map order, TextStyle? baseStyle) {
@@ -859,7 +1443,7 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
         );
       },
       child: Container(
-        margin: EdgeInsets.only(left: 10, right: 10, top: 4, bottom: 10),
+        margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -875,7 +1459,8 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
         child: Stack(
           children: [
             DefaultTextStyle.merge(
-              style: baseStyle,
+              style:
+                  baseStyle ?? TextStyle(fontSize: 14, color: Colors.black87),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -886,29 +1471,54 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                   SizedBox(height: 4),
                   Text("Nama         : ${order['name'] ?? '-'}"),
                   Text("Alamat       : ${order['domicile'] ?? '-'}"),
-                  GestureDetector(
-                    onTap: () async {
-                      try {
-                        await _launchWhatsApp(phoneNumber);
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error launching WhatsApp: $e'),
-                          ),
-                        );
-                      }
-                    },
-                    child: Text(
-                      "No. Telp     : $phoneNumber",
-                      style: TextStyle(color: Colors.blue),
+                  SizedBox(height: 4),
+                  RichText(
+                    text: TextSpan(
+                      style:
+                          baseStyle ??
+                          TextStyle(fontSize: 14, color: Colors.black87),
+                      children: [
+                        TextSpan(text: "No. Telp      : "),
+                        TextSpan(
+                          text: phoneNumber,
+                          style: TextStyle(color: Colors.blue),
+                          recognizer:
+                              TapGestureRecognizer()
+                                ..onTap = () async {
+                                  final normalized = normalizePhone(
+                                    phoneNumber,
+                                  );
+                                  final uri = Uri.parse(
+                                    'https://wa.me/$normalized',
+                                  );
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(
+                                      uri,
+                                      mode: LaunchMode.externalApplication,
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Tidak dapat membuka WhatsApp',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                        ),
+                      ],
                     ),
                   ),
+
+                  SizedBox(height: 4),
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
                   Text("Pengajuan : ${order['installment'] ?? '-'}"),
                   SizedBox(height: 8),
-                  if (!(isLead && (order['status'] == 'lead')))
+                  if (!(isLead && order['status'] == 'lead'))
                     Text(
                       "Status        : ${order['status'] ?? 'Belum diproses'}",
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   SizedBox(height: 16),
                   Align(
@@ -918,7 +1528,7 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                       children: [
                         ElevatedButton(
                           onPressed:
-                              () => _updateOrderStatus(order['key'], 'cancel'),
+                              () => _showCancelConfirmation(order['key']),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
@@ -932,7 +1542,12 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.cancel, size: 16, color: Colors.white),
+                              SvgPicture.asset(
+                                'assets/icon/button_cancel.svg',
+                                width: 16,
+                                height: 16,
+                                color: Colors.white,
+                              ),
                               SizedBox(height: 4),
                               Text(
                                 'Cancel',
@@ -947,7 +1562,7 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                         SizedBox(width: 6),
                         ElevatedButton(
                           onPressed:
-                              () => _updateOrderStatus(order['key'], 'process'),
+                              () => _showProcessConfirmation(order['key']),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
@@ -961,9 +1576,10 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                Icons.hourglass_bottom,
-                                size: 16,
+                              SvgPicture.asset(
+                                'assets/icon/button_process.svg',
+                                width: 16,
+                                height: 16,
                                 color: Colors.white,
                               ),
                               SizedBox(height: 4),
@@ -983,10 +1599,43 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                 ],
               ),
             ),
+
+            if (isLead)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 8, right: 36),
+                  child: GestureDetector(
+                    onTap: () async {
+                      setState(() => order['lead'] = false);
+                      await _updateLeadStatus(order['key'], false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Status lead dibatalkan')),
+                      );
+                      _fetchSavedOrders();
+                    },
+                    child: Transform.scale(
+                      scaleY: 1.3,
+                      scaleX: 1.0,
+                      child: Icon(
+                        Icons.bookmark,
+                        size: 24,
+                        color: Color(0xFF0E5C36),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
             Positioned(
               top: 0,
               right: 0,
               child: PopupMenuButton<String>(
+                color: Colors.white,
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 onSelected: (value) async {
                   if (value == 'lead') {
                     setState(() => order['lead'] = true);
@@ -994,48 +1643,44 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Ditandai sebagai lead')),
                     );
+                    _fetchSavedOrders();
                   } else if (value == 'delete') {
                     _confirmDeleteSingleToTrash(order['key']);
                   }
                 },
-                itemBuilder: (BuildContext context) {
-                  return [
-                    if (!isLead)
-                      PopupMenuItem<String>(value: 'lead', child: Text('Lead')),
-                    PopupMenuItem<String>(
-                      value: 'delete',
-                      child: Text('Delete'),
-                    ),
-                  ];
-                },
+                itemBuilder:
+                    (_) => [
+                      if (!isLead)
+                        PopupMenuItem<String>(
+                          value: 'lead',
+                          child: Row(
+                            children: [
+                              Icon(Icons.bookmark, color: Color(0xFF0E5C36)),
+                              SizedBox(width: 10),
+                              Text(
+                                'Lead',
+                                style: TextStyle(color: Color(0xFF0E5C36)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (!isLead) PopupMenuDivider(),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, color: Color(0xFF0E5C36)),
+                            SizedBox(width: 10),
+                            Text(
+                              'Delete',
+                              style: TextStyle(color: Color(0xFF0E5C36)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
               ),
             ),
-            if (isLead)
-              Positioned(
-                top: 12,
-                left: 240,
-                child: GestureDetector(
-                  onTap: () async {
-                    setState(() {
-                      order['lead'] = false;
-                    });
-                    await _updateLeadStatus(order['key'], false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Status lead dibatalkan')),
-                    );
-                    _fetchSavedOrders();
-                  },
-                  child: Transform.scale(
-                    scaleY: 1.3,
-                    scaleX: 1.0,
-                    child: Icon(
-                      Icons.bookmark,
-                      size: 24,
-                      color: Color(0xFF0E5C36),
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),

@@ -157,34 +157,25 @@ class OrderDetailScreen extends StatelessWidget {
                       ],
                     ),
                     Text("E-mail: ${orderData['agentEmail'] ?? '-'}"),
-                    GestureDetector(
-                      onTap: () async {
-                        final phone = orderData['agentPhone'] ?? '';
-                        if (phone.isNotEmpty) {
-                          final url =
-                              'https://wa.me/${normalizePhoneNumber(phone)}';
-                          if (await canLaunch(url)) {
-                            await launch(url);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Tidak dapat membuka WhatsApp'),
+                    RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          TextSpan(text: "No. Telp: "),
+                          WidgetSpan(
+                            child: GestureDetector(
+                              onTap:
+                                  () => _launchWhatsApp(
+                                    context,
+                                    orderData['agentPhone'] ?? '',
+                                  ),
+                              child: Text(
+                                orderData['agentPhone'] ?? '-',
+                                style: TextStyle(color: Colors.blue),
                               ),
-                            );
-                          }
-                        }
-                      },
-                      child: RichText(
-                        text: TextSpan(
-                          style: TextStyle(fontSize: 14, color: Colors.black87),
-                          children: [
-                            TextSpan(text: "No. Telp: "),
-                            TextSpan(
-                              text: orderData['agentPhone'] ?? '-',
-                              style: TextStyle(color: Colors.blue),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -210,36 +201,28 @@ class OrderDetailScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    GestureDetector(
-                      onTap: () async {
-                        final phone = orderData['agentPhone'] ?? '';
-                        if (phone.isNotEmpty) {
-                          final url =
-                              'https://wa.me/${normalizePhoneNumber(phone)}';
-                          if (await canLaunch(url)) {
-                            await launch(url);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Tidak dapat membuka WhatsApp'),
+                    RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          TextSpan(text: "No. Telp: "),
+                          WidgetSpan(
+                            child: GestureDetector(
+                              onTap:
+                                  () => _launchWhatsApp(
+                                    context,
+                                    orderData['phone'] ?? '',
+                                  ),
+                              child: Text(
+                                orderData['phone'] ?? '-',
+                                style: TextStyle(color: Colors.blue),
                               ),
-                            );
-                          }
-                        }
-                      },
-                      child: RichText(
-                        text: TextSpan(
-                          style: TextStyle(fontSize: 14, color: Colors.black87),
-                          children: [
-                            TextSpan(text: "No. Telp: "),
-                            TextSpan(
-                              text: orderData['agentPhone'] ?? '-',
-                              style: TextStyle(color: Colors.blue),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
+
                     Text("E-mail: ${orderData['email'] ?? '-'}"),
                     Text("Alamat: ${orderData['domicile'] ?? '-'}"),
                     Text("Kode Pos: ${orderData['postalCode'] ?? '-'}"),
@@ -355,10 +338,26 @@ class OrderDetailScreen extends StatelessWidget {
     return ts.toString();
   }
 
-  String normalizePhoneNumber(String phone) {
-    if (phone.startsWith('0')) {
-      return '62${phone.substring(1)}';
+  String normalizePhone(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('0')) {
+      return '62${digits.substring(1)}';
+    } else if (digits.startsWith('62')) {
+      return digits;
+    } else {
+      return '62$digits';
     }
-    return phone;
+  }
+
+  Future<void> _launchWhatsApp(BuildContext context, String phone) async {
+    final normalized = normalizePhone(phone);
+    final uri = Uri.parse('https://wa.me/$normalized');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat membuka WhatsApp')),
+      );
+    }
   }
 }

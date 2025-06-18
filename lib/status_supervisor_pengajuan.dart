@@ -598,7 +598,7 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
         return;
       }
 
-      _selectedExportDate = null; // reset sebelumnya
+      _selectedExportDate = null;
 
       showDialog(
         context: context,

@@ -13,6 +13,7 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'circular_loading_indicator.dart';
+import 'package:flutter/gestures.dart';
 
 const platform = MethodChannel('com.fundrain.adiraapp/download');
 
@@ -170,24 +171,26 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     }
   }
 
-  String normalizePhoneNumber(String phone) {
-    if (phone.startsWith('0')) {
-      return '62${phone.substring(1)}';
+  String normalizePhone(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('0')) {
+      return '62${digits.substring(1)}';
+    } else if (digits.startsWith('62')) {
+      return digits;
+    } else {
+      return '62$digits';
     }
-    return phone;
   }
 
-  Future<void> _launchWhatsApp(String phoneNumber) async {
-    final normalizedPhone = normalizePhoneNumber(phoneNumber);
-    final url = 'https://wa.me/$normalizedPhone';
-    final uri = Uri.parse(url);
-
+  Future<void> _launchWhatsApp(String phone) async {
+    final normalized = normalizePhone(phone);
+    final uri = Uri.parse('https://wa.me/$normalized');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat membuka WhatsApp')),
+      );
     }
   }
 
@@ -215,39 +218,111 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: Text('Hapus Data Ini?'),
-            content: Text('Yakin ingin menghapus data ini ke Trash Bin?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Batal'),
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  final now = DateTime.now();
-                  final formattedDate = DateFormat('dd-MM-yyyy').format(now);
-                  try {
-                    await _database.child(key).update({
-                      'trash': true,
-                      'trashUpdatedAt': formattedDate,
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Data berhasil dipindahkan ke Trash'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delete Data Pengajuan?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data will first be moved to “Trash Bin”. From there,\nyou can recover them or permanently delete them.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ),
-                    );
-                    _fetchOrders();
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Gagal menghapus data: $e')),
-                    );
-                  }
-                },
-                child: Text('Ya, Hapus'),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            final now = DateTime.now();
+                            final formattedDate = DateFormat(
+                              'dd-MM-yyyy',
+                            ).format(now);
+                            try {
+                              await _database.child(key).update({
+                                'trash': true,
+                                'trashUpdatedAt': formattedDate,
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Data berhasil dipindahkan ke Trash',
+                                  ),
+                                ),
+                              );
+                              _fetchOrders();
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Gagal menghapus data: $e'),
+                                ),
+                              );
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Delete',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
     );
   }
@@ -294,21 +369,33 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                   SizedBox(height: 4),
                   Text("Nama         : ${order['name'] ?? '-'}"),
                   Text("Alamat       : ${order['domicile'] ?? '-'}"),
-                  GestureDetector(
-                    onTap: () async {
-                      try {
-                        await _launchWhatsApp(phoneNumber);
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error launching WhatsApp: $e'),
-                          ),
-                        );
-                      }
-                    },
-                    child: Text(
-                      "No. Telp     : $phoneNumber",
-                      style: TextStyle(color: Colors.blue),
+                  RichText(
+                    text: TextSpan(
+                      style:
+                          baseStyle ??
+                          TextStyle(fontSize: 14, color: Colors.black87),
+                      children: [
+                        const TextSpan(text: "No. Telp     : "),
+                        TextSpan(
+                          text: phoneNumber,
+                          style: const TextStyle(color: Colors.blue),
+                          recognizer:
+                              TapGestureRecognizer()
+                                ..onTap = () async {
+                                  try {
+                                    await _launchWhatsApp(phoneNumber);
+                                  } catch (e) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Error launching WhatsApp: $e',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                        ),
+                      ],
                     ),
                   ),
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
@@ -317,6 +404,7 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                   if (!(isLead && (order['status'] == 'lead')))
                     Text(
                       "Status        : ${order['status'] ?? 'Belum diproses'}",
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   SizedBox(height: 16),
                   Align(
@@ -781,7 +869,6 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
     return Column(
       children: [
-        // ▶ Search bar
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
           child: Container(
@@ -842,10 +929,8 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
         const SizedBox(height: 8),
 
-        // ▶ Status menu
         _buildStatusMenu(),
 
-        // ▶ Header & action buttons
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(
@@ -928,13 +1013,50 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
 
         const SizedBox(height: 12),
 
-        // ▶ List of orders grouped by date
         Expanded(
           child:
               _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _orders.isEmpty
-                  ? const Center(child: Text("Tidak ada pengajuan baru"))
+                  ? IgnorePointer(
+                    ignoring: true,
+                    child: SingleChildScrollView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              'assets/images/EmptyState.png',
+                              width: 300,
+                              height: 200,
+                              fit: BoxFit.contain,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No Data Found',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'No data pengajuan found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
                   : _filteredOrders.isEmpty
                   ? const Center(child: Text("Tidak ada hasil pencarian"))
                   : ListView.builder(
@@ -1445,8 +1567,6 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         _setExportDialogState?.call(() {
           _exportProgress = (i + 1) / ordersToExport.length;
         });
-
-        await Future.delayed(Duration(milliseconds: 10));
 
         sheet.getRangeByIndex(row, 1).rowHeight = 80;
 

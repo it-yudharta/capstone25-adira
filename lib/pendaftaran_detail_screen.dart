@@ -48,24 +48,26 @@ class PendaftaranDetailScreen extends StatelessWidget {
     );
   }
 
-  String normalizePhoneNumber(String phone) {
-    if (phone.startsWith('0')) {
-      return '62${phone.substring(1)}';
+  String normalizePhone(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.startsWith('0')) {
+      return '62${digits.substring(1)}';
+    } else if (digits.startsWith('62')) {
+      return digits;
+    } else {
+      return '62$digits';
     }
-    return phone;
   }
 
-  Future<void> _launchWhatsApp(BuildContext context, String phoneNumber) async {
-    final normalizedPhone = normalizePhoneNumber(phoneNumber);
-    final url = 'https://wa.me/$normalizedPhone';
-    final uri = Uri.parse(url);
-
+  Future<void> _launchWhatsApp(BuildContext context, String phone) async {
+    final normalized = normalizePhone(phone);
+    final uri = Uri.parse('https://wa.me/$normalized');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tidak dapat membuka WhatsApp')),
+      );
     }
   }
 

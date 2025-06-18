@@ -344,7 +344,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Delete Data Pengajuan?',
+                    'Delete Data Pendaftaran?',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

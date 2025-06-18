@@ -1902,7 +1902,7 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    'Data akan dipindahkan dulu ke “Trash Bin”.\nDari sana kamu bisa memulihkan atau menghapus permanen.',
+                    'Data will first be moved to “Trash Bin”. From there,\nyou can recover them or permanently delete them.',
                     style: TextStyle(fontSize: 14, color: Colors.black87),
                   ),
                   SizedBox(height: 20),

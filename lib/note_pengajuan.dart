@@ -2,24 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
-import 'bottom_nav_bar_pendaftaran.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'custom_bottom_nav_bar.dart';
 
-class NotePendaftaranScreen extends StatefulWidget {
-  final Map pendaftaran;
-  final String pendaftaranKey;
+class NotePengajuanScreen extends StatefulWidget {
+  final Map orderData;
+  final String orderKey;
 
-  const NotePendaftaranScreen({
+  const NotePengajuanScreen({
     Key? key,
-    required this.pendaftaran,
-    required this.pendaftaranKey,
+    required this.orderData,
+    required this.orderKey,
   }) : super(key: key);
 
   @override
-  _NotePendaftaranScreenState createState() => _NotePendaftaranScreenState();
+  _NotePengajuanScreenState createState() => _NotePengajuanScreenState();
 }
 
-class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
+class _NotePengajuanScreenState extends State<NotePengajuanScreen> {
   late TextEditingController _controller;
   bool _isSaving = false;
   bool _showError = false;
@@ -28,7 +28,7 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
   void initState() {
     super.initState();
     _controller = TextEditingController(
-      text: widget.pendaftaran['note']?.toString() ?? '',
+      text: widget.orderData['note']?.toString() ?? '',
     );
   }
 
@@ -40,11 +40,8 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
 
   Future<void> _saveNote() async {
     final note = _controller.text.trim();
-
     if (note.isEmpty) {
-      setState(() {
-        _showError = true;
-      });
+      setState(() => _showError = true);
       return;
     }
 
@@ -55,8 +52,8 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
 
     final dbRef = FirebaseDatabase.instance
         .ref()
-        .child('agent-form')
-        .child(widget.pendaftaranKey);
+        .child('orders')
+        .child(widget.orderKey);
 
     await dbRef.update({
       'note': note,
@@ -66,23 +63,6 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
 
     setState(() => _isSaving = false);
     Navigator.pop(context, note);
-  }
-
-  Widget _detailRow(String label, String? value, {VoidCallback? onTap}) {
-    final txt = "$label : ${value ?? '-'}";
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child:
-          onTap == null
-              ? Text(txt, style: TextStyle(fontSize: 14))
-              : GestureDetector(
-                onTap: onTap,
-                child: Text(
-                  txt,
-                  style: TextStyle(fontSize: 14, color: Colors.blue),
-                ),
-              ),
-    );
   }
 
   String normalizePhone(String phone) {
@@ -108,9 +88,26 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
     }
   }
 
+  Widget _detailRow(String label, String? value, {VoidCallback? onTap}) {
+    final text = "$label : ${value ?? '-'}";
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child:
+          onTap == null
+              ? Text(text, style: const TextStyle(fontSize: 14))
+              : GestureDetector(
+                onTap: onTap,
+                child: Text(
+                  text,
+                  style: const TextStyle(fontSize: 14, color: Colors.blue),
+                ),
+              ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final p = widget.pendaftaran;
+    final o = widget.orderData;
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F5),
       appBar: AppBar(
@@ -118,14 +115,14 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
         backgroundColor: const Color(0xFFF0F4F5),
         elevation: 0,
         foregroundColor: Colors.black,
-        systemOverlayStyle: SystemUiOverlayStyle(
+        systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Color(0xFFF0F4F5),
           statusBarIconBrightness: Brightness.dark,
         ),
         title: Row(
           children: [
             RichText(
-              text: TextSpan(
+              text: const TextSpan(
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 children: [
                   TextSpan(
@@ -139,15 +136,14 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
                 ],
               ),
             ),
-            Spacer(),
+            const Spacer(),
             IconButton(
-              icon: Icon(Icons.logout, color: Colors.black),
+              icon: const Icon(Icons.logout, color: Colors.black),
               onPressed: () {},
             ),
           ],
         ),
       ),
-
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -169,7 +165,7 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
                 SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'Data Pendaftaran',
+                    'Data Pengajuan',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -182,16 +178,15 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
           ),
 
           Expanded(
-            flex: 1,
             child: SingleChildScrollView(
               child: Container(
                 width: double.infinity,
-                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: EdgeInsets.all(16),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
+                  boxShadow: const [
                     BoxShadow(
                       color: Colors.black12,
                       blurRadius: 4,
@@ -202,45 +197,36 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _detailRow("Nama", p['fullName']?.toString()),
-                    _detailRow("Email", p['email']?.toString()),
-                    if (p['phone'] != null)
+                    _detailRow("Agent", o['agentName']?.toString()),
+                    _detailRow("Nama", o['name']?.toString()),
+                    _detailRow("Alamat", o['domicile']?.toString()),
+                    if (o['phone'] != null)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: GestureDetector(
-                          onTap: () async {
-                            try {
-                              await _launchWhatsApp(p['phone'].toString());
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Error launching WhatsApp: $e'),
-                                ),
-                              );
-                            }
-                          },
+                          onTap: () => _launchWhatsApp(o['phone'].toString()),
                           child: RichText(
                             text: TextSpan(
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: Colors.black87,
                               ),
                               children: [
-                                TextSpan(text: "No. Telp : "),
+                                const TextSpan(text: "No. Telp : "),
                                 TextSpan(
-                                  text: p['phone'],
-                                  style: TextStyle(color: Colors.blue),
+                                  text: o['phone'].toString(),
+                                  style: const TextStyle(color: Colors.blue),
                                 ),
                               ],
                             ),
                           ),
                         ),
                       ),
-                    _detailRow("Alamat", p['address']?.toString()),
-                    _detailRow("Kode Pos", p['postalCode']?.toString()),
-                    _detailRow("Status", p['status']?.toString()),
-                    if (p['note'] != null && p['note'].toString().isNotEmpty)
-                      _detailRow("Existing Note", p['note']?.toString()),
+                    _detailRow("Pekerjaan", o['job']?.toString()),
+                    _detailRow("Pengajuan", o['installment']?.toString()),
+                    _detailRow("Status", o['status']?.toString()),
+                    if (o['note'] != null && o['note'].toString().isNotEmpty)
+                      _detailRow("Existing Note", o['note']?.toString()),
                   ],
                 ),
               ),
@@ -248,10 +234,9 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
           ),
 
           Expanded(
-            flex: 1,
             child: Container(
               color: const Color(0xFFF0F4F5),
-              padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
               child: Column(
                 children: [
                   Expanded(
@@ -283,55 +268,55 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(
-                            color: _showError ? Colors.red : Color(0xFF0E5C36),
+                            color:
+                                _showError
+                                    ? Colors.red
+                                    : const Color(0xFF0E5C36),
                             width: 2,
                           ),
                         ),
                       ),
-
                       maxLines: null,
                       expands: true,
                       textAlignVertical: TextAlignVertical.top,
                     ),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFFE67D13),
-                            padding: EdgeInsets.symmetric(vertical: 14),
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: const Color(0xFFE67D13),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: Text(
+                          child: const Text(
                             'Cancel',
                             style: TextStyle(fontSize: 16, color: Colors.white),
                           ),
                         ),
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
                           onPressed: _isSaving ? null : _saveNote,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF0E5C36),
-                            padding: EdgeInsets.symmetric(vertical: 14),
+                          style: TextButton.styleFrom(
+                            backgroundColor: const Color(0xFF0E5C36),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                           child:
                               _isSaving
-                                  ? CircularProgressIndicator(
+                                  ? const CircularProgressIndicator(
                                     color: Colors.white,
                                   )
-                                  : Text(
+                                  : const Text(
                                     'Confirm',
                                     style: TextStyle(
                                       fontSize: 16,
@@ -348,7 +333,7 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavBarPendaftaran(currentRoute: 'status'),
+      bottomNavigationBar: const CustomBottomNavBar(currentRoute: 'other'),
     );
   }
 }
