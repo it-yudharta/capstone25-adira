@@ -710,7 +710,6 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
                             child: TextButton(
                               onPressed: () async {
                                 if (_selectedExportDate != null) {
-                                  Navigator.pop(context);
                                   await _exportSupervisorByDate(
                                     _selectedExportDate!,
                                   );

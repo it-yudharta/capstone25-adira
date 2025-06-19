@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'circular_loading_indicator.dart';
 
 class StatusSupervisorPendaftaran extends StatefulWidget {
   final String status;
@@ -38,6 +39,8 @@ class _StatusSupervisorPendaftaranState
   late String _currentStatus;
   static const platform = MethodChannel('com.fundrain.adiraapp/download');
   String? _selectedExportDate;
+  late void Function(VoidCallback fn) _setExportDialogState;
+  double _exportProgress = 0.0;
 
   @override
   void initState() {
@@ -1142,7 +1145,6 @@ class _StatusSupervisorPendaftaranState
                             child: TextButton(
                               onPressed: () async {
                                 if (_selectedExportDate != null) {
-                                  Navigator.pop(context);
                                   await _exportSupervisorPendaftaranByStatusUpdatedAt(
                                     _selectedExportDate!,
                                     status,
@@ -1194,7 +1196,21 @@ class _StatusSupervisorPendaftaranState
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(child: CircularProgressIndicator()),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            _setExportDialogState = setStateDialog;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularExportIndicator(progress: _exportProgress),
+              ),
+            );
+          },
+        );
+      },
     );
 
     final ref = FirebaseDatabase.instance.ref("agent-form");
@@ -1258,6 +1274,9 @@ class _StatusSupervisorPendaftaranState
       for (int i = 0; i < agentsToExport.length; i++) {
         final agent = Map<String, dynamic>.from(agentsToExport[i]);
         final row = i + 2;
+        _setExportDialogState?.call(() {
+          _exportProgress = (i + 1) / agentsToExport.length;
+        });
 
         sheet.getRangeByIndex(row, 1).rowHeight = 80;
         sheet.getRangeByIndex(row, 1).setText(agent['tanggal'] ?? '');

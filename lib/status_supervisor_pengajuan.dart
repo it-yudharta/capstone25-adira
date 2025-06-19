@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'circular_loading_indicator.dart';
 
 class StatusSupervisorPengajuan extends StatefulWidget {
   final String status;
@@ -34,6 +35,8 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
   late String _currentStatus;
   bool _isExporting = false;
   String? _selectedExportDate;
+  late void Function(VoidCallback fn) _setExportDialogState;
+  double _exportProgress = 0.0;
 
   @override
   void initState() {
@@ -748,7 +751,6 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
                             child: TextButton(
                               onPressed: () async {
                                 if (_selectedExportDate != null) {
-                                  Navigator.pop(context);
                                   await _exportOrdersByStatusUpdatedAtSupervisor(
                                     _selectedExportDate!,
                                     status,
@@ -809,7 +811,21 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(child: CircularProgressIndicator()),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            _setExportDialogState = setStateDialog;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularExportIndicator(progress: _exportProgress),
+              ),
+            );
+          },
+        );
+      },
     );
 
     final ref = FirebaseDatabase.instance.ref("orders");
@@ -895,6 +911,9 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
         final dynamicOrder = ordersToExport[i];
         final order = Map<String, dynamic>.from(dynamicOrder);
         final row = i + 2;
+        _setExportDialogState?.call(() {
+          _exportProgress = (i + 1) / ordersToExport.length;
+        });
 
         sheet.getRangeByIndex(row, 1).rowHeight = 80;
 
