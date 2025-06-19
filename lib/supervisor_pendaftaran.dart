@@ -10,6 +10,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'circular_loading_indicator.dart';
 
 const platform = MethodChannel('com.fundrain.adiraapp/download');
 
@@ -33,6 +34,8 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
   late List<String> orderedDates;
   String? _selectedExportDate;
   Set<String> _exportedDates = {};
+  late void Function(VoidCallback fn) _setExportDialogState;
+  double _exportProgress = 0.0;
 
   @override
   void initState() {
@@ -755,7 +758,21 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(child: CircularProgressIndicator()),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            _setExportDialogState = setStateDialog;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularExportIndicator(progress: _exportProgress),
+              ),
+            );
+          },
+        );
+      },
     );
 
     try {
@@ -812,6 +829,9 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
       for (int i = 0; i < items.length; i++) {
         final agent = items[i];
         final row = i + 2;
+        _setExportDialogState(() {
+          _exportProgress = (i + 1) / items.length;
+        });
 
         sheet.getRangeByIndex(row, 1).rowHeight = 80;
         sheet.getRangeByIndex(row, 1).setText(agent['tanggal'] ?? '');

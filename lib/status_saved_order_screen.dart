@@ -357,7 +357,6 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
             return InkWell(
               onTap: () {
                 if (!isActive) {
-                  // ganti status layar ke yang dipilih
                   _changeStatus(item['status'], item['label']);
                 }
               },
@@ -482,7 +481,7 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-          child: SizedBox(
+          child: Container(
             width: 250,
             height: 40,
             child: TextField(
@@ -511,12 +510,9 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                     width: 1.2,
                   ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF0E5C36),
-                    width: 1.5,
-                  ),
+                focusedBorder: const OutlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                  borderSide: BorderSide(color: Color(0xFF0E5C36), width: 1.5),
                 ),
                 filled: true,
                 fillColor: Colors.white,
