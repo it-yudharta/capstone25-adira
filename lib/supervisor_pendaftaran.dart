@@ -164,10 +164,12 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
 
   Widget _buildAgentCard(Map agent) {
     final String status = agent['status'] ?? 'Belum diproses';
+    final bool isLead = agent['lead'] == true; // flag lead
+
     return Container(
       width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      padding: EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
@@ -175,45 +177,69 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
           BoxShadow(
             color: Colors.grey.shade300,
             blurRadius: 4,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: DefaultTextStyle.merge(
-        style: TextStyle(fontSize: 14, color: Colors.black87),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Nama        : ${agent['fullName'] ?? '-'}",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 4),
-            Text("Email         : ${agent['email'] ?? '-'}"),
-            SizedBox(height: 4),
-            GestureDetector(
-              onTap: () => _launchWhatsApp(agent['phone'] ?? ''),
-              child: RichText(
-                text: TextSpan(
-                  style: TextStyle(fontSize: 14, color: Colors.black87),
-                  children: [
-                    TextSpan(text: "No. Telp     : "),
-                    TextSpan(
-                      text: agent['phone'] ?? '-',
-                      style: TextStyle(color: Colors.blue),
+      child: Stack(
+        children: [
+          DefaultTextStyle.merge(
+            style: const TextStyle(fontSize: 14, color: Colors.black87),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Nama        : ${agent['fullName'] ?? '-'}",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text("Email         : ${agent['email'] ?? '-'}"),
+                const SizedBox(height: 4),
+                GestureDetector(
+                  onTap: () => _launchWhatsApp(agent['phone'] ?? ''),
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                      children: [
+                        const TextSpan(text: "No. Telp     : "),
+                        TextSpan(
+                          text: agent['phone'] ?? '-',
+                          style: const TextStyle(color: Colors.blue),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text("Alamat      : ${agent['address'] ?? '-'}"),
+                const SizedBox(height: 4),
+                Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
+                const SizedBox(height: 4),
+                Text("Status       : $status"),
+              ],
+            ),
+          ),
+
+          if (isLead)
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8, right: 8),
+                child: Transform.scale(
+                  scaleY: 1.3,
+                  scaleX: 1.0,
+                  child: const Icon(
+                    Icons.bookmark,
+                    size: 24,
+                    color: Color(0xFF0E5C36),
+                  ),
                 ),
               ),
             ),
-            SizedBox(height: 4),
-            Text("Alamat      : ${agent['address'] ?? '-'}"),
-            SizedBox(height: 4),
-            Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
-            SizedBox(height: 4),
-            Text("Status       : $status"),
-          ],
-        ),
+        ],
       ),
     );
   }

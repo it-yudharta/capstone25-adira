@@ -1314,8 +1314,6 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
           _exportProgress = (i + 1) / agentsToExport.length;
         });
 
-        await Future.delayed(Duration(milliseconds: 10));
-
         sheet.getRangeByIndex(row, 1).rowHeight = 80;
         sheet.getRangeByIndex(row, 1).setText(agent['tanggal'] ?? '');
         sheet.getRangeByIndex(row, 2).setText(agent['status'] ?? '');

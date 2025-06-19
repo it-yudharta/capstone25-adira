@@ -1,0 +1,14 @@
+<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+<ellipse cx="8.75" cy="8.75" rx="3.75" ry="3.75" transform="rotate(90 8.75 8.75)" fill="black"/>
+<ellipse cx="8.75" cy="8.75" rx="3.75" ry="3.75" transform="rotate(90 8.75 8.75)" fill="#0E5C36"/>
+<ellipse cx="8.75" cy="8.75" rx="3.75" ry="3.75" transform="rotate(90 8.75 8.75)" stroke="black" stroke-width="2" stroke-linecap="round"/>
+<ellipse cx="8.75" cy="8.75" rx="3.75" ry="3.75" transform="rotate(90 8.75 8.75)" stroke="#0E5C36" stroke-width="2" stroke-linecap="round"/>
+<path d="M11.875 6.25H22.5C22.9647 6.25 23.197 6.25 23.3902 6.28843C24.1836 6.44624 24.8038 7.06644 24.9616 7.85982C25 8.05302 25 8.28534 25 8.75V8.75C25 9.21466 25 9.44698 24.9616 9.64018C24.8038 10.4336 24.1836 11.0538 23.3902 11.2116C23.197 11.25 22.9647 11.25 22.5 11.25H11.875" stroke="black" stroke-width="2" stroke-linecap="round"/>
+<path d="M11.875 6.25H22.5C22.9647 6.25 23.197 6.25 23.3902 6.28843C24.1836 6.44624 24.8038 7.06644 24.9616 7.85982C25 8.05302 25 8.28534 25 8.75V8.75C25 9.21466 25 9.44698 24.9616 9.64018C24.8038 10.4336 24.1836 11.0538 23.3902 11.2116C23.197 11.25 22.9647 11.25 22.5 11.25H11.875" stroke="#0E5C36" stroke-width="2" stroke-linecap="round"/>
+<ellipse cx="3.75" cy="3.75" rx="3.75" ry="3.75" transform="matrix(4.37114e-08 1 1 -4.37114e-08 17.5 17.5)" fill="black"/>
+<ellipse cx="3.75" cy="3.75" rx="3.75" ry="3.75" transform="matrix(4.37114e-08 1 1 -4.37114e-08 17.5 17.5)" fill="#0E5C36"/>
+<ellipse cx="3.75" cy="3.75" rx="3.75" ry="3.75" transform="matrix(4.37114e-08 1 1 -4.37114e-08 17.5 17.5)" stroke="black" stroke-width="2" stroke-linecap="round"/>
+<ellipse cx="3.75" cy="3.75" rx="3.75" ry="3.75" transform="matrix(4.37114e-08 1 1 -4.37114e-08 17.5 17.5)" stroke="#0E5C36" stroke-width="2" stroke-linecap="round"/>
+<path d="M18.125 18.75H7.5C7.03534 18.75 6.80302 18.75 6.60982 18.7884C5.81644 18.9462 5.19624 19.5664 5.03843 20.3598C5 20.553 5 20.7853 5 21.25V21.25C5 21.7147 5 21.947 5.03843 22.1402C5.19624 22.9336 5.81644 23.5538 6.60982 23.7116C6.80302 23.75 7.03534 23.75 7.5 23.75H18.125" stroke="black" stroke-width="2" stroke-linecap="round"/>
+<path d="M18.125 18.75H7.5C7.03534 18.75 6.80302 18.75 6.60982 18.7884C5.81644 18.9462 5.19624 19.5664 5.03843 20.3598C5 20.553 5 20.7853 5 21.25V21.25C5 21.7147 5 21.947 5.03843 22.1402C5.19624 22.9336 5.81644 23.5538 6.60982 23.7116C6.80302 23.75 7.03534 23.75 7.5 23.75H18.125" stroke="#0E5C36" stroke-width="2" stroke-linecap="round"/>
+</svg>
