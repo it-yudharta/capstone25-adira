@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'navbar_supervisor.dart';
 import 'package:flutter/services.dart';
+import 'order_detail_screen.dart';
+import 'package:intl/intl.dart';
 
 class StatusSupervisorLead extends StatefulWidget {
   final String status;
@@ -68,7 +70,7 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
     _fetchFilteredData();
   }
 
-  void _fetchFilteredData() async {
+  Future<void> _fetchFilteredData() async {
     setState(() => _isLoading = true);
     final List<Map<dynamic, dynamic>> result = [];
 
@@ -134,10 +136,11 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
     List<Map> data,
   ) {
     final Map<String, Map<String, List<Map<String, dynamic>>>> grouped = {};
+    final String statusDateField = '${_currentStatus}UpdatedAt';
 
     for (var item in data) {
       final source = item['source'] ?? 'pengajuan';
-      final tanggal = item['tanggal'] ?? 'Tanggal tidak diketahui';
+      final tanggal = item[statusDateField] ?? 'Tanggal tidak diketahui';
 
       grouped.putIfAbsent(tanggal, () => {});
       grouped[tanggal]!.putIfAbsent(source, () => []);
@@ -171,13 +174,6 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
     }
   }
 
-  void _showRejectConfirmation(String key) {
-    // TODO: Implementasi reject
-  }
-
-  void _showApproveConfirmation(String key) {
-    // TODO: Implementasi approve
-  }
   void _changeStatus(String newStatus) {
     setState(() {
       _currentStatus = newStatus;
@@ -185,10 +181,288 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
     });
   }
 
+  Future<void> _updateSupervisorLeadStatus(String key, String newStatus) async {
+    final now = DateFormat('dd-MM-yyyy').format(DateTime.now());
+
+    final refOrders = FirebaseDatabase.instance.ref('orders/$key');
+    final refForms = FirebaseDatabase.instance.ref('agent-form/$key');
+
+    final snapOrders = await refOrders.get();
+    final snapForms = await refForms.get();
+
+    if (snapOrders.exists) {
+      await refOrders.update({
+        'status': newStatus,
+        '${newStatus}UpdatedAt': now,
+      });
+    } else if (snapForms.exists) {
+      await refForms.update({
+        'status': newStatus,
+        '${newStatus}UpdatedAt': now,
+      });
+    }
+
+    await _fetchFilteredData();
+    setState(() {});
+  }
+
+  void _showSuccessDialog(String type) {
+    final isApproved = type == 'approve';
+    final message =
+        isApproved
+            ? 'Data Approved Successfully!'
+            : 'Data Rejected Successfully!';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset(
+                    'assets/images/Checkmark.svg',
+                    width: 80,
+                    height: 80,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
+                      child: Text(
+                        'OK',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _showRejectConfirmation(String key) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Reject Data?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data will be rejected and\nmoved to “Reject”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateSupervisorLeadStatus(key, 'reject');
+                            Future.delayed(Duration(milliseconds: 300), () {
+                              _showSuccessDialog('reject');
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _showApproveConfirmation(String key) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Approve Data?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data will be approved and\nmoved to “Approve”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _updateSupervisorLeadStatus(key, 'approve');
+                            Future.delayed(Duration(milliseconds: 300), () {
+                              _showSuccessDialog('approve');
+                            });
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
   Widget _buildCard(Map data) {
-    final String source = data['source'] ?? 'pengajuan';
     final String status = data['status'] ?? 'Belum diproses';
     final String phone = data['phone'] ?? '-';
+    final String key = data['key'];
     final bool isLead = data['lead'] == true;
 
     return Container(
@@ -235,19 +509,12 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
                     ),
                   ),
                 ),
-                if (source == 'pendaftaran') ...[
-                  SizedBox(height: 4),
-                  Text("Alamat      : ${data['address'] ?? '-'}"),
-                  SizedBox(height: 4),
-                  Text("Kode Pos  : ${data['postalCode'] ?? '-'}"),
-                ] else ...[
-                  SizedBox(height: 4),
-                  Text("Alamat      : ${data['domicile'] ?? '-'}"),
-                  SizedBox(height: 4),
-                  Text("Pekerjaan  : ${data['job'] ?? '-'}"),
-                  SizedBox(height: 4),
-                  Text("Pengajuan : ${data['installment'] ?? '-'}"),
-                ],
+                SizedBox(height: 4),
+                Text(
+                  "Alamat      : ${data['address'] ?? data['domicile'] ?? '-'}",
+                ),
+                SizedBox(height: 4),
+                Text("Kode Pos  : ${data['postalCode'] ?? '-'}"),
                 SizedBox(height: 4),
                 Text(
                   "Status       : $status",
@@ -256,8 +523,15 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
                 if (data['note'] != null && data['note'].toString().isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 4.0),
-                    child: Text("Note          : ${data['note']}"),
+                    child: Text(
+                      "Note          : ${data['note']}",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
                   ),
+                SizedBox(height: 16),
                 if (status.toLowerCase() == 'pending' &&
                     widget.status != 'trash')
                   Align(
@@ -266,32 +540,47 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         ElevatedButton(
-                          onPressed: () => _showRejectConfirmation(data['key']),
+                          onPressed: () => _showRejectConfirmation(key),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                           ),
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.cancel, size: 16, color: Colors.white),
                               SizedBox(height: 4),
-                              Text('Reject', style: TextStyle(fontSize: 12)),
+                              Text(
+                                'Reject',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                         SizedBox(width: 6),
                         ElevatedButton(
-                          onPressed:
-                              () => _showApproveConfirmation(data['key']),
+                          onPressed: () => _showApproveConfirmation(key),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                           ),
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 Icons.check_circle,
@@ -299,7 +588,13 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
                                 color: Colors.white,
                               ),
                               SizedBox(height: 4),
-                              Text('Approve', style: TextStyle(fontSize: 12)),
+                              Text(
+                                'Approve',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -314,7 +609,15 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
               alignment: Alignment.topRight,
               child: Padding(
                 padding: EdgeInsets.only(top: 8, right: 8),
-                child: Icon(Icons.bookmark, color: Color(0xFF0E5C36), size: 24),
+                child: Transform.scale(
+                  scaleY: 1.3,
+                  scaleX: 1.0,
+                  child: Icon(
+                    Icons.bookmark,
+                    size: 24,
+                    color: Color(0xFF0E5C36),
+                  ),
+                ),
               ),
             ),
         ],
@@ -328,116 +631,388 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
     final isLead = order['lead'] == true;
     final key = order['key'];
 
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 4)],
-      ),
-      child: Stack(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "Nama        : ${order['name'] ?? '-'}",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 4),
-              Text("Email         : ${order['email'] ?? '-'}"),
-              SizedBox(height: 4),
-              GestureDetector(
-                onTap: () => _launchWhatsApp(phone),
-                child: RichText(
-                  text: TextSpan(
-                    style: TextStyle(fontSize: 14, color: Colors.black87),
-                    children: [
-                      TextSpan(text: "No. Telp     : "),
-                      TextSpan(
-                        text: phone,
-                        style: TextStyle(color: Colors.blue),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              SizedBox(height: 4),
-              Text("Alamat      : ${order['domicile'] ?? '-'}"),
-              SizedBox(height: 4),
-              Text("Pekerjaan  : ${order['job'] ?? '-'}"),
-              SizedBox(height: 4),
-              Text("Pengajuan : ${order['installment'] ?? '-'}"),
-              SizedBox(height: 4),
-              Text(
-                "Status        : $status",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              if (order['note'] != null && order['note'].toString().isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: Text("Note           : ${order['note']}"),
-                ),
-              if (status == 'pending' && _currentStatus != 'trash')
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ElevatedButton(
-                        onPressed: () => _showRejectConfirmation(key),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF0E5C36),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(Icons.cancel, size: 16, color: Colors.white),
-                            SizedBox(height: 4),
-                            Text('Reject', style: TextStyle(fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      SizedBox(width: 6),
-                      ElevatedButton(
-                        onPressed: () => _showApproveConfirmation(key),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF0E5C36),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              size: 16,
-                              color: Colors.white,
-                            ),
-                            SizedBox(height: 4),
-                            Text('Approve', style: TextStyle(fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => OrderDetailScreen(orderData: order, orderKey: key),
           ),
-          if (isLead)
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: EdgeInsets.only(top: 8, right: 8),
-                child: Icon(Icons.bookmark, color: Color(0xFF0E5C36), size: 24),
+        );
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 4)],
+        ),
+        child: Stack(
+          children: [
+            DefaultTextStyle.merge(
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Nama        : ${order['fullName'] ?? order['name'] ?? '-'}",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 4),
+                  Text("Email         : ${order['email'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () => _launchWhatsApp(phone),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          TextSpan(text: "No. Telp     : "),
+                          TextSpan(
+                            text: phone,
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    "Alamat      : ${order['address'] ?? order['domicile'] ?? '-'}",
+                  ),
+                  if (order['postalCode'] != null || order['job'] != null) ...[
+                    SizedBox(height: 4),
+                    Text("Kode Pos  : ${order['postalCode'] ?? '-'}"),
+                    SizedBox(height: 4),
+                    Text("Pekerjaan  : ${order['job'] ?? '-'}"),
+                  ],
+                  if (order['installment'] != null) ...[
+                    SizedBox(height: 4),
+                    Text("Pengajuan : ${order['installment']}"),
+                  ],
+                  SizedBox(height: 4),
+                  Text(
+                    "Status        : $status",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  if (order['note'] != null &&
+                      order['note'].toString().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        "Note           : ${order['note']}",
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  SizedBox(height: 16),
+                  if (status.toLowerCase() == 'pending' &&
+                      widget.status != 'trash')
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ElevatedButton(
+                            onPressed:
+                                () => _showRejectConfirmationPengajuan(key),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.cancel,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Reject',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 6),
+                          ElevatedButton(
+                            onPressed:
+                                () => _showApproveConfirmationPengajuan(key),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Approve',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
             ),
-        ],
+            if (isLead)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 8, right: 8),
+                  child: Transform.scale(
+                    scaleY: 1.3,
+                    scaleX: 1.0,
+                    child: Icon(
+                      Icons.bookmark,
+                      size: 24,
+                      color: Color(0xFF0E5C36),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Future<void> _updateOrderStatusPengajuan(String key, String newStatus) async {
+    final now = DateFormat('dd-MM-yyyy').format(DateTime.now());
+
+    final refOrders = FirebaseDatabase.instance.ref('orders/$key');
+    final refForms = FirebaseDatabase.instance.ref('agent-form/$key');
+
+    final snapOrders = await refOrders.get();
+    final snapForms = await refForms.get();
+
+    if (snapOrders.exists) {
+      await refOrders.update({
+        'status': newStatus,
+        '${newStatus}UpdatedAt': now,
+      });
+    } else if (snapForms.exists) {
+      await refForms.update({
+        'status': newStatus,
+        '${newStatus}UpdatedAt': now,
+      });
+    }
+
+    await _fetchFilteredData(); // refresh data
+  }
+
+  void _showRejectConfirmationPengajuan(String key) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Reject Data?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data will be rejected and\nmoved to “Reject”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            await _updateOrderStatusPengajuan(key, 'reject');
+                            _showSuccessDialog('reject');
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  void _showApproveConfirmationPengajuan(String key) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            child: Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Approve Data?',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Text(
+                    'Data will be approved and\nmoved to “Approve”.',
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFFE67D13),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            await _updateOrderStatusPengajuan(key, 'approve');
+                            _showSuccessDialog('approve');
+                          },
+                          style: TextButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Confirm',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
     );
   }
 
