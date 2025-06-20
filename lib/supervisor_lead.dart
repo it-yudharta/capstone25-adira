@@ -314,7 +314,7 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
       {'label': 'Pending', 'status': 'pending', 'icon': 'custom_pending_icon'},
       {'label': 'Reject', 'status': 'reject', 'icon': 'custom_reject_icon'},
       {'label': 'Approve', 'status': 'approve', 'icon': 'custom_approve_icon'},
-      {'label': 'Trash Bin', 'status': 'trash', 'icon': 'custom_bin_icon'},
+      {'label': 'QR Given', 'status': 'qr_given', 'icon': 'custom_qr_icon'},
     ];
 
     return Container(
@@ -395,9 +395,9 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
                               height: 21,
                               color: Color(0xFF0E5C36),
                             );
-                          case 'custom_bin_icon':
+                          case 'custom_qr_icon':
                             return SvgPicture.asset(
-                              'assets/icon/bin.svg',
+                              'assets/icon/qr_icon.svg',
                               width: 21,
                               height: 21,
                               color: Color(0xFF0E5C36),
@@ -1421,7 +1421,6 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
       pengajuanSheet.name = 'Pengajuan';
       final pendaftaranSheet = workbook.worksheets.addWithName('Pendaftaran');
 
-      // ================== PENGAJUAN ==================
       final pengajuanHeaders = [
         'Tanggal Pengajuan',
         'Status',
@@ -1501,7 +1500,6 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
             .setText(order['agentPhone'] ?? '');
       }
 
-      // ================== PENDAFTARAN ==================
       final pendaftaranHeaders = [
         'Tanggal',
         'Status',
@@ -1798,22 +1796,21 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
                   Text("Nama         : ${order['name'] ?? '-'}"),
                   Text("Alamat       : ${order['domicile'] ?? '-'}"),
                   GestureDetector(
-                    onTap: () async {
-                      try {
-                        await _launchWhatsApp(phoneNumber);
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error launching WhatsApp: $e'),
+                    onTap: () => _launchWhatsApp(phoneNumber),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          TextSpan(text: "No. Telp      : "),
+                          TextSpan(
+                            text: phoneNumber,
+                            style: TextStyle(color: Colors.blue),
                           ),
-                        );
-                      }
-                    },
-                    child: Text(
-                      "No. Telp     : $phoneNumber",
-                      style: TextStyle(color: Colors.blue),
+                        ],
+                      ),
                     ),
                   ),
+
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
                   Text("Pengajuan : ${order['installment'] ?? '-'}"),
                   SizedBox(height: 8),
