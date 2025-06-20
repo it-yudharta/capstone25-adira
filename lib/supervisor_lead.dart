@@ -1453,6 +1453,9 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
       for (int i = 0; i < pengajuanList.length; i++) {
         final order = pengajuanList[i];
         final row = i + 2;
+        _setExportDialogState?.call(() {
+          _exportProgress = (i + 1) / pengajuanList.length;
+        });
 
         pengajuanSheet.getRangeByIndex(row, 1).setText(order['tanggal'] ?? '');
         pengajuanSheet.getRangeByIndex(row, 2).setText(order['status'] ?? '');
@@ -1528,6 +1531,9 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
       for (int i = 0; i < pendaftaranList.length; i++) {
         final agent = pendaftaranList[i];
         final row = i + 2;
+        _setExportDialogState?.call(() {
+          _exportProgress = (i + 1) / pendaftaranList.length;
+        });
 
         pendaftaranSheet
             .getRangeByIndex(row, 1)
