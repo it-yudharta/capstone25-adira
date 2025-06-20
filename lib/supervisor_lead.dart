@@ -22,7 +22,7 @@ class LeadSupervisor extends StatefulWidget {
 class _LeadSupervisorState extends State<LeadSupervisor> {
   final _database = FirebaseDatabase.instance.ref();
   bool _isLoading = false;
-  String _selectedType = 'pengajuan';
+  String _selectedType = 'semua';
   String _searchQuery = '';
   TextEditingController _searchController = TextEditingController();
   final GlobalKey _filterIconKey = GlobalKey();
@@ -52,9 +52,69 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
   void _fetchData() {
     if (_selectedType == 'pengajuan') {
       _fetchSavedOrders();
-    } else {
+    } else if (_selectedType == 'pendaftaran') {
       _fetchLeadAgents();
+    } else {
+      _fetchSavedOrdersAndAgents();
     }
+  }
+
+  void _fetchSavedOrdersAndAgents() async {
+    setState(() => _isLoading = true);
+
+    final ordersSnapshot = await _database.child('orders').get();
+    final agentsSnapshot = await _database.child('agent-form').get();
+
+    final List<Map<dynamic, dynamic>> loadedOrders = [];
+    final Map<String, List<Map<dynamic, dynamic>>> groupedLeadAgents = {};
+
+    if (ordersSnapshot.exists) {
+      final data = ordersSnapshot.value as Map<dynamic, dynamic>;
+      data.forEach((key, value) {
+        final status = value['status'];
+        final isTrash = value['trash'] == true;
+        final isLead = value['lead'] == true;
+
+        if (!isTrash &&
+            isLead &&
+            (status == null || status == 'belum diproses')) {
+          value['key'] = key;
+          loadedOrders.add(value);
+        }
+      });
+    }
+
+    if (agentsSnapshot.exists) {
+      final data = agentsSnapshot.value as Map<dynamic, dynamic>;
+      data.forEach((key, value) {
+        final isLead = value['lead'] == true;
+        final isTrashed = value['trash'] == true;
+        final status = value['status'];
+        final isValidStatus = status == null || status == 'belum diproses';
+
+        if (isLead && !isTrashed && isValidStatus) {
+          final tanggal = value['tanggal'];
+          if (tanggal != null && tanggal is String) {
+            groupedLeadAgents.putIfAbsent(tanggal, () => []);
+            value['key'] = key;
+            groupedLeadAgents[tanggal]?.add(value);
+          }
+        }
+      });
+    }
+
+    setState(() {
+      _savedOrders = loadedOrders;
+      _filteredOrders = List.from(_savedOrders);
+      groupedOrders = _groupOrdersByDate(_filteredOrders);
+
+      _leadAgents =
+          groupedLeadAgents.entries
+              .map((e) => {'date': e.key, 'agents': e.value})
+              .toList();
+
+      _isLoading = false;
+    });
   }
 
   void _fetchSavedOrders() async {
@@ -142,6 +202,30 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
       }
       grouped.putIfAbsent(dateKey, () => []).add(order);
     }
+    return grouped;
+  }
+
+  Map<String, Map<String, List<Map<String, dynamic>>>>
+  _groupCombinedDataByDate({
+    required List<Map<dynamic, dynamic>> orders,
+    required List<Map<dynamic, dynamic>> agents,
+  }) {
+    final Map<String, Map<String, List<Map<String, dynamic>>>> grouped = {};
+
+    for (var order in orders) {
+      final date = order['tanggal'] ?? 'Tanggal tidak diketahui';
+      grouped.putIfAbsent(date, () => {});
+      grouped[date]!.putIfAbsent('pengajuan', () => []);
+      grouped[date]!['pengajuan']!.add(Map<String, dynamic>.from(order));
+    }
+
+    for (var agent in agents) {
+      final date = agent['tanggal'] ?? 'Tanggal tidak diketahui';
+      grouped.putIfAbsent(date, () => {});
+      grouped[date]!.putIfAbsent('pendaftaran', () => []);
+      grouped[date]!['pendaftaran']!.add(Map<String, dynamic>.from(agent));
+    }
+
     return grouped;
   }
 
@@ -513,44 +597,54 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
                             ),
                           ),
                         ],
-                    child: SvgPicture.asset('assets/icon/filter.svg'),
+                    child: SvgPicture.asset(
+                      'assets/icon/filter.svg',
+                      color:
+                          _selectedType == 'semua'
+                              ? Colors.black
+                              : Color(0xFF0E5C36),
+                    ),
                   ),
 
                   SizedBox(width: 8),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          _selectedType[0].toUpperCase() +
-                              _selectedType.substring(1),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            fontSize: 13,
+                  if (_selectedType != 'semua')
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            _selectedType[0].toUpperCase() +
+                                _selectedType.substring(1),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                              fontSize: 13,
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 4),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedType = 'pengajuan';
-                              _fetchData();
-                            });
-                          },
-                          child: Icon(
-                            Icons.close,
-                            size: 16,
-                            color: Colors.black,
+                          SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedType = 'semua';
+                                _fetchData();
+                              });
+                            },
+                            child: Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.black,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
                 ],
               ),
 
@@ -588,37 +682,43 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
           child:
               _isLoading
                   ? Center(child: CircularProgressIndicator())
-                  : _selectedType == 'pengajuan'
-                  ? _filteredOrders.isEmpty
-                      ? _buildEmptyState('No data lead found')
-                      : _buildPengajuanList()
-                  : _leadAgents.isEmpty
-                  ? _buildEmptyState('No data lead found')
-                  : _buildPendaftaranList(),
+                  : _buildCombinedListView(),
         ),
       ],
     );
   }
 
   void _showExportDialog() async {
-    final ref = FirebaseDatabase.instance.ref(
-      _selectedType == 'pengajuan' ? 'orders' : 'agent-form',
-    );
+    final Set<String> uniqueDates = {};
 
     try {
-      final snapshot = await ref.get();
-      if (!snapshot.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Tidak ada data untuk diekspor')),
-        );
-        return;
-      }
+      if (_selectedType == 'semua') {
+        final ordersSnap = await FirebaseDatabase.instance.ref('orders').get();
+        for (final child in ordersSnap.children) {
+          final data = Map<String, dynamic>.from(child.value as Map);
+          if (data['lead'] == true && data['tanggal'] != null) {
+            uniqueDates.add(data['tanggal']);
+          }
+        }
 
-      final Set<String> uniqueDates = {};
-      for (final child in snapshot.children) {
-        final data = Map<String, dynamic>.from(child.value as Map);
-        if (data['lead'] == true && data['tanggal'] != null) {
-          uniqueDates.add(data['tanggal']);
+        final agentsSnap =
+            await FirebaseDatabase.instance.ref('agent-form').get();
+        for (final child in agentsSnap.children) {
+          final data = Map<String, dynamic>.from(child.value as Map);
+          if (data['lead'] == true && data['tanggal'] != null) {
+            uniqueDates.add(data['tanggal']);
+          }
+        }
+      } else {
+        final ref = FirebaseDatabase.instance.ref(
+          _selectedType == 'pengajuan' ? 'orders' : 'agent-form',
+        );
+        final snapshot = await ref.get();
+        for (final child in snapshot.children) {
+          final data = Map<String, dynamic>.from(child.value as Map);
+          if (data['lead'] == true && data['tanggal'] != null) {
+            uniqueDates.add(data['tanggal']);
+          }
         }
       }
 
@@ -784,10 +884,12 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
                                     _exportPengajuanByDate(
                                       _selectedExportDate!,
                                     );
-                                  } else {
+                                  } else if (_selectedType == 'pendaftaran') {
                                     _exportPendaftaranByDate(
                                       _selectedExportDate!,
                                     );
+                                  } else if (_selectedType == 'semua') {
+                                    _exportAllByDate(_selectedExportDate!);
                                   }
                                 } else {
                                   setStateDialog(() => showError = true);
@@ -1241,6 +1343,294 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
     }
   }
 
+  Future<void> _exportAllByDate(String selectedDate) async {
+    setState(() => _isExporting = true);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            _setExportDialogState = setStateDialog;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularExportIndicator(progress: _exportProgress),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    try {
+      final pengajuanList = <Map<String, dynamic>>[];
+      final pendaftaranList = <Map<String, dynamic>>[];
+
+      final ordersSnap =
+          await FirebaseDatabase.instance
+              .ref('orders')
+              .orderByChild('tanggal')
+              .equalTo(selectedDate)
+              .get();
+
+      final agentsSnap =
+          await FirebaseDatabase.instance
+              .ref('agent-form')
+              .orderByChild('tanggal')
+              .equalTo(selectedDate)
+              .get();
+
+      if (agentsSnap.exists) {
+        for (final child in agentsSnap.children) {
+          final agentData = Map<String, dynamic>.from(child.value as Map);
+          if (agentData['lead'] == true) {
+            agentData['key'] = child.key;
+            pendaftaranList.add(agentData);
+          }
+        }
+      }
+
+      if (ordersSnap.exists) {
+        for (final child in ordersSnap.children) {
+          final data = Map<String, dynamic>.from(child.value as Map);
+          if (data['lead'] == true) {
+            data['key'] = child.key;
+            pengajuanList.add(data);
+          }
+        }
+      }
+
+      if (pengajuanList.isEmpty && pendaftaranList.isEmpty) {
+        Navigator.of(context, rootNavigator: true).pop();
+        setState(() => _isExporting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Tidak ada data pengajuan/pendaftaran lead pada $selectedDate',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final workbook = xlsio.Workbook();
+      final pengajuanSheet = workbook.worksheets[0];
+      pengajuanSheet.name = 'Pengajuan';
+      final pendaftaranSheet = workbook.worksheets.addWithName('Pendaftaran');
+
+      // ================== PENGAJUAN ==================
+      final pengajuanHeaders = [
+        'Tanggal Pengajuan',
+        'Status',
+        'Tanggal Cancel',
+        'Tanggal Process',
+        'Tanggal Pending',
+        'Tanggal Reject',
+        'Tanggal Approve',
+        'Nama',
+        'Email',
+        'No. Telephone',
+        'Pekerjaan',
+        'Pendapatan',
+        'Item',
+        'Merk',
+        'Nominal Pengajuan',
+        'Angsuran Lain',
+        'DP',
+        'Domisili',
+        'Kode Pos',
+        'Nama Agent',
+        'Email Agent',
+        'No. Telephone Agent',
+      ];
+
+      for (int i = 0; i < pengajuanHeaders.length; i++) {
+        pengajuanSheet.getRangeByIndex(1, i + 1).setText(pengajuanHeaders[i]);
+      }
+
+      for (int i = 0; i < pengajuanList.length; i++) {
+        final order = pengajuanList[i];
+        final row = i + 2;
+
+        pengajuanSheet.getRangeByIndex(row, 1).setText(order['tanggal'] ?? '');
+        pengajuanSheet.getRangeByIndex(row, 2).setText(order['status'] ?? '');
+        pengajuanSheet
+            .getRangeByIndex(row, 3)
+            .setText(order['cancelUpdatedAt'] ?? '');
+        pengajuanSheet
+            .getRangeByIndex(row, 4)
+            .setText(order['processUpdatedAt'] ?? '');
+        pengajuanSheet
+            .getRangeByIndex(row, 5)
+            .setText(order['pendingUpdatedAt'] ?? '');
+        pengajuanSheet
+            .getRangeByIndex(row, 6)
+            .setText(order['rejectUpdatedAt'] ?? '');
+        pengajuanSheet
+            .getRangeByIndex(row, 7)
+            .setText(order['approveUpdatedAt'] ?? '');
+        pengajuanSheet.getRangeByIndex(row, 8).setText(order['name'] ?? '');
+        pengajuanSheet.getRangeByIndex(row, 9).setText(order['email'] ?? '');
+        pengajuanSheet.getRangeByIndex(row, 10).setText(order['phone'] ?? '');
+        pengajuanSheet.getRangeByIndex(row, 11).setText(order['job'] ?? '');
+        pengajuanSheet.getRangeByIndex(row, 12).setText(order['income'] ?? '');
+        pengajuanSheet.getRangeByIndex(row, 13).setText(order['item'] ?? '');
+        pengajuanSheet.getRangeByIndex(row, 14).setText(order['merk'] ?? '');
+        pengajuanSheet.getRangeByIndex(row, 15).setText(order['nominal'] ?? '');
+        pengajuanSheet
+            .getRangeByIndex(row, 16)
+            .setText(order['installment'] ?? '');
+        pengajuanSheet.getRangeByIndex(row, 17).setText(order['dp'] ?? '');
+        pengajuanSheet
+            .getRangeByIndex(row, 18)
+            .setText(order['domicile'] ?? '');
+        pengajuanSheet
+            .getRangeByIndex(row, 19)
+            .setText(order['postalCode'] ?? '');
+        pengajuanSheet
+            .getRangeByIndex(row, 20)
+            .setText(order['agentName'] ?? '');
+        pengajuanSheet
+            .getRangeByIndex(row, 21)
+            .setText(order['agentEmail'] ?? '');
+        pengajuanSheet
+            .getRangeByIndex(row, 22)
+            .setText(order['agentPhone'] ?? '');
+      }
+
+      // ================== PENDAFTARAN ==================
+      final pendaftaranHeaders = [
+        'Tanggal',
+        'Status',
+        'Tanggal Cancel',
+        'Tanggal Process',
+        'Tanggal Pending',
+        'Tanggal Reject',
+        'Tanggal Approve',
+        'Tanggal QR Given',
+        'Nama Lengkap',
+        'Email',
+        'Telepon',
+        'Alamat',
+        'Kode Pos',
+        'KK',
+        'KTP',
+        'NPWP',
+      ];
+
+      for (int i = 0; i < pendaftaranHeaders.length; i++) {
+        pendaftaranSheet
+            .getRangeByIndex(1, i + 1)
+            .setText(pendaftaranHeaders[i]);
+      }
+
+      for (int i = 0; i < pendaftaranList.length; i++) {
+        final agent = pendaftaranList[i];
+        final row = i + 2;
+
+        pendaftaranSheet
+            .getRangeByIndex(row, 1)
+            .setText(agent['tanggal'] ?? '');
+        pendaftaranSheet.getRangeByIndex(row, 2).setText(agent['status'] ?? '');
+        pendaftaranSheet
+            .getRangeByIndex(row, 3)
+            .setText(agent['cancelUpdatedAt'] ?? '');
+        pendaftaranSheet
+            .getRangeByIndex(row, 4)
+            .setText(agent['processUpdatedAt'] ?? '');
+        pendaftaranSheet
+            .getRangeByIndex(row, 5)
+            .setText(agent['pendingUpdatedAt'] ?? '');
+        pendaftaranSheet
+            .getRangeByIndex(row, 6)
+            .setText(agent['rejectUpdatedAt'] ?? '');
+        pendaftaranSheet
+            .getRangeByIndex(row, 7)
+            .setText(agent['approveUpdatedAt'] ?? '');
+        pendaftaranSheet
+            .getRangeByIndex(row, 8)
+            .setText(agent['qr_givenUpdatedAt'] ?? '');
+        pendaftaranSheet
+            .getRangeByIndex(row, 9)
+            .setText(agent['fullName'] ?? '');
+        pendaftaranSheet.getRangeByIndex(row, 10).setText(agent['email'] ?? '');
+        pendaftaranSheet.getRangeByIndex(row, 11).setText(agent['phone'] ?? '');
+        pendaftaranSheet
+            .getRangeByIndex(row, 12)
+            .setText(agent['address'] ?? '');
+        pendaftaranSheet
+            .getRangeByIndex(row, 13)
+            .setText(agent['postalCode'] ?? '');
+
+        final kkImage = await _downloadImage(agent['kk']);
+        final ktpImage = await _downloadImage(agent['ktp']);
+        final npwpImage = await _downloadImage(agent['npwp']);
+
+        for (int col in [14, 15, 16]) {
+          pendaftaranSheet.getRangeByIndex(1, col).columnWidth = 20;
+        }
+
+        if (kkImage != null) {
+          final pic = pendaftaranSheet.pictures.addBase64(
+            row,
+            14,
+            base64Encode(kkImage),
+          );
+          pic.height = 80;
+          pic.width = 120;
+        }
+        if (ktpImage != null) {
+          final pic = pendaftaranSheet.pictures.addBase64(
+            row,
+            15,
+            base64Encode(ktpImage),
+          );
+          pic.height = 80;
+          pic.width = 120;
+        }
+        if (npwpImage != null) {
+          final pic = pendaftaranSheet.pictures.addBase64(
+            row,
+            16,
+            base64Encode(npwpImage),
+          );
+          pic.height = 80;
+          pic.width = 120;
+        }
+      }
+
+      final bytes = workbook.saveAsStream();
+      workbook.dispose();
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final savedPath = await platform.invokeMethod<String>(
+        'saveFileToDownloads',
+        {
+          'fileName': 'saved_semua_${selectedDate}_$timestamp.xlsx',
+          'bytes': bytes,
+        },
+      );
+
+      Navigator.of(context, rootNavigator: true).pop();
+      setState(() => _isExporting = false);
+
+      if (savedPath != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File berhasil disimpan di $savedPath')),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context, rootNavigator: true).pop();
+      setState(() => _isExporting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengekspor: $e')));
+    }
+  }
+
   Widget _buildEmptyState(String message) {
     return IgnorePointer(
       ignoring: true,
@@ -1456,58 +1846,107 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
     );
   }
 
-  Widget _buildPengajuanList() {
-    return ListView(
-      children:
-          groupedOrders.entries.map((entry) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8,
-                  ),
-                  child: Text(
-                    'Date: ${entry.key}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                ...entry.value.map((order) {
-                  return _buildOrderCard(
-                    order,
-                    order['key'] as String,
-                    Theme.of(context).textTheme.bodyMedium,
-                  );
-                }).toList(),
-              ],
-            );
-          }).toList(),
-    );
+  List<Widget> _buildPengajuanListItems() {
+    return groupedOrders.entries.expand((entry) {
+      return [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Text(
+            'Date: ${entry.key}',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        ...entry.value.map((order) {
+          return _buildOrderCard(
+            order,
+            order['key'] as String,
+            Theme.of(context).textTheme.bodyMedium,
+          );
+        }).toList(),
+      ];
+    }).toList();
   }
 
-  Widget _buildPendaftaranList() {
+  List<Widget> _buildPendaftaranListItems() {
+    return _leadAgents.expand((group) {
+      return [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Text(
+            'Date: ${group['date']}',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        ...(group['agents'] as List)
+            .map((agent) => _buildAgentCard(agent))
+            .toList(),
+      ];
+    }).toList();
+  }
+
+  Widget _buildCombinedListView() {
+    final orders =
+        (_selectedType == 'pendaftaran')
+            ? <Map<dynamic, dynamic>>[]
+            : _filteredOrders.cast<Map<dynamic, dynamic>>();
+
+    final agents =
+        (_selectedType == 'pengajuan')
+            ? <Map<dynamic, dynamic>>[]
+            : _leadAgents
+                .expand((e) => (e['agents'] as List))
+                .map((a) => a as Map<dynamic, dynamic>)
+                .toList();
+
+    final grouped = _groupCombinedDataByDate(orders: orders, agents: agents);
+
+    if (grouped.isEmpty) return _buildEmptyState('No data lead found');
+
+    final sortedDates =
+        grouped.keys.toList()..sort(
+          (a, b) => DateFormat(
+            'd-M-yyyy',
+          ).parse(b, true).compareTo(DateFormat('d-M-yyyy').parse(a, true)),
+        );
+
     return ListView(
+      padding: EdgeInsets.only(bottom: 20),
       children:
-          _leadAgents.map((group) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8,
-                  ),
-                  child: Text(
-                    'Date: ${group['date']}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+          sortedDates.expand((date) {
+            final children = <Widget>[
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8,
+                ),
+                child: Text(
+                  'Date: $date',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ];
+
+            final data = grouped[date]!;
+
+            if (data.containsKey('pengajuan')) {
+              children.addAll(
+                data['pengajuan']!.map(
+                  (order) => _buildOrderCard(
+                    order,
+                    order['key'],
+                    Theme.of(context).textTheme.bodyMedium!,
                   ),
                 ),
-                ...(group['agents'] as List).map((agent) {
-                  return _buildAgentCard(agent);
-                }).toList(),
-              ],
-            );
+              );
+            }
+
+            if (data.containsKey('pendaftaran')) {
+              children.addAll(
+                data['pendaftaran']!.map((agent) => _buildAgentCard(agent)),
+              );
+            }
+
+            return children;
           }).toList(),
     );
   }
