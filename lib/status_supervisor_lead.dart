@@ -28,6 +28,7 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   String _searchQuery = '';
+  String _selectedType = 'semua';
 
   @override
   void dispose() {
@@ -63,6 +64,7 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
   void initState() {
     super.initState();
     _currentStatus = widget.status;
+    _selectedType = widget.type ?? 'semua';
     _fetchFilteredData();
   }
 
@@ -70,7 +72,7 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
     setState(() => _isLoading = true);
     final List<Map<dynamic, dynamic>> result = [];
 
-    if (widget.type == 'pengajuan' || widget.type == 'semua') {
+    if (_selectedType == 'pengajuan' || _selectedType == 'semua') {
       final ordersSnapshot = await _database.child('orders').get();
       if (ordersSnapshot.exists) {
         final data = ordersSnapshot.value as Map<dynamic, dynamic>;
@@ -95,7 +97,7 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
       }
     }
 
-    if (widget.type == 'pendaftaran' || widget.type == 'semua') {
+    if (_selectedType == 'pendaftaran' || _selectedType == 'semua') {
       final agentsSnapshot = await _database.child('agent-form').get();
       if (agentsSnapshot.exists) {
         final data = agentsSnapshot.value as Map<dynamic, dynamic>;
@@ -610,12 +612,141 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Data Lead',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Row(
+                children: [
+                  PopupMenuButton<String>(
+                    color: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    offset: Offset(0, 40),
+                    onSelected: (value) {
+                      setState(() {
+                        _selectedType = value;
+                        _fetchFilteredData();
+                      });
+                    },
+                    itemBuilder:
+                        (BuildContext context) => [
+                          PopupMenuItem<String>(
+                            value: 'pengajuan',
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Pengajuan',
+                                    style: TextStyle(
+                                      color:
+                                          _selectedType == 'pengajuan'
+                                              ? Color(0xFF0E5C36)
+                                              : Colors.black,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.black,
+                                      width: 1.2,
+                                    ),
+                                    color:
+                                        _selectedType == 'pengajuan'
+                                            ? Color(0xFF0E5C36)
+                                            : Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuDivider(),
+                          PopupMenuItem<String>(
+                            value: 'pendaftaran',
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Pendaftaran',
+                                    style: TextStyle(
+                                      color:
+                                          _selectedType == 'pendaftaran'
+                                              ? Color(0xFF0E5C36)
+                                              : Colors.black,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.black,
+                                      width: 1.2,
+                                    ),
+                                    color:
+                                        _selectedType == 'pendaftaran'
+                                            ? Color(0xFF0E5C36)
+                                            : Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                    child: SvgPicture.asset(
+                      'assets/icon/filter.svg',
+                      color:
+                          _selectedType == 'semua'
+                              ? Colors.black
+                              : Color(0xFF0E5C36),
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  if (_selectedType != 'semua')
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            _selectedType[0].toUpperCase() +
+                                _selectedType.substring(1),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                              fontSize: 13,
+                            ),
+                          ),
+                          SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedType = 'semua';
+                                _fetchFilteredData();
+                              });
+                            },
+                            child: Icon(
+                              Icons.close,
+                              size: 16,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
               ElevatedButton(
-                onPressed: () => (),
+                onPressed: () => print("Export logic here"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF0E5C36),
                   shape: RoundedRectangleBorder(
