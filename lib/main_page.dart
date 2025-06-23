@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'pengajuan_screen.dart';
-import 'generate_qr_screen.dart';
 import 'saved_orders_screen.dart';
-import 'pendaftaran_screen.dart';
 import 'custom_bottom_nav_bar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
@@ -21,7 +19,7 @@ class _MainPageState extends State<MainPage> {
   late PageController _pageController;
   late int _currentPage;
 
-  final List<String> _routes = ['/pengajuan', '/qr', '/pendaftaran', '/saved'];
+  final List<String> _routes = ['/pengajuan', '/saved'];
 
   @override
   void initState() {
@@ -108,10 +106,6 @@ class _MainPageState extends State<MainPage> {
             case 0:
               return PengajuanScreen();
             case 1:
-              return GenerateQRScreen();
-            case 2:
-              return PendaftaranScreen();
-            case 3:
               return SavedOrdersScreen();
             default:
               return const SizedBox();

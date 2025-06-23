@@ -25,7 +25,13 @@ class _LoginScreenState extends State<LoginScreen> {
       isLoading = true;
       errorMessage = null;
     });
-
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      precacheImage(const AssetImage('assets/images/rectangle_2.png'), context);
+      precacheImage(
+        const AssetImage('assets/images/rectangle_10.png'),
+        context,
+      );
+    });
     try {
       if (emailController.text.trim() == 'demo@appkamu.com' &&
           passwordController.text.trim() == 'Demo1234') {
