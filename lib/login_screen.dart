@@ -19,11 +19,18 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   String? errorMessage;
   bool isPasswordVisible = false;
+  final _formKey = GlobalKey<FormState>();
+  bool _emailError = false;
+  bool _passwordError = false;
+  bool _emailInvalid = false;
+  bool _passwordInvalid = false;
 
   Future<void> login() async {
     setState(() {
       isLoading = true;
       errorMessage = null;
+      _emailInvalid = false;
+      _passwordInvalid = false;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       precacheImage(const AssetImage('assets/images/rectangle_2.png'), context);
@@ -169,12 +176,22 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        errorMessage = e.message;
-      });
-    } finally {
+      print("Firebase error code: ${e.code}");
+      print("Firebase error message: ${e.message}");
+
       setState(() {
         isLoading = false;
+
+        if (e.code == 'user-not-found') {
+          _emailInvalid = true;
+          _passwordInvalid = false;
+        } else if (e.code == 'wrong-password') {
+          _passwordInvalid = true;
+          _emailInvalid = false;
+        } else {
+          _emailInvalid = true;
+          _passwordInvalid = true;
+        }
       });
     }
   }
@@ -216,155 +233,201 @@ class _LoginScreenState extends State<LoginScreen> {
             alignment: Alignment.topCenter,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 250, 16, 0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  RichText(
-                    text: TextSpan(
-                      text: 'Fundra',
-                      style: TextStyle(
-                        color: Color(0xFF0E5C36),
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    RichText(
+                      text: TextSpan(
+                        text: 'Fundra',
+                        style: TextStyle(
+                          color: Color(0xFF0E5C36),
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'IN',
+                            style: TextStyle(
+                              color: Color(0xFFE67D13),
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
-                      children: [
-                        TextSpan(
-                          text: 'IN',
-                          style: TextStyle(
-                            color: Color(0xFFE67D13),
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
+                    ),
+                    SizedBox(height: 40),
+
+                    TextFormField(
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      cursorColor: Colors.black,
+                      style: TextStyle(color: Colors.black),
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        labelStyle: TextStyle(color: Colors.black),
+                        prefixIcon: Icon(Icons.email, color: Color(0xFF0E5C36)),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: Color(0xFF0E5C36),
+                            width: 2,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 40),
-
-                  TextField(
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    cursorColor: Colors.black,
-                    style: TextStyle(color: Colors.black),
-                    decoration: InputDecoration(
-                      labelText: 'Email',
-                      labelStyle: TextStyle(color: Colors.black),
-                      prefixIcon: Icon(Icons.email, color: Color(0xFF0E5C36)),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Color(0xFF0E5C36),
-                          width: 2,
+                        errorStyle: TextStyle(color: Colors.red),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
                         ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 12),
-
-                  TextField(
-                    controller: passwordController,
-                    obscureText: !isPasswordVisible,
-                    cursorColor: Colors.black,
-                    style: TextStyle(color: Colors.black),
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      labelStyle: TextStyle(color: Colors.black),
-                      prefixIcon: Icon(Icons.lock, color: Color(0xFF0E5C36)),
-
-                      suffixIcon: GestureDetector(
-                        onLongPress: () {
-                          setState(() {
-                            isPasswordVisible = true;
-                          });
-                        },
-                        onLongPressUp: () {
-                          setState(() {
-                            isPasswordVisible = false;
-                          });
-                        },
-                        child: Icon(
-                          isPasswordVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off,
-                          color: Colors.black,
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
                         ),
+                        errorText:
+                            _emailError
+                                ? 'Email required'
+                                : _emailInvalid
+                                ? 'Email wrong'
+                                : null,
                       ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide(
-                          color: Color(0xFF0E5C36),
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 8),
 
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChangePasswordScreen(),
-                          ),
-                        );
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Email required';
+                        }
+                        return null;
                       },
-                      style: TextButton.styleFrom(
-                        foregroundColor: Colors.black,
-                      ),
-                      child: Text("Forgot Password?"),
                     ),
-                  ),
 
-                  TextButton(
-                    onPressed: () {
-                      emailController.text = 'demo@appkamu.com';
-                      passwordController.text = 'Demo1234';
-                      login();
-                    },
-                    child: Text('Gunakan akun demo'),
-                  ),
+                    SizedBox(height: 24),
 
-                  if (errorMessage != null) ...[
-                    SizedBox(height: 10),
-                    Text(errorMessage!, style: TextStyle(color: Colors.red)),
-                  ],
-
-                  SizedBox(height: 20),
-
-                  isLoading
-                      ? CircularProgressIndicator()
-                      : ElevatedButton(
-                        onPressed: login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF0E5C36),
-                          foregroundColor: Colors.white,
-                          minimumSize: Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    TextFormField(
+                      controller: passwordController,
+                      obscureText: !isPasswordVisible,
+                      cursorColor: Colors.black,
+                      style: TextStyle(color: Colors.black),
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        labelStyle: TextStyle(color: Colors.black),
+                        prefixIcon: Icon(Icons.lock, color: Color(0xFF0E5C36)),
+                        suffixIcon: GestureDetector(
+                          onLongPress:
+                              () => setState(() => isPasswordVisible = true),
+                          onLongPressUp:
+                              () => setState(() => isPasswordVisible = false),
+                          child: Icon(
+                            isPasswordVisible
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Colors.black,
                           ),
                         ),
-                        child: Text(
-                          "Login",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: Color(0xFF0E5C36),
+                            width: 2,
                           ),
                         ),
+                        errorStyle: TextStyle(color: Colors.red),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: Colors.red, width: 2),
+                        ),
+                        errorText:
+                            _passwordError
+                                ? 'Password required'
+                                : _passwordInvalid
+                                ? 'Password wrong'
+                                : null,
                       ),
-                ],
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Password required';
+                        }
+                        return null;
+                      },
+                    ),
+
+                    SizedBox(height: 8),
+
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChangePasswordScreen(),
+                            ),
+                          );
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.black,
+                        ),
+                        child: Text("Forgot Password?"),
+                      ),
+                    ),
+
+                    TextButton(
+                      onPressed: () {
+                        emailController.text = 'demo@appkamu.com';
+                        passwordController.text = 'Demo1234';
+                        login();
+                      },
+                      child: Text('Gunakan akun demo'),
+                    ),
+
+                    if (errorMessage != null) ...[
+                      SizedBox(height: 10),
+                      Text(errorMessage!, style: TextStyle(color: Colors.red)),
+                    ],
+
+                    SizedBox(height: 20),
+
+                    isLoading
+                        ? CircularProgressIndicator()
+                        : ElevatedButton(
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              login();
+                            }
+                          },
+
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF0E5C36),
+                            foregroundColor: Colors.white,
+                            minimumSize: Size(double.infinity, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            "Login",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                  ],
+                ),
               ),
             ),
           ),
