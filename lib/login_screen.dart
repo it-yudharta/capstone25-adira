@@ -6,6 +6,7 @@ import 'admin_pengajuan_screen.dart';
 import 'admin_pendaftaran_screen.dart';
 import 'agent_screen.dart';
 import 'main_supervisor.dart';
+import 'main_agent.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -114,10 +115,12 @@ class _LoginScreenState extends State<LoginScreen> {
         }
 
         await user.reload();
-        if (!user.emailVerified) {
+        final refreshedUser = _auth.currentUser;
+        if (refreshedUser != null && !refreshedUser.emailVerified) {
           await user.sendEmailVerification();
 
           setState(() {
+            isLoading = false;
             errorMessage =
                 "Silakan verifikasi email terlebih dahulu. Link verifikasi telah dikirim.";
           });
@@ -166,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else if (role == 'agent') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => AgentScreen()),
+            MaterialPageRoute(builder: (_) => MainAgent()),
           );
         } else {
           setState(() {

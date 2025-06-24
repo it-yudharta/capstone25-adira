@@ -1365,10 +1365,11 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Nama        : ${order['name'] ?? '-'}",
+                  "Agent         : ${order['agentName'] ?? '-'}",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 4),
+                Text("Nama         : ${order['name'] ?? '-'}"),
                 Text("Email         : ${order['email'] ?? '-'}"),
                 SizedBox(height: 4),
                 GestureDetector(

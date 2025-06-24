@@ -8,6 +8,7 @@ import 'admin_pengajuan_screen.dart';
 import 'admin_pendaftaran_screen.dart';
 import 'agent_screen.dart';
 import 'main_supervisor.dart';
+import 'main_agent.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -114,7 +115,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         } else if (role == 'admin_pendaftaran') {
           return AdminPendaftaranScreen();
         } else if (role == 'agent') {
-          return AgentScreen();
+          return MainAgent();
         } else if (role == 'supervisor') {
           return MainSupervisor();
         } else {
