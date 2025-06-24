@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'circular_loading_indicator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class StatusSupervisorPengajuan extends StatefulWidget {
   final String status;
@@ -1335,6 +1336,27 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
     );
   }
 
+  String normalizePhoneNumber(String phone) {
+    if (phone.startsWith('0')) {
+      return '62${phone.substring(1)}';
+    }
+    return phone;
+  }
+
+  Future<void> _launchWhatsApp(String phoneNumber) async {
+    final normalizedPhone = normalizePhoneNumber(phoneNumber);
+    final url = 'https://wa.me/$normalizedPhone';
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+    }
+  }
+
   Widget _buildOrderCard(Map order) {
     final phone = order['phone'] ?? '-';
     final status = order['status'] ?? 'Belum diproses';
@@ -1352,132 +1374,150 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
         );
       },
       child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        padding: EdgeInsets.all(12),
+        width: double.infinity,
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
-          boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 4)],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Stack(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Agent         : ${order['agentName'] ?? '-'}",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 4),
-                Text("Nama         : ${order['name'] ?? '-'}"),
-                Text("Email         : ${order['email'] ?? '-'}"),
-                SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () async {},
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
-                      children: [
-                        TextSpan(text: "No. Telp     : "),
-                        TextSpan(
-                          text: phone,
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                      ],
-                    ),
+            DefaultTextStyle.merge(
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Agent         : ${order['agentName'] ?? '-'}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text("Alamat      : ${order['domicile'] ?? '-'}"),
-                SizedBox(height: 4),
-                Text("Kode Pos  : ${order['postalCode'] ?? '-'}"),
-                SizedBox(height: 4),
-                Text(
-                  "Status        : ${order['status'] ?? 'Belum diproses'}",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                if (order['note'] != null &&
-                    order['note'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      "Note           : ${order['note']}",
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(height: 8),
+                  Text("Nama         : ${order['name'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  Text("Alamat       : ${order['domicile'] ?? '-'}"),
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () => _launchWhatsApp(phone),
+                    child: RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
+                        children: [
+                          const TextSpan(text: "No. Telp      : "),
+                          TextSpan(
+                            text: phone,
+                            style: const TextStyle(color: Colors.blue),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                SizedBox(height: 16),
-                if (status == 'pending' && _currentStatus != 'trash')
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () => _showRejectConfirmation(key),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF0E5C36),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.cancel, size: 16, color: Colors.white),
-                              SizedBox(height: 4),
-                              Text(
-                                'Reject',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: 6),
-                        ElevatedButton(
-                          onPressed: () => _showApproveConfirmation(key),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF0E5C36),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Approve',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  SizedBox(height: 4),
+                  Text("Pekerjaan  : ${order['job'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Status        : $status",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-              ],
+                  if (order['note'] != null &&
+                      order['note'].toString().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        "Note           : ${order['note']}",
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  if (status == 'pending' && _currentStatus != 'trash')
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _showRejectConfirmation(key),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(
+                                  Icons.cancel,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Reject',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          ElevatedButton(
+                            onPressed: () => _showApproveConfirmation(key),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Approve',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
             if (isLead)
               Align(

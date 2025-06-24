@@ -84,17 +84,17 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Nama        : ${order['name'] ?? '-'}",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  "Agent         : ${order['agentName'] ?? '-'}",
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 4),
-                Text("Email         : ${order['email'] ?? '-'}"),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
+                Text("Nama         : ${order['name'] ?? '-'}"),
+                Text("Alamat       : ${order['domicile'] ?? '-'}"),
                 RichText(
                   text: TextSpan(
                     style: const TextStyle(fontSize: 14, color: Colors.black87),
                     children: [
-                      const TextSpan(text: "No. Telp     : "),
+                      const TextSpan(text: "No. Telp      : "),
                       TextSpan(
                         text: phone,
                         style: const TextStyle(color: Colors.blue),
@@ -102,11 +102,9 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text("Alamat      : ${order['domicile'] ?? '-'}"),
-                const SizedBox(height: 4),
-                Text("Kode Pos  : ${order['postalCode'] ?? '-'}"),
-                const SizedBox(height: 4),
+                Text("Pekerjaan  : ${order['job'] ?? '-'}"),
+                Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                SizedBox(height: 8),
                 Text(
                   "Status        : $status",
                   style: const TextStyle(fontWeight: FontWeight.bold),

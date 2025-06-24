@@ -486,7 +486,10 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
                   Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
                   SizedBox(height: 8),
                   if (!(isLead && status == 'lead'))
-                    Text("Status       : $status"),
+                    Text(
+                      "Status       : $status",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   if (agent['lead'] == true) ...[
                     SizedBox(height: 12),
                     Align(

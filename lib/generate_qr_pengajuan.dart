@@ -11,6 +11,7 @@ import 'dart:ui' as ui;
 import 'bottom_nav_bar_pendaftaran.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class GenerateQRPengajuan extends StatefulWidget {
   final String? fullName;
@@ -44,6 +45,7 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
   bool isAgentNameValid = true;
   bool isEmailValid = true;
   bool isPhoneValid = true;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -93,8 +95,11 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
 
   String _generateRandomPassword(String email) {
     String prefix = email.length >= 3 ? email.substring(0, 3) : email;
-    int randomNum = DateTime.now().millisecondsSinceEpoch % 1000;
-    return "$prefix$randomNum";
+    String timePart =
+        (DateTime.now().millisecondsSinceEpoch % 10000).toString();
+    String strongSuffix = "A@";
+
+    return "$prefix$timePart$strongSuffix";
   }
 
   Future<void> _createAgentAccount({
@@ -264,15 +269,39 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
     return byteData!.buffer.asUint8List();
   }
 
-  Future<void> _saveQrCode() async {
+  Future<String?> _uploadQrToFirebase(Uint8List qrBytes, String email) async {
     try {
-      if (currentAgentData.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Silakan generate QR terlebih dahulu")),
-        );
-        return;
-      }
+      final storageRef = FirebaseStorage.instance.ref();
+      final qrFileName =
+          'qr_codes/${email}_${DateTime.now().millisecondsSinceEpoch}.png';
+      final qrFileRef = storageRef.child(qrFileName);
 
+      final uploadTask = await qrFileRef.putData(
+        qrBytes,
+        SettableMetadata(contentType: 'image/png'),
+      );
+
+      final downloadUrl = await qrFileRef.getDownloadURL();
+      print("QR uploaded. Download URL: $downloadUrl");
+      return downloadUrl;
+    } catch (e) {
+      print("Error uploading QR to Firebase Storage: $e");
+      return null;
+    }
+  }
+
+  Future<void> _saveQrCode() async {
+    if (currentAgentData.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Silakan generate QR terlebih dahulu")),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    _showSavingDialog();
+
+    try {
       Uint8List pngBytes = await _captureQrWithText();
 
       final result = await platform.invokeMethod("saveFileToDownloads", {
@@ -281,11 +310,9 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
         "bytes": pngBytes,
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('QR Code berhasil disimpan ke $result')),
-      );
+      final qrUrl = await _uploadQrToFirebase(pngBytes, emailController.text);
 
-      if (widget.pendaftaranKey != null) {
+      if (qrUrl != null && widget.pendaftaranKey != null) {
         final DatabaseReference ref = FirebaseDatabase.instance
             .ref()
             .child('agent-form')
@@ -294,17 +321,44 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
         await ref.update({
           'status': 'qr_given',
           'qr_givenUpdatedAt': DateFormat('dd-MM-yyyy').format(DateTime.now()),
+          'qr_url': qrUrl,
         });
       }
+
+      Navigator.of(context).pop();
+      setState(() => _isSaving = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('QR Code berhasil disimpan ke $result')),
+      );
 
       await Future.delayed(Duration(milliseconds: 500));
       _showQrSavedPopup();
     } catch (e) {
       print("Error saving QR: $e");
+      Navigator.of(context).pop();
+      setState(() => _isSaving = false);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Gagal menyimpan QR Code')));
     }
+  }
+
+  void _showSavingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF0E5C36), // Warna hijau gelap sesuai permintaan
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showGenerateConfirmation() {

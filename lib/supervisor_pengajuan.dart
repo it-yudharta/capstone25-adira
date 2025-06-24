@@ -193,9 +193,11 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
                     "Agent         : ${order['agentName'] ?? '-'}",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 4),
+                  SizedBox(height: 8),
                   Text("Nama         : ${order['name'] ?? '-'}"),
+                  SizedBox(height: 4),
                   Text("Alamat       : ${order['domicile'] ?? '-'}"),
+                  SizedBox(height: 4),
                   GestureDetector(
                     onTap: () async {
                       try {
@@ -208,16 +210,27 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
                         );
                       }
                     },
-                    child: Text(
-                      "No. Telp     : $phoneNumber",
-                      style: TextStyle(color: Colors.blue),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          TextSpan(text: "No. Telp      : "),
+                          TextSpan(
+                            text: phoneNumber,
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+                  SizedBox(height: 4),
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
+                  SizedBox(height: 4),
                   Text("Pengajuan : ${order['installment'] ?? '-'}"),
                   SizedBox(height: 8),
                   Text(
                     "Status        : ${order['status'] ?? 'Belum diproses'}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ],
               ),

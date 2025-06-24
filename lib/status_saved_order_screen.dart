@@ -92,13 +92,9 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
         }
 
         if (matches) {
-          // tambahkan key
           item['key'] = key;
-
-          // ambil displayDate sesuai status
           String displayDate;
           if (_currentStatus == 'trash') {
-            // sebelum trash, pakai statusUpdatedAt terakhir
             final updatedKey = '${status}UpdatedAt';
             displayDate = item[updatedKey] ?? item['tanggal'] ?? 'Unknown';
           } else {
@@ -156,7 +152,7 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
       String dateKey;
       try {
         if (dateStr.isEmpty) throw FormatException();
-        // format: 'dd-MM-yyyy' atau 'yyyy-MM-dd', sesuaikan DateFormat-nya jika perlu
+
         DateFormat('d-M-yyyy').parseStrict(dateStr);
         dateKey = dateStr;
       } catch (_) {
@@ -1431,9 +1427,9 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                         child: TextButton(
                           onPressed: () {
                             Navigator.pop(context);
-                            // Panggil fungsi cancel-mu—misal:
+
                             updateStatus(orderKey, 'cancel');
-                            // lalu muat ulang data:
+
                             _fetchFilteredOrders();
                           },
                           style: TextButton.styleFrom(
@@ -1514,8 +1510,9 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                     "Agent         : ${order['agentName'] ?? '-'}",
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text("Nama         : ${order['name'] ?? '-'}"),
+                  const SizedBox(height: 4),
                   Text("Alamat       : ${order['domicile'] ?? '-'}"),
                   const SizedBox(height: 4),
 
@@ -1547,7 +1544,9 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 4),
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
+                  const SizedBox(height: 4),
                   Text("Pengajuan : ${order['installment'] ?? '-'}"),
                   const SizedBox(height: 8),
                   if (!(isLead && order['status'] == 'lead'))

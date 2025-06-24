@@ -1403,9 +1403,11 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                     "Agent         : ${order['agentName'] ?? '-'}",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 4),
+                  SizedBox(height: 8),
                   Text("Nama         : ${order['name'] ?? '-'}"),
+                  SizedBox(height: 4),
                   Text("Alamat       : ${order['domicile'] ?? '-'}"),
+                  SizedBox(height: 4),
                   GestureDetector(
                     onTap: () async {
                       try {
@@ -1431,8 +1433,9 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                       ),
                     ),
                   ),
-
+                  SizedBox(height: 4),
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
+                  SizedBox(height: 4),
                   Text("Pengajuan : ${order['installment'] ?? '-'}"),
                   SizedBox(height: 8),
                   if (!(isLead && (order['status'] == 'lead')))

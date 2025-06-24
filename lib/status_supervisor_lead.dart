@@ -652,8 +652,8 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
         );
       },
       child: Container(
-        margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        padding: EdgeInsets.all(12),
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(8),
@@ -662,50 +662,45 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
         child: Stack(
           children: [
             DefaultTextStyle.merge(
-              style: TextStyle(fontSize: 14, color: Colors.black87),
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Nama        : ${order['fullName'] ?? order['name'] ?? '-'}",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    "Agent         : ${order['agentName'] ?? '-'}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 4),
-                  Text("Email         : ${order['email'] ?? '-'}"),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 8),
+                  Text("Nama         : ${order['name'] ?? '-'}"),
+                  const SizedBox(height: 4),
+                  Text("Alamat       : ${order['domicile'] ?? '-'}"),
+                  const SizedBox(height: 4),
                   GestureDetector(
                     onTap: () => _launchWhatsApp(phone),
                     child: RichText(
                       text: TextSpan(
-                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
+                        ),
                         children: [
-                          TextSpan(text: "No. Telp     : "),
+                          const TextSpan(text: "No. Telp      : "),
                           TextSpan(
                             text: phone,
-                            style: TextStyle(color: Colors.blue),
+                            style: const TextStyle(color: Colors.blue),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    "Alamat      : ${order['address'] ?? order['domicile'] ?? '-'}",
-                  ),
-                  if (order['postalCode'] != null || order['job'] != null) ...[
-                    SizedBox(height: 4),
-                    Text("Kode Pos  : ${order['postalCode'] ?? '-'}"),
-                    SizedBox(height: 4),
-                    Text("Pekerjaan  : ${order['job'] ?? '-'}"),
-                  ],
-                  if (order['installment'] != null) ...[
-                    SizedBox(height: 4),
-                    Text("Pengajuan : ${order['installment']}"),
-                  ],
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
+                  Text("Pekerjaan  : ${order['job'] ?? '-'}"),
+                  const SizedBox(height: 4),
+                  Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                  const SizedBox(height: 8),
                   Text(
                     "Status        : $status",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   if (order['note'] != null &&
                       order['note'].toString().isNotEmpty)
@@ -713,13 +708,13 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
                       padding: const EdgeInsets.only(top: 4.0),
                       child: Text(
                         "Note           : ${order['note']}",
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.black87,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   if (status.toLowerCase() == 'pending' &&
                       widget.status != 'trash')
                     Align(
@@ -731,18 +726,18 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
                             onPressed:
                                 () => _showRejectConfirmationPengajuan(key),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF0E5C36),
+                              backgroundColor: const Color(0xFF0E5C36),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              padding: EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 10,
                                 vertical: 6,
                               ),
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
-                              children: [
+                              children: const [
                                 Icon(
                                   Icons.cancel,
                                   size: 16,
@@ -759,23 +754,23 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
                               ],
                             ),
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           ElevatedButton(
                             onPressed:
                                 () => _showApproveConfirmationPengajuan(key),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF0E5C36),
+                              backgroundColor: const Color(0xFF0E5C36),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              padding: EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 10,
                                 vertical: 6,
                               ),
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
-                              children: [
+                              children: const [
                                 Icon(
                                   Icons.check_circle,
                                   size: 16,
@@ -802,11 +797,11 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
               Align(
                 alignment: Alignment.topRight,
                 child: Padding(
-                  padding: EdgeInsets.only(top: 8, right: 8),
+                  padding: const EdgeInsets.only(top: 8, right: 8),
                   child: Transform.scale(
                     scaleY: 1.3,
                     scaleX: 1.0,
-                    child: Icon(
+                    child: const Icon(
                       Icons.bookmark,
                       size: 24,
                       color: Color(0xFF0E5C36),

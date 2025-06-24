@@ -407,7 +407,10 @@ class _StatusSavedPendaftaranScreenState
                   const SizedBox(height: 4),
                   Text("Kode Pos  : ${data['postalCode'] ?? '-'}"),
                   const SizedBox(height: 4),
-                  Text("Status       : $status"),
+                  Text(
+                    "Status       : $status",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   const SizedBox(height: 16),
 
                   if (status == 'process' && widget.status != 'trash')

@@ -46,6 +46,7 @@ dependencies:
   syncfusion_flutter_xlsio: ^29.2.4
   http: ^0.13.6
   shared_preferences: ^2.2.2
+  firebase_storage: ^11.5.1
 
 
   # The following adds the Cupertino Icons font to your application.

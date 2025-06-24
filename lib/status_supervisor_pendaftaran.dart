@@ -388,7 +388,7 @@ class _StatusSupervisorPendaftaranState
                   "Nama        : ${pendaftaran['fullName'] ?? '-'}",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                SizedBox(height: 4),
+                SizedBox(height: 8),
                 Text("Email         : ${pendaftaran['email'] ?? '-'}"),
                 SizedBox(height: 4),
                 GestureDetector(
@@ -410,7 +410,7 @@ class _StatusSupervisorPendaftaranState
                 Text("Alamat      : ${pendaftaran['address'] ?? '-'}"),
                 SizedBox(height: 4),
                 Text("Kode Pos  : ${pendaftaran['postalCode'] ?? '-'}"),
-                SizedBox(height: 4),
+                SizedBox(height: 8),
                 Text(
                   "Status       : $status",
                   style: TextStyle(fontWeight: FontWeight.bold),

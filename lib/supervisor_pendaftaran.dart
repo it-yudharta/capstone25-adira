@@ -192,7 +192,7 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
                   "Nama        : ${agent['fullName'] ?? '-'}",
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Text("Email         : ${agent['email'] ?? '-'}"),
                 const SizedBox(height: 4),
                 GestureDetector(
@@ -217,8 +217,11 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
                 Text("Alamat      : ${agent['address'] ?? '-'}"),
                 const SizedBox(height: 4),
                 Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
-                const SizedBox(height: 4),
-                Text("Status       : $status"),
+                const SizedBox(height: 8),
+                Text(
+                  "Status       : $status",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           ),
