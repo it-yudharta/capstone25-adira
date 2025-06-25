@@ -15,8 +15,8 @@ class CircularExportIndicator extends StatelessWidget {
       width: 100,
       height: 120,
       decoration: BoxDecoration(
-        color: Colors.white, // Latar belakang putih
-        borderRadius: BorderRadius.circular(12), // Sudut membulat
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),

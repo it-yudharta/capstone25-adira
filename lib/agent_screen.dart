@@ -36,7 +36,7 @@ class _AgentScreenState extends State<AgentScreen> {
     if (user == null) return;
 
     final email = user.email;
-    print("🔍 Fetching orders for: $email");
+    print("Fetching orders for: $email");
 
     final ref = FirebaseDatabase.instance.ref('orders');
     final snapshot = await ref.orderByChild('agentEmail').equalTo(email).get();
