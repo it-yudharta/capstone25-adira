@@ -206,12 +206,11 @@ class _AgentLeadState extends State<AgentLead> {
       {'label': 'Pending', 'status': 'pending', 'icon': 'custom_pending_icon'},
       {'label': 'Reject', 'status': 'reject', 'icon': 'custom_reject_icon'},
       {'label': 'Approve', 'status': 'approve', 'icon': 'custom_approve_icon'},
-      {'label': 'Trash Bin', 'status': 'trash', 'icon': 'custom_bin_icon'},
     ];
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
-      padding: EdgeInsets.symmetric(horizontal: 19, vertical: 8),
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 1),
+      padding: EdgeInsets.symmetric(horizontal: 25, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 5)],
@@ -221,7 +220,7 @@ class _AgentLeadState extends State<AgentLead> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: List.generate(statusButtons.length * 2 - 1, (index) {
-            if (index.isOdd) return SizedBox(width: 16);
+            if (index.isOdd) return SizedBox(width: 28);
             final item = statusButtons[index ~/ 2];
 
             return InkWell(
