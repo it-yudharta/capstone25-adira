@@ -1,3 +1,5 @@
+// ignore_for_file: duplicate_import, unused_field, unnecessary_import, use_super_parameters, library_private_types_in_public_api, prefer_final_fields
+
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,6 +14,8 @@ import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'circular_loading_indicator.dart';
 import 'reset_password.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'login_screen.dart';
 
 class StatusAgentScreen extends StatefulWidget {
   final String status;
@@ -102,8 +106,7 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
               tanggal.contains(query);
         }).toList();
 
-    _filteredOrders =
-        results; // Tambahkan ini agar kondisi empty state bisa deteksi hasil pencarian
+    _filteredOrders = results;
 
     groupedOrders.clear();
 
@@ -144,10 +147,34 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
     _fetchStatusOrders();
   }
 
+  String normalizePhoneNumber(String phone) {
+    if (phone.startsWith('0')) {
+      return '62${phone.substring(1)}';
+    }
+    return phone;
+  }
+
+  Future<void> _launchWhatsApp(String phoneNumber) async {
+    final normalizedPhone = normalizePhoneNumber(phoneNumber);
+    final url = 'https://wa.me/$normalizedPhone';
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+    }
+  }
+
   void _logout() async {
     await FirebaseAuth.instance.signOut();
-    if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/login');
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
   }
 
   Widget _buildOrderCard(Map<String, dynamic> order) {
@@ -188,18 +215,25 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
                 SizedBox(height: 4),
                 Text("Alamat       : ${order['domicile'] ?? '-'}"),
                 SizedBox(height: 4),
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(fontSize: 14, color: Colors.black87),
-                    children: [
-                      const TextSpan(text: "No. Telp      : "), //TODO
-                      TextSpan(
-                        text: phone,
-                        style: const TextStyle(color: Colors.blue),
+                GestureDetector(
+                  onTap: () => _launchWhatsApp(phone),
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
                       ),
-                    ],
+                      children: [
+                        const TextSpan(text: "No. Telp      : "),
+                        TextSpan(
+                          text: phone,
+                          style: const TextStyle(color: Colors.blue),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+
                 SizedBox(height: 4),
                 Text("Pekerjaan  : ${order['job'] ?? '-'}"),
                 SizedBox(height: 4),

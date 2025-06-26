@@ -1,3 +1,5 @@
+// ignore_for_file: duplicate_import, unused_field, unnecessary_import, use_super_parameters, library_private_types_in_public_api, prefer_final_fields, deprecated_member_use, sized_box_for_whitespace, use_build_context_synchronously, avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -12,6 +14,8 @@ import 'package:http/http.dart' as http;
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'circular_loading_indicator.dart';
 import 'reset_password.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'login_screen.dart';
 
 class StatusAgentLeadScreen extends StatefulWidget {
   final String status;
@@ -150,8 +154,32 @@ class _StatusAgentLeadScreenState extends State<StatusAgentLeadScreen> {
 
   void _logout() async {
     await FirebaseAuth.instance.signOut();
-    if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/login');
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  String normalizePhoneNumber(String phone) {
+    if (phone.startsWith('0')) {
+      return '62${phone.substring(1)}';
+    }
+    return phone;
+  }
+
+  Future<void> _launchWhatsApp(String phoneNumber) async {
+    final normalizedPhone = normalizePhoneNumber(phoneNumber);
+    final url = 'https://wa.me/$normalizedPhone';
+    final uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Tidak dapat membuka WhatsApp')));
+    }
   }
 
   Widget _buildOrderCard(Map<String, dynamic> order) {
@@ -191,16 +219,22 @@ class _StatusAgentLeadScreenState extends State<StatusAgentLeadScreen> {
                 SizedBox(height: 4),
                 Text("Alamat       : ${order['domicile'] ?? '-'}"),
                 SizedBox(height: 4),
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(fontSize: 14, color: Colors.black87),
-                    children: [
-                      const TextSpan(text: "No. Telp      : "),
-                      TextSpan(
-                        text: phone,
-                        style: const TextStyle(color: Colors.blue),
+                GestureDetector(
+                  onTap: () => _launchWhatsApp(phone),
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
                       ),
-                    ],
+                      children: [
+                        const TextSpan(text: "No. Telp      : "),
+                        TextSpan(
+                          text: phone,
+                          style: const TextStyle(color: Colors.blue),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 SizedBox(height: 4),
