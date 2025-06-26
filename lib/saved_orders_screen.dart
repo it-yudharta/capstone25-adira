@@ -1,3 +1,5 @@
+// ignore_for_file: unused_import, unused_field, unused_local_variable, unused_element, unnecessary_import, use_key_in_widget_constructors, library_private_types_in_public_api, deprecated_member_use, sized_box_for_whitespace, use_build_context_synchronously, no_leading_underscores_for_local_identifiers, avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'order_detail_screen.dart';
@@ -421,46 +423,18 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
                   : _savedOrders.isEmpty
-                  ? IgnorePointer(
-                    ignoring: true,
-                    child: SingleChildScrollView(
-                      physics: NeverScrollableScrollPhysics(),
-                      child: Container(
-                        height: MediaQuery.of(context).size.height * 0.6,
-                        alignment: Alignment.center,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/images/EmptyState.png',
-                              width: 300,
-                              height: 200,
-                              fit: BoxFit.contain,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'No Data Found',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'No saved orders found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  ? _buildEmptyState(
+                    title: 'No Data Found',
+                    subtitle: 'No Data Lead Pengajuan found',
+                  )
+                  : _filteredOrders.isEmpty
+                  ? _buildEmptyState(
+                    title: 'No Search Results',
+                    subtitle: 'No Data Lead Pengajuan found',
                   )
                   : ListView.builder(
                     itemCount: orderedDates.fold<int>(
@@ -497,6 +471,48 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                   ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyState({required String title, required String subtitle}) {
+    return IgnorePointer(
+      ignoring: true,
+      child: SingleChildScrollView(
+        physics: NeverScrollableScrollPhysics(),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/EmptyState.png',
+                width: 300,
+                height: 200,
+                fit: BoxFit.contain,
+              ),
+              SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -452,34 +452,43 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
                   color: Colors.black87,
                 ),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  _showExportByStatusUpdatedDatePickerDialogAgent(
-                    _currentStatus,
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF0E5C36),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              Opacity(
+                opacity: _currentStatus == 'trash' ? 0.0 : 1.0,
+                child: IgnorePointer(
+                  ignoring: _currentStatus == 'trash',
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _showExportByStatusUpdatedDatePickerDialogAgent(
+                        _currentStatus,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/icon/export_icon.png',
+                          width: 16,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Export by',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'assets/icon/export_icon.png',
-                      width: 16,
-                      height: 16,
-                      color: Colors.white,
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Export by',
-                      style: TextStyle(fontSize: 12, color: Colors.white),
-                    ),
-                  ],
                 ),
               ),
             ],
@@ -523,8 +532,8 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
                             SizedBox(height: 4),
                             Text(
                               _searchQuery.isEmpty
-                                  ? 'No Data Found \'$_currentStatus\''
-                                  : 'No Search Results',
+                                  ? 'No Data Pengajuan Found'
+                                  : 'No Data Pengajuan Found',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -1035,8 +1044,8 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
             PopupMenuButton<String>(
               icon: SvgPicture.asset(
                 'assets/icon/agent.svg',
-                width: 24,
-                height: 24,
+                width: 20,
+                height: 20,
                 color: Colors.black,
               ),
               onSelected: (value) {

@@ -525,8 +525,8 @@ class _StatusAgentLeadScreenState extends State<StatusAgentLeadScreen> {
                             SizedBox(height: 4),
                             Text(
                               _searchQuery.isEmpty
-                                  ? 'No Data Found \'$_currentStatus\''
-                                  : 'No Search Results',
+                                  ? 'No Data Lead Pengajuan Found'
+                                  : 'No Data Lead Pengajuan Found',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,

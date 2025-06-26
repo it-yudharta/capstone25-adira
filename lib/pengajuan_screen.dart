@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field, unused_element, unnecessary_import, use_key_in_widget_constructors, library_private_types_in_public_api, prefer_final_fields, use_build_context_synchronously, avoid_print, deprecated_member_use, sized_box_for_whitespace
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -1020,7 +1022,9 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
         Expanded(
           child:
               _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
                   : _orders.isEmpty
                   ? IgnorePointer(
                     ignoring: true,
@@ -1061,8 +1065,11 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                       ),
                     ),
                   )
-                  : _filteredOrders.isEmpty
-                  ? const Center(child: Text("Tidak ada hasil pencarian"))
+                  : groupedOrders.isEmpty && _searchQuery.isNotEmpty
+                  ? _buildEmptyState(
+                    'No Search Results',
+                    'No data pengajuan found',
+                  )
                   : ListView.builder(
                     itemCount: orderedDates.fold<int>(
                       0,
@@ -1101,6 +1108,48 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
                   ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyState(String title, String subtitle) {
+    return IgnorePointer(
+      ignoring: true,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/EmptyState.png',
+                width: 300,
+                height: 200,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

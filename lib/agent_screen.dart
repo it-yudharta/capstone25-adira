@@ -458,14 +458,18 @@ class _AgentScreenState extends State<AgentScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Image.asset(
-                              'assets/images/EmptyState.png',
+                              _searchQuery.isEmpty
+                                  ? 'assets/images/EmptyState.png'
+                                  : 'assets/images/EmptyState.png',
                               width: 300,
                               height: 200,
                               fit: BoxFit.contain,
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'No Data Found',
+                              _searchQuery.isEmpty
+                                  ? 'No Data Found'
+                                  : 'No Search Results',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -474,12 +478,15 @@ class _AgentScreenState extends State<AgentScreen> {
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'No data pengajuan found',
+                              _searchQuery.isEmpty
+                                  ? 'No Data Pengajuan Found'
+                                  : 'No Data Pengajuan Found',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.grey.shade600,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),

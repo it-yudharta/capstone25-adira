@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field, unused_local_variable, unnecessary_import, use_super_parameters, library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use, sized_box_for_whitespace, curly_braces_in_flow_control_structures, no_leading_underscores_for_local_identifiers, avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -446,14 +448,18 @@ class _AgentLeadState extends State<AgentLead> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Image.asset(
-                              'assets/images/EmptyState.png',
+                              _searchQuery.isEmpty
+                                  ? 'assets/images/EmptyState.png'
+                                  : 'assets/images/EmptyState.png',
                               width: 300,
                               height: 200,
                               fit: BoxFit.contain,
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'No Data Found',
+                              _searchQuery.isEmpty
+                                  ? 'No Data Found'
+                                  : 'No Search Results',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -462,12 +468,15 @@ class _AgentLeadState extends State<AgentLead> {
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'No data pengajuan found',
+                              _searchQuery.isEmpty
+                                  ? 'No Data Lead Pengajuan Found'
+                                  : 'No Data Lead Pengajuan Found',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.grey.shade600,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),

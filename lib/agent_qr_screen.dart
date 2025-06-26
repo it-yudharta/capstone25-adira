@@ -1,3 +1,5 @@
+// ignore_for_file: unused_import, unused_field, depend_on_referenced_packages, use_super_parameters, library_private_types_in_public_api, use_build_context_synchronously
+
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;

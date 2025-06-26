@@ -1,3 +1,5 @@
+// ignore_for_file: duplicate_import, unused_field
+
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -76,7 +78,6 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
   void initState() {
     super.initState();
     _currentStatus = widget.status;
-    _selectedType = widget.type ?? 'semua';
     _fetchFilteredData();
   }
 

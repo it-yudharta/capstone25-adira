@@ -5,6 +5,7 @@ import 'saved_orders_screen.dart';
 import 'custom_bottom_nav_bar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class MainPage extends StatefulWidget {
   final int initialPage;
@@ -86,7 +87,12 @@ class _MainPageState extends State<MainPage> {
             ),
             const Spacer(),
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.black),
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 24,
+                height: 24,
+                color: Colors.black,
+              ),
               onPressed: _logout,
             ),
           ],

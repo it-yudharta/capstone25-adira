@@ -12,6 +12,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'circular_loading_indicator.dart';
 import 'note_pengajuan.dart';
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart';
 
 class StatusPengajuanScreen extends StatefulWidget {
   String status;
@@ -126,14 +128,22 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
     _filteredOrders =
         _orders.where((item) {
           final name = (item['name'] ?? '').toString().toLowerCase();
+          final phone = (item['phone'] ?? '').toString().toLowerCase();
+          final tanggal = (item['displayDate'] ?? '').toString().toLowerCase();
           final isTrash = item['trash'] == true || item['trash'] == 'true';
+
+          final isMatch =
+              name.contains(query) ||
+              phone.contains(query) ||
+              tanggal.contains(query);
+
           if (widget.status == 'trash') {
-            return isTrash && name.contains(query);
+            return isTrash && isMatch;
           }
           return !isTrash &&
               item['status']?.toString().toLowerCase() ==
                   widget.status.toLowerCase() &&
-              name.contains(query);
+              isMatch;
         }).toList();
 
     groupedOrders.clear();
@@ -187,8 +197,13 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
     );
   }
 
-  void _logout() {
-    Navigator.pop(context);
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
   }
 
   Future<void> _launchWhatsApp(String phoneNumber) async {
@@ -1918,7 +1933,9 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
         Expanded(
           child:
               _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
                   : _orders.isEmpty
                   ? IgnorePointer(
                     ignoring: true,
@@ -1987,7 +2004,7 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Tidak ada hasil pencarian ditemukan',
+                              'No data pengajuan found',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -2073,7 +2090,12 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
             ),
             const Spacer(),
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.black),
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 20,
+                height: 20,
+                color: Colors.black,
+              ),
               onPressed: _logout,
             ),
           ],

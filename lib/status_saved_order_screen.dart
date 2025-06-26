@@ -64,8 +64,14 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
           _filteredOrders.where((order) {
             final name = (order['name'] ?? '').toString().toLowerCase();
             final phone = (order['phone'] ?? '').toString().toLowerCase();
-            return name.contains(query) || phone.contains(query);
+            final tanggal =
+                (order['displayDate'] ?? '').toString().toLowerCase();
+            return name.contains(query) ||
+                phone.contains(query) ||
+                tanggal.contains(query);
           }).toList();
+
+      groupedOrders = _groupOrdersByDisplayDate(_filteredOrders);
     });
   }
 
@@ -459,7 +465,12 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
             ),
             const Spacer(),
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.black),
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 20,
+                height: 20,
+                color: Colors.black,
+              ),
               onPressed: _logout,
             ),
           ],
@@ -467,6 +478,47 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
       ),
       body: _buildMainPage(),
       bottomNavigationBar: const CustomBottomNavBar(currentRoute: 'other'),
+    );
+  }
+
+  Widget _buildEmptyState({
+    required String image,
+    required String title,
+    required String subtitle,
+  }) {
+    return IgnorePointer(
+      ignoring: true,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(image, width: 300, height: 200, fit: BoxFit.contain),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -620,47 +672,21 @@ class _StatusSavedOrderScreenState extends State<StatusSavedOrderScreen> {
         Expanded(
           child:
               _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _filteredOrders.isEmpty
-                  ? IgnorePointer(
-                    ignoring: true,
-                    child: SingleChildScrollView(
-                      physics: const NeverScrollableScrollPhysics(),
-                      child: Container(
-                        height: MediaQuery.of(context).size.height * 0.6,
-                        alignment: Alignment.center,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/images/EmptyState.png',
-                              width: 300,
-                              height: 200,
-                              fit: BoxFit.contain,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'No Data Found',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'No data lead pengajuan found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
                   )
+                  : _filteredOrders.isEmpty
+                  ? (_searchQuery.isNotEmpty
+                      ? _buildEmptyState(
+                        image: 'assets/images/EmptyState.png',
+                        title: 'No Search Results',
+                        subtitle: 'No Data Lead Pengajuan Found',
+                      )
+                      : _buildEmptyState(
+                        image: 'assets/images/EmptyState.png',
+                        title: 'No Data Found',
+                        subtitle: 'No Data Lead Pengajuan Found',
+                      ))
                   : ListView.builder(
                     itemCount: orderedDates.fold<int>(
                       0,

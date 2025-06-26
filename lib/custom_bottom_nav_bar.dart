@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable, use_super_parameters, deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'admin_pengajuan_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';

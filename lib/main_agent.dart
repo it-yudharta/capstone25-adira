@@ -115,8 +115,8 @@ class _MainAgentState extends State<MainAgent> {
             PopupMenuButton<String>(
               icon: SvgPicture.asset(
                 'assets/icon/agent.svg',
-                width: 24,
-                height: 24,
+                width: 20,
+                height: 20,
                 color: Colors.black,
               ),
               onSelected: (value) {
