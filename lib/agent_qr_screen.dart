@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -19,9 +18,7 @@ class _AgentQRScreenState extends State<AgentQRScreen> {
   bool _isSaving = false;
   String? _error;
   final GlobalKey _qrKey = GlobalKey();
-  static const platform = MethodChannel(
-    "com.fundrain.adiraapp/download",
-  ); // samakan dengan GenerateQRPengajuan
+  static const platform = MethodChannel("com.fundrain.adiraapp/download");
 
   @override
   void initState() {

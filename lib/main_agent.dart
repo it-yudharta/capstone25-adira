@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:flutter_svg/flutter_svg.dart';
 import 'login_screen.dart';
 import 'agent_screen.dart';
 import 'agent_qr_screen.dart';
 import 'agent_lead.dart';
 import 'navbar_agent.dart';
+import 'reset_password.dart';
 
 class MainAgent extends StatefulWidget {
   final int initialPage;
@@ -111,9 +112,66 @@ class _MainAgentState extends State<MainAgent> {
               ),
             ),
             const Spacer(),
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.black),
-              onPressed: _logout,
+            PopupMenuButton<String>(
+              icon: SvgPicture.asset(
+                'assets/icon/agent.svg',
+                width: 24,
+                height: 24,
+                color: Colors.black,
+              ),
+              onSelected: (value) {
+                if (value == 'logout') {
+                  _logout();
+                } else if (value == 'reset') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ResetPasswordAgentScreen(),
+                    ),
+                  );
+                }
+              },
+              color: Colors.white,
+              itemBuilder:
+                  (BuildContext context) => [
+                    PopupMenuItem<String>(
+                      value: 'reset',
+                      child: Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icon/reset_password.svg',
+                            width: 18,
+                            height: 18,
+                            color: Color(0xFF0E5C36),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Reset Password',
+                            style: TextStyle(color: Color(0xFF0E5C36)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    PopupMenuItem<String>(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icon/logout.svg',
+                            width: 18,
+                            height: 18,
+                            color: Color(0xFF0E5C36),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Logout',
+                            style: TextStyle(color: Color(0xFF0E5C36)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
             ),
           ],
         ),

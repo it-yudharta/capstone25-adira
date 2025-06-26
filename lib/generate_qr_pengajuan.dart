@@ -352,9 +352,7 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
         return Dialog(
           backgroundColor: Colors.transparent,
           child: Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFF0E5C36), // Warna hijau gelap sesuai permintaan
-            ),
+            child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
           ),
         );
       },

@@ -1,6 +1,7 @@
+// ignore_for_file: use_build_context_synchronously, unused_local_variable, unnecessary_import, use_super_parameters, prefer_final_fields, avoid_print, deprecated_member_use, sized_box_for_whitespace, no_leading_underscores_for_local_identifiers
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'login_screen.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'order_detail_screen.dart';
@@ -32,7 +33,6 @@ class _AgentScreenState extends State<AgentScreen> {
   String _searchQuery = '';
   List<Map<String, dynamic>> _filteredOrders = [];
   FocusNode _focusNode = FocusNode();
-  bool _isExporting = false;
   double _exportProgress = 0.0;
   late void Function(void Function()) _setExportDialogState;
 
@@ -107,15 +107,6 @@ class _AgentScreenState extends State<AgentScreen> {
     final ordered = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
     orderedDates = ordered;
     return grouped;
-  }
-
-  void _logout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => LoginScreen()),
-      (route) => false,
-    );
   }
 
   Widget _buildOrderCard(Map order) {
@@ -447,7 +438,9 @@ class _AgentScreenState extends State<AgentScreen> {
         Expanded(
           child:
               isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
                   : _filteredOrders.isEmpty
                   ? IgnorePointer(
                     ignoring: true,
@@ -770,7 +763,6 @@ class _AgentScreenState extends State<AgentScreen> {
   }
 
   Future<void> _exportOrdersByDate(String selectedDate) async {
-    setState(() => _isExporting = true);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -800,7 +792,6 @@ class _AgentScreenState extends State<AgentScreen> {
 
       if (!snapshot.exists) {
         Navigator.of(context, rootNavigator: true).pop();
-        setState(() => _isExporting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Tidak ada data pada tanggal $selectedDate')),
         );
@@ -820,7 +811,6 @@ class _AgentScreenState extends State<AgentScreen> {
 
       if (ordersToExport.isEmpty) {
         Navigator.of(context, rootNavigator: true).pop();
-        setState(() => _isExporting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -997,7 +987,6 @@ class _AgentScreenState extends State<AgentScreen> {
       }
 
       Navigator.of(context, rootNavigator: true).pop();
-      setState(() => _isExporting = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('File berhasil disimpan di $filePath')),
@@ -1006,7 +995,6 @@ class _AgentScreenState extends State<AgentScreen> {
       print('Error export: $e');
       print(stacktrace);
       Navigator.of(context, rootNavigator: true).pop();
-      setState(() => _isExporting = false);
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Gagal mengekspor: $e')));
