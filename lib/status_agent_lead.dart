@@ -5,6 +5,12 @@ import 'order_detail_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'navbar_agent.dart';
 import 'package:flutter/services.dart';
+import 'dart:typed_data';
+import 'dart:convert';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
+import 'circular_loading_indicator.dart';
 
 class StatusAgentLeadScreen extends StatefulWidget {
   final String status;
@@ -17,6 +23,7 @@ class StatusAgentLeadScreen extends StatefulWidget {
 }
 
 class _StatusAgentLeadScreenState extends State<StatusAgentLeadScreen> {
+  static const platform = MethodChannel('com.fundrain.adiraapp/download');
   List<Map<String, dynamic>> filteredOrders = [];
   Map<String, List<Map<String, dynamic>>> groupedOrders = {};
   List<String> orderedDates = [];
@@ -25,6 +32,10 @@ class _StatusAgentLeadScreenState extends State<StatusAgentLeadScreen> {
   TextEditingController _searchController = TextEditingController();
   FocusNode _focusNode = FocusNode();
   String _searchQuery = '';
+  String? _selectedExportDate;
+  bool _isExporting = false;
+  double _exportProgress = 0.0;
+  void Function(void Function())? _setExportDialogState;
 
   @override
   void initState() {
@@ -403,9 +414,10 @@ class _StatusAgentLeadScreenState extends State<StatusAgentLeadScreen> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  // TODO
+                  _showExportByStatusUpdatedDatePickerDialogAgentLead(
+                    _currentStatus,
+                  );
                 },
-
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF0E5C36),
                   shape: RoundedRectangleBorder(
@@ -520,6 +532,440 @@ class _StatusAgentLeadScreenState extends State<StatusAgentLeadScreen> {
         ),
       ],
     );
+  }
+
+  void _showExportByStatusUpdatedDatePickerDialogAgentLead(
+    String status,
+  ) async {
+    final updatedAtKey = '${status}UpdatedAt';
+    final currentEmail = FirebaseAuth.instance.currentUser?.email;
+
+    final uniqueDates =
+        filteredOrders
+            .where(
+              (o) =>
+                  o['status'] == status &&
+                  o['agentEmail'] == currentEmail &&
+                  o['lead'] == true &&
+                  o[updatedAtKey] != null,
+            )
+            .map<String>((o) => o[updatedAtKey] as String)
+            .toSet();
+
+    final sortedDates =
+        uniqueDates.toList()..sort((a, b) {
+          final da = DateTime.parse(_toIsoDate(a));
+          final db = DateTime.parse(_toIsoDate(b));
+          return db.compareTo(da);
+        });
+
+    if (sortedDates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Tidak ada data lead dengan status "$status"')),
+      );
+      return;
+    }
+
+    _selectedExportDate = null;
+    showDialog(
+      context: context,
+      builder: (_) {
+        bool showError = false;
+        return StatefulBuilder(
+          builder: (ctx, setStateDialog) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Pilih Tanggal Data Lead Status $status",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 300,
+                      width: double.maxFinite,
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: sortedDates.length,
+                        itemBuilder: (_, i) {
+                          final date = sortedDates[i];
+                          final isSelected = date == _selectedExportDate;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedExportDate = date;
+                              });
+                              setStateDialog(() {
+                                showError = false;
+                              });
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color:
+                                      isSelected
+                                          ? const Color(0xFF0E5C36)
+                                          : (showError
+                                              ? Colors.red
+                                              : Colors.grey),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "By Date $date",
+                                    style: TextStyle(
+                                      color:
+                                          isSelected
+                                              ? const Color(0xFF0E5C36)
+                                              : (showError
+                                                  ? Colors.red
+                                                  : Colors.black),
+                                      fontWeight:
+                                          isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 20,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color:
+                                            isSelected
+                                                ? const Color(0xFF0E5C36)
+                                                : (showError
+                                                    ? Colors.red
+                                                    : Colors.black),
+                                      ),
+                                      color:
+                                          isSelected
+                                              ? const Color(0xFF0E5C36)
+                                              : Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (showError)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            "Tanggal harus dipilih",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(
+                              backgroundColor: Color(0xFFE67D13),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () {
+                              if (_selectedExportDate != null) {
+                                _exportOrdersByStatusUpdatedAtAgent(
+                                  _selectedExportDate!,
+                                  status,
+                                );
+                              } else {
+                                setStateDialog(() {
+                                  showError = true;
+                                });
+                              }
+                            },
+                            style: TextButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Text(
+                              'Export',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _exportOrdersByStatusUpdatedAtAgent(
+    String selectedDate,
+    String status,
+  ) async {
+    setState(() => _isExporting = true);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            _setExportDialogState = setStateDialog;
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularExportIndicator(progress: _exportProgress),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    try {
+      final ref = FirebaseDatabase.instance.ref("orders");
+      final email = FirebaseAuth.instance.currentUser?.email;
+      final key = '${status}UpdatedAt';
+
+      final snapshot = await ref.orderByChild(key).equalTo(selectedDate).get();
+
+      if (!snapshot.exists) {
+        Navigator.of(context, rootNavigator: true).pop();
+        setState(() => _isExporting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Tidak ada data pada tanggal $selectedDate')),
+        );
+        return;
+      }
+
+      final List<Map<String, dynamic>> ordersToExport = [];
+
+      for (final child in snapshot.children) {
+        final data = Map<String, dynamic>.from(child.value as Map);
+        if (data['status'] == status &&
+            data['agentEmail'] == email &&
+            data['lead'] == true) {
+          ordersToExport.add(data);
+        }
+      }
+
+      if (ordersToExport.isEmpty) {
+        Navigator.of(context, rootNavigator: true).pop();
+        setState(() => _isExporting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tidak ada data "$status" di tanggal $selectedDate'),
+          ),
+        );
+        return;
+      }
+
+      final workbook = xlsio.Workbook();
+      final sheet = workbook.worksheets[0];
+
+      final headers = <String>[
+        'Tanggal Pengajuan',
+        'Status',
+        'Tanggal Cancel',
+        'Tanggal Process',
+        'Tanggal Pending',
+        'Tanggal Reject',
+        'Tanggal Approve',
+        'Nama',
+        'Email',
+        'No. Telephone',
+        'Pekerjaan',
+        'Pendapatan',
+        'Item',
+        'Merk',
+        'Nominal Pengajuan',
+        'Angsuran Lain',
+        'DP',
+        'Domisili',
+        'Kode Pos',
+        'Nama Agent',
+        'Email Agent',
+        'No. Telephone Agent',
+        'Foto KTP',
+        'Foto BPKB',
+        'Foto KK',
+        'Foto NPWP',
+        'Foto Slip Gaji',
+        'Foto STNK',
+      ];
+
+      for (int col = 0; col < headers.length; col++) {
+        sheet.getRangeByIndex(1, col + 1).setText(headers[col]);
+      }
+
+      for (int col = 19; col <= 22; col++) {
+        sheet.getRangeByIndex(1, col).columnWidth = 20;
+      }
+
+      for (int i = 0; i < ordersToExport.length; i++) {
+        final order = ordersToExport[i];
+        final row = i + 2;
+
+        _setExportDialogState?.call(() {
+          _exportProgress = (i + 1) / ordersToExport.length;
+        });
+
+        sheet.getRangeByIndex(row, 1).rowHeight = 80;
+        sheet.getRangeByIndex(row, 1).setText(order['tanggal'] ?? '');
+        sheet.getRangeByIndex(row, 2).setText(order['status'] ?? '');
+        sheet.getRangeByIndex(row, 3).setText(order['cancelUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 4).setText(order['processUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 5).setText(order['pendingUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 6).setText(order['rejectUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 7).setText(order['approveUpdatedAt'] ?? '');
+        sheet.getRangeByIndex(row, 8).setText(order['name'] ?? '');
+        sheet.getRangeByIndex(row, 9).setText(order['email'] ?? '');
+        sheet.getRangeByIndex(row, 10).setText(order['phone'] ?? '');
+        sheet.getRangeByIndex(row, 11).setText(order['job'] ?? '');
+        sheet.getRangeByIndex(row, 12).setText(order['income'] ?? '');
+        sheet.getRangeByIndex(row, 13).setText(order['item'] ?? '');
+        sheet.getRangeByIndex(row, 14).setText(order['merk'] ?? '');
+        sheet.getRangeByIndex(row, 15).setText(order['nominal'] ?? '');
+        sheet.getRangeByIndex(row, 16).setText(order['installment'] ?? '');
+        sheet.getRangeByIndex(row, 17).setText(order['dp'] ?? '');
+        sheet.getRangeByIndex(row, 18).setText(order['domicile'] ?? '');
+        sheet.getRangeByIndex(row, 19).setText(order['postalCode'] ?? '');
+        sheet.getRangeByIndex(row, 20).setText(order['agentName'] ?? '');
+        sheet.getRangeByIndex(row, 21).setText(order['agentEmail'] ?? '');
+        sheet.getRangeByIndex(row, 22).setText(order['agentPhone'] ?? '');
+
+        final imgKeys = ['ktp', 'bpkb', 'kk', 'npwp', 'slipgaji', 'stnk'];
+        for (int j = 0; j < imgKeys.length; j++) {
+          final bytes = await _downloadImage(order[imgKeys[j]]);
+          if (bytes != null) {
+            final pic = sheet.pictures.addBase64(
+              row,
+              23 + j,
+              base64Encode(bytes),
+            );
+            pic.height = 80;
+            pic.width = 120;
+          }
+        }
+      }
+
+      final List<int> bytes = workbook.saveAsStream();
+      workbook.dispose();
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final filePath = 'Folder Download';
+      try {
+        final savedPath = await platform.invokeMethod<String>(
+          'saveFileToDownloads',
+          {
+            'fileName': 'pengajuan_${selectedDate}_$timestamp.xlsx',
+            'bytes': bytes,
+          },
+        );
+
+        if (savedPath != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('File berhasil disimpan di $savedPath')),
+          );
+        }
+      } on PlatformException catch (e) {
+        print("Gagal menyimpan file: ${e.message}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menyimpan file: ${e.message}')),
+        );
+      }
+
+      Navigator.of(context, rootNavigator: true).pop();
+      setState(() => _isExporting = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('File berhasil disimpan di $filePath')),
+      );
+    } catch (e, stacktrace) {
+      print('Error export: $e');
+      print(stacktrace);
+      Navigator.of(context, rootNavigator: true).pop();
+      setState(() => _isExporting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengekspor: $e')));
+    }
+  }
+
+  String _toIsoDate(String date) {
+    try {
+      final parts = date.split('-');
+      return '${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}';
+    } catch (_) {
+      return date;
+    }
+  }
+
+  Future<Uint8List?> _downloadImage(String? url) async {
+    if (url == null || url.isEmpty) return null;
+    try {
+      final response = await http.get(Uri.parse(url));
+      return response.bodyBytes;
+    } catch (e) {
+      print('Gagal download gambar: $e');
+      return null;
+    }
   }
 
   @override
