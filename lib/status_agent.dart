@@ -11,6 +11,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'circular_loading_indicator.dart';
+import 'reset_password.dart';
 
 class StatusAgentScreen extends StatefulWidget {
   final String status;
@@ -35,6 +36,7 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
   double _exportProgress = 0.0;
   void Function(void Function())? _setExportDialogState;
   bool _exportDialogOpen = false;
+  List<Map<String, dynamic>> _filteredOrders = [];
 
   @override
   void initState() {
@@ -88,11 +90,20 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
   }
 
   void _applySearchAndGroup() {
+    final query = _searchQuery.toLowerCase().trim();
+
     final results =
         filteredOrders.where((order) {
           final name = (order['name'] ?? '').toString().toLowerCase();
-          return name.contains(_searchQuery.toLowerCase());
+          final phone = (order['phone'] ?? '').toString().toLowerCase();
+          final tanggal = (order['tanggal'] ?? '').toString().toLowerCase();
+          return name.contains(query) ||
+              phone.contains(query) ||
+              tanggal.contains(query);
         }).toList();
+
+    _filteredOrders =
+        results; // Tambahkan ini agar kondisi empty state bisa deteksi hasil pencarian
 
     groupedOrders.clear();
 
@@ -116,7 +127,7 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
                 int.parse(parts[1]),
                 int.parse(parts[0]),
               );
-            } catch (e) {
+            } catch (_) {
               return DateTime(2000);
             }
           }
@@ -447,7 +458,7 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
                   ? Center(
                     child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
                   )
-                  : filteredOrders.isEmpty
+                  : _filteredOrders.isEmpty || groupedOrders.isEmpty
                   ? IgnorePointer(
                     ignoring: true,
                     child: SingleChildScrollView(
@@ -478,8 +489,8 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
                             SizedBox(height: 4),
                             Text(
                               _searchQuery.isEmpty
-                                  ? 'Tidak ada data status \'$_currentStatus\''
-                                  : 'Tidak ada hasil pencarian ditemukan',
+                                  ? 'No Data Found \'$_currentStatus\''
+                                  : 'No Search Results',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -965,14 +976,14 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
         backgroundColor: const Color(0xFFF0F4F5),
         elevation: 0,
         foregroundColor: Colors.black,
-        systemOverlayStyle: SystemUiOverlayStyle(
+        systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: Color(0xFFF0F4F5),
           statusBarIconBrightness: Brightness.dark,
         ),
         title: Row(
           children: [
             RichText(
-              text: TextSpan(
+              text: const TextSpan(
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 children: [
                   TextSpan(
@@ -986,14 +997,72 @@ class _StatusAgentScreenState extends State<StatusAgentScreen> {
                 ],
               ),
             ),
-            Spacer(),
-            IconButton(
-              icon: Icon(Icons.logout, color: Colors.black),
-              onPressed: _logout,
+            const Spacer(),
+            PopupMenuButton<String>(
+              icon: SvgPicture.asset(
+                'assets/icon/agent.svg',
+                width: 24,
+                height: 24,
+                color: Colors.black,
+              ),
+              onSelected: (value) {
+                if (value == 'logout') {
+                  _logout();
+                } else if (value == 'reset') {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ResetPasswordAgentScreen(),
+                    ),
+                  );
+                }
+              },
+              color: Colors.white,
+              itemBuilder:
+                  (BuildContext context) => [
+                    PopupMenuItem<String>(
+                      value: 'reset',
+                      child: Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icon/reset_password.svg',
+                            width: 18,
+                            height: 18,
+                            color: Color(0xFF0E5C36),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Reset Password',
+                            style: TextStyle(color: Color(0xFF0E5C36)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    PopupMenuItem<String>(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icon/logout.svg',
+                            width: 18,
+                            height: 18,
+                            color: Color(0xFF0E5C36),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'Logout',
+                            style: TextStyle(color: Color(0xFF0E5C36)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
             ),
           ],
         ),
       ),
+
       body: _buildMainPage(),
       bottomNavigationBar: BottomNavBarAgent(currentRoute: ''),
     );

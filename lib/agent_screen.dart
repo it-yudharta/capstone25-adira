@@ -84,13 +84,18 @@ class _AgentScreenState extends State<AgentScreen> {
   }
 
   void _applySearch() {
+    final query = _searchQuery.toLowerCase().trim();
+
     setState(() {
       _filteredOrders =
           agentOrders.where((order) {
             final name = order['name']?.toString().toLowerCase() ?? '';
             final phone = order['phone']?.toString().toLowerCase() ?? '';
-            return name.contains(_searchQuery.toLowerCase()) ||
-                phone.contains(_searchQuery.toLowerCase());
+            final tanggal = order['tanggal']?.toString().toLowerCase() ?? '';
+
+            return name.contains(query) ||
+                phone.contains(query) ||
+                tanggal.contains(query);
           }).toList();
     });
   }
