@@ -477,7 +477,9 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
                   : _orders.isEmpty
                   ? IgnorePointer(
                     ignoring: true,

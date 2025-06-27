@@ -498,7 +498,9 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
                   : _agents.isEmpty
                   ? _buildEmptyState(
                     title: 'No Data Found',

@@ -958,7 +958,9 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
                   : _filteredOrders.isEmpty
                   ? IgnorePointer(
                     ignoring: true,

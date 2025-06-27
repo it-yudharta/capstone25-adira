@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field, unused_element, unused_local_variable, unnecessary_import, use_key_in_widget_constructors, library_private_types_in_public_api, prefer_final_fields, use_build_context_synchronously, deprecated_member_use, sized_box_for_whitespace, avoid_print, unnecessary_to_list_in_spreads
+
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
@@ -11,6 +13,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:http/http.dart' as http;
+import 'pendaftaran_detail_screen.dart';
 
 const platform = MethodChannel('com.fundrain.adiraapp/download');
 
@@ -260,19 +263,36 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
   }
 
   void _applySearchPendaftaran() {
-    if (_searchQuery.isEmpty) {
+    final query = _searchQuery.toLowerCase();
+
+    if (query.isEmpty) {
       _fetchLeadAgents();
     } else {
-      setState(() {
-        _leadAgents =
-            _leadAgents.where((group) {
-              final List agents = group['agents'] ?? [];
-              return agents.any((agent) {
-                final fullName =
-                    (agent['fullName'] ?? '').toString().toLowerCase();
-                return fullName.contains(_searchQuery.toLowerCase());
-              });
+      final List<Map<String, dynamic>> filteredGroups = [];
+
+      for (var group in _leadAgents) {
+        final String date = group['date']?.toString().toLowerCase() ?? '';
+        final List<dynamic> agents = group['agents'] ?? [];
+
+        final matchingAgents =
+            agents.where((agent) {
+              final fullName =
+                  (agent['fullName'] ?? '').toString().toLowerCase();
+              final phone = (agent['phone'] ?? '').toString().toLowerCase();
+              final tanggal = (agent['tanggal'] ?? '').toString().toLowerCase();
+
+              return fullName.contains(query) ||
+                  phone.contains(query) ||
+                  tanggal.contains(query);
             }).toList();
+
+        if (date.contains(query) || matchingAgents.isNotEmpty) {
+          filteredGroups.add({'date': group['date'], 'agents': matchingAgents});
+        }
+      }
+
+      setState(() {
+        _leadAgents = filteredGroups;
       });
     }
   }
@@ -681,7 +701,9 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
                   : _buildCombinedListView(),
         ),
       ],
@@ -1681,80 +1703,89 @@ class _LeadSupervisorState extends State<LeadSupervisor> {
     final String status = agent['status'] ?? 'Belum diproses';
     final bool isLead = agent['lead'] == true;
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade300,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PendaftaranDetailScreen(agentData: agent),
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          DefaultTextStyle.merge(
-            style: const TextStyle(fontSize: 14, color: Colors.black87),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Nama        : ${agent['fullName'] ?? '-'}",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text("Email         : ${agent['email'] ?? '-'}"),
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () => _launchWhatsApp(agent['phone'] ?? ''),
-                  child: RichText(
-                    text: TextSpan(
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                      children: [
-                        const TextSpan(text: "No. Telp     : "),
-                        TextSpan(
-                          text: agent['phone'] ?? '-',
-                          style: const TextStyle(color: Colors.blue),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            DefaultTextStyle.merge(
+              style: const TextStyle(fontSize: 14, color: Colors.black87),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Nama        : ${agent['fullName'] ?? '-'}",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text("Email         : ${agent['email'] ?? '-'}"),
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () => _launchWhatsApp(agent['phone'] ?? ''),
+                    child: RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.black87,
                         ),
-                      ],
+                        children: [
+                          const TextSpan(text: "No. Telp     : "),
+                          TextSpan(
+                            text: agent['phone'] ?? '-',
+                            style: const TextStyle(color: Colors.blue),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text("Alamat      : ${agent['address'] ?? '-'}"),
+                  const SizedBox(height: 4),
+                  Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
+                  const SizedBox(height: 4),
+                  Text("Status       : $status"),
+                ],
+              ),
+            ),
+            if (isLead)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8, right: 8),
+                  child: Transform.scale(
+                    scaleY: 1.3,
+                    scaleX: 1.0,
+                    child: const Icon(
+                      Icons.bookmark,
+                      size: 24,
+                      color: Color(0xFF0E5C36),
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text("Alamat      : ${agent['address'] ?? '-'}"),
-                const SizedBox(height: 4),
-                Text("Kode Pos  : ${agent['postalCode'] ?? '-'}"),
-                const SizedBox(height: 4),
-                Text("Status       : $status"),
-              ],
-            ),
-          ),
-
-          if (isLead)
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8, right: 8),
-                child: Transform.scale(
-                  scaleY: 1.3,
-                  scaleX: 1.0,
-                  child: const Icon(
-                    Icons.bookmark,
-                    size: 24,
-                    color: Color(0xFF0E5C36),
-                  ),
-                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

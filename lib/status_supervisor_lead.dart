@@ -1,4 +1,4 @@
-// ignore_for_file: duplicate_import, unused_field
+// ignore_for_file: duplicate_import, unused_field, unused_local_variable, library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use, sized_box_for_whitespace, unnecessary_to_list_in_spreads, avoid_print
 
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -13,6 +13,9 @@ import 'package:flutter/services.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:http/http.dart' as http;
 import 'circular_loading_indicator.dart';
+import 'pendaftaran_detail_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart';
 
 class StatusSupervisorLead extends StatefulWidget {
   final String status;
@@ -161,8 +164,13 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
     return grouped;
   }
 
-  void _logout() {
-    Navigator.pushReplacementNamed(context, '/login');
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
   }
 
   String normalizePhoneNumber(String phone) {
@@ -476,162 +484,177 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
     final String key = data['key'];
     final bool isLead = data['lead'] == true;
 
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade300,
-            blurRadius: 4,
-            offset: Offset(0, 2),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PendaftaranDetailScreen(agentData: data),
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          DefaultTextStyle.merge(
-            style: TextStyle(fontSize: 14, color: Colors.black87),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Nama        : ${data['fullName'] ?? data['name'] ?? '-'}",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 4),
-                Text("Email         : ${data['email'] ?? '-'}"),
-                SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () => _launchWhatsApp(phone),
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(color: Colors.black87),
-                      children: [
-                        TextSpan(text: "No. Telp     : "),
-                        TextSpan(
-                          text: phone,
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                      ],
-                    ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            DefaultTextStyle.merge(
+              style: TextStyle(fontSize: 14, color: Colors.black87),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Nama        : ${data['fullName'] ?? data['name'] ?? '-'}",
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "Alamat      : ${data['address'] ?? data['domicile'] ?? '-'}",
-                ),
-                SizedBox(height: 4),
-                Text("Kode Pos  : ${data['postalCode'] ?? '-'}"),
-                SizedBox(height: 4),
-                Text(
-                  "Status       : $status",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                if (data['note'] != null && data['note'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      "Note          : ${data['note']}",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                  SizedBox(height: 4),
+                  Text("Email         : ${data['email'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () => _launchWhatsApp(phone),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(color: Colors.black87),
+                        children: [
+                          TextSpan(text: "No. Telp     : "),
+                          TextSpan(
+                            text: phone,
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                SizedBox(height: 16),
-                if (status.toLowerCase() == 'pending' &&
-                    widget.status != 'trash')
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () => _showRejectConfirmation(key),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF0E5C36),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.cancel, size: 16, color: Colors.white),
-                              SizedBox(height: 4),
-                              Text(
-                                'Reject',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: 6),
-                        ElevatedButton(
-                          onPressed: () => _showApproveConfirmation(key),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF0E5C36),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Approve',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  SizedBox(height: 4),
+                  Text(
+                    "Alamat      : ${data['address'] ?? data['domicile'] ?? '-'}",
                   ),
-              ],
+                  SizedBox(height: 4),
+                  Text("Kode Pos  : ${data['postalCode'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  Text(
+                    "Status       : $status",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  if (data['note'] != null &&
+                      data['note'].toString().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        "Note          : ${data['note']}",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ),
+                  SizedBox(height: 16),
+                  if (status.toLowerCase() == 'pending' &&
+                      widget.status != 'trash')
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _showRejectConfirmation(key),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.cancel,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Reject',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 6),
+                          ElevatedButton(
+                            onPressed: () => _showApproveConfirmation(key),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Approve',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          if (isLead)
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: EdgeInsets.only(top: 8, right: 8),
-                child: Transform.scale(
-                  scaleY: 1.3,
-                  scaleX: 1.0,
-                  child: Icon(
-                    Icons.bookmark,
-                    size: 24,
-                    color: Color(0xFF0E5C36),
+            if (isLead)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 8, right: 8),
+                  child: Transform.scale(
+                    scaleY: 1.3,
+                    scaleX: 1.0,
+                    child: Icon(
+                      Icons.bookmark,
+                      size: 24,
+                      color: Color(0xFF0E5C36),
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1362,9 +1385,13 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
                   : groupedData.isEmpty
-                  ? _buildEmptyState()
+                  ? (_searchQuery.isEmpty
+                      ? _buildEmptyState()
+                      : _buildNoSearchResult())
                   : ListView(
                     children:
                         groupedData.entries.map((entry) {
@@ -2268,6 +2295,48 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
     }
   }
 
+  Widget _buildNoSearchResult() {
+    return IgnorePointer(
+      ignoring: true,
+      child: SingleChildScrollView(
+        physics: NeverScrollableScrollPhysics(),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/EmptyState.png',
+                width: 300,
+                height: 200,
+                fit: BoxFit.contain,
+              ),
+              SizedBox(height: 8),
+              Text(
+                'No Search Result',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'No data lead found',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
     return IgnorePointer(
       ignoring: true,
@@ -2342,7 +2411,12 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
             ),
             Spacer(),
             IconButton(
-              icon: Icon(Icons.logout, color: Colors.black),
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+              ),
               onPressed: _logout,
             ),
           ],

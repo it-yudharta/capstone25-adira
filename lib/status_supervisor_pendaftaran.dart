@@ -842,33 +842,43 @@ class _StatusSupervisorPendaftaranState
                   color: Colors.black87,
                 ),
               ),
-              ElevatedButton(
-                onPressed:
-                    () => _showExportSupervisorPendaftaranByStatusDatePicker(
-                      _currentStatus,
+              Opacity(
+                opacity: _currentStatus == 'trash' ? 0.0 : 1.0,
+                child: IgnorePointer(
+                  ignoring: _currentStatus == 'trash',
+                  child: ElevatedButton(
+                    onPressed:
+                        () =>
+                            _showExportSupervisorPendaftaranByStatusDatePicker(
+                              _currentStatus,
+                            ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                     ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF0E5C36),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/icon/export_icon.png',
+                          width: 16,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Export by',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'assets/icon/export_icon.png',
-                      width: 16,
-                      height: 16,
-                      color: Colors.white,
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Export by',
-                      style: TextStyle(fontSize: 12, color: Colors.white),
-                    ),
-                  ],
                 ),
               ),
             ],
@@ -880,7 +890,9 @@ class _StatusSupervisorPendaftaranState
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
                   : _pendaftarans.isEmpty
                   ? IgnorePointer(
                     ignoring: true,
