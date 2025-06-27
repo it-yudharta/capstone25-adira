@@ -1,3 +1,5 @@
+// ignore_for_file: use_key_in_widget_constructors, sort_child_properties_last
+
 import 'package:flutter/material.dart';
 import 'generate_qr_pengajuan.dart';
 import 'generate_qr_pendaftaran.dart';

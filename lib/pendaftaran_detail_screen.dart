@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -99,6 +101,33 @@ class PendaftaranDetailScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildStatusTimestamps(Map data) {
+    final statusLabels = {
+      'pendingUpdatedAt': 'Tanggal Pending',
+      'processUpdatedAt': 'Tanggal Process',
+      'approveUpdatedAt': 'Tanggal Approve',
+      'qr_givenUpdatedAt': 'Tanggal QR Diberikan',
+      'rejectUpdatedAt': 'Tanggal Reject',
+      'cancelUpdatedAt': 'Tanggal Cancel',
+    };
+
+    List<Widget> widgets = [];
+
+    statusLabels.forEach((key, label) {
+      final value = data[key];
+      if (value != null && value.toString().isNotEmpty) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text("$label: $value"),
+          ),
+        );
+      }
+    });
+
+    return widgets;
   }
 
   @override
@@ -208,6 +237,8 @@ class PendaftaranDetailScreen extends StatelessWidget {
 
                     SizedBox(height: 16),
                     Text("Tanggal Pendaftaran: ${agentData['tanggal'] ?? '-'}"),
+
+                    ..._buildStatusTimestamps(agentData),
 
                     SizedBox(height: 8),
                     Text(

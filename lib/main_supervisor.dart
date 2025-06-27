@@ -1,3 +1,5 @@
+// ignore_for_file: use_super_parameters, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,6 +9,7 @@ import 'supervisor_pengajuan.dart';
 import 'supervisor_pendaftaran.dart';
 import 'supervisor_lead.dart';
 import 'navbar_supervisor.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class MainSupervisor extends StatefulWidget {
   final int initialPage;
@@ -86,7 +89,12 @@ class _MainSupervisorState extends State<MainSupervisor> {
             ),
             const Spacer(),
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.black),
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+              ),
               onPressed: _logout,
             ),
           ],

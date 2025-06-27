@@ -1,3 +1,5 @@
+// ignore_for_file: duplicate_import, unused_field, unused_element, unused_local_variable, use_super_parameters, library_private_types_in_public_api, deprecated_member_use, sized_box_for_whitespace, use_build_context_synchronously, avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/services.dart';
@@ -122,7 +124,18 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
     _filteredOrders =
         _orders.where((order) {
           final name = (order['name'] ?? '').toString().toLowerCase();
-          return name.contains(_searchQuery.toLowerCase());
+          final phone = (order['phone'] ?? '').toString().toLowerCase();
+          final tanggal = (order['tanggal'] ?? '').toString().toLowerCase();
+          final statusUpdatedAtKey = '${_currentStatus}UpdatedAt';
+          final statusTanggal =
+              (order[statusUpdatedAtKey] ?? '').toString().toLowerCase();
+
+          final query = _searchQuery.toLowerCase();
+
+          return name.contains(query) ||
+              phone.contains(query) ||
+              tanggal.contains(query) ||
+              statusTanggal.contains(query);
         }).toList();
 
     groupedOrders.clear();
@@ -210,7 +223,12 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
             ),
             Spacer(),
             IconButton(
-              icon: Icon(Icons.logout, color: Colors.black),
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+              ),
               onPressed: _logout,
             ),
           ],
@@ -351,7 +369,7 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
                 });
               },
               decoration: InputDecoration(
-                hintText: 'Search Data',
+                hintText: 'Search data',
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 4,
@@ -406,34 +424,43 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
                   color: Colors.black87,
                 ),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  _showExportByStatusUpdatedDatePickerDialogSupervisor(
-                    _currentStatus,
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF0E5C36),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+              Opacity(
+                opacity: _currentStatus == 'trash' ? 0.0 : 1.0,
+                child: IgnorePointer(
+                  ignoring: _currentStatus == 'trash',
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _showExportByStatusUpdatedDatePickerDialogSupervisor(
+                        _currentStatus,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Color(0xFF0E5C36),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/icon/export_icon.png',
+                          width: 16,
+                          height: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Export by',
+                          style: TextStyle(fontSize: 12, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Image.asset(
-                      'assets/icon/export_icon.png',
-                      width: 16,
-                      height: 16,
-                      color: Colors.white,
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Export by',
-                      style: TextStyle(fontSize: 12, color: Colors.white),
-                    ),
-                  ],
                 ),
               ),
             ],
@@ -512,7 +539,7 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'Tidak ada hasil pencarian ditemukan',
+                              'No data pengajuan found',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -912,7 +939,7 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
         final dynamicOrder = ordersToExport[i];
         final order = Map<String, dynamic>.from(dynamicOrder);
         final row = i + 2;
-        _setExportDialogState?.call(() {
+        _setExportDialogState.call(() {
           _exportProgress = (i + 1) / ordersToExport.length;
         });
 

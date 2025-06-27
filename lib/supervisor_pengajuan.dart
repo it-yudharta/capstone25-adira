@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field, unnecessary_import, use_key_in_widget_constructors, library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use, no_leading_underscores_for_local_identifiers, sized_box_for_whitespace, avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
@@ -976,7 +978,9 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              'No Data Found',
+                              _searchQuery.isNotEmpty
+                                  ? 'No Search Results'
+                                  : 'No Data Found',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -985,12 +989,15 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'No data pengajuan found',
+                              _searchQuery.isNotEmpty
+                                  ? 'No data pengajuan found'
+                                  : 'No data pengajuan found',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.grey.shade600,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),

@@ -1,3 +1,5 @@
+// ignore_for_file: duplicate_import, unused_field, unnecessary_import, use_super_parameters, library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use, sized_box_for_whitespace, avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +15,7 @@ import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'circular_loading_indicator.dart';
+import 'pendaftaran_detail_screen.dart';
 
 class StatusSupervisorPendaftaran extends StatefulWidget {
   final String status;
@@ -362,161 +365,176 @@ class _StatusSupervisorPendaftaranState
     final String phone = pendaftaran['phone'] ?? '-';
     final bool isLead = pendaftaran['lead'] == true;
 
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade300,
-            blurRadius: 4,
-            offset: Offset(0, 2),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PendaftaranDetailScreen(agentData: pendaftaran),
           ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          DefaultTextStyle.merge(
-            style: baseStyle ?? TextStyle(fontSize: 14, color: Colors.black87),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Nama        : ${pendaftaran['fullName'] ?? '-'}",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-                Text("Email         : ${pendaftaran['email'] ?? '-'}"),
-                SizedBox(height: 4),
-                GestureDetector(
-                  onTap: () => _launchWhatsApp(phone),
-                  child: RichText(
-                    text: TextSpan(
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
-                      children: [
-                        TextSpan(text: "No. Telp     : "),
-                        TextSpan(
-                          text: phone,
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                      ],
-                    ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade300,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            DefaultTextStyle.merge(
+              style:
+                  baseStyle ?? TextStyle(fontSize: 14, color: Colors.black87),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Nama        : ${pendaftaran['fullName'] ?? '-'}",
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text("Alamat      : ${pendaftaran['address'] ?? '-'}"),
-                SizedBox(height: 4),
-                Text("Kode Pos  : ${pendaftaran['postalCode'] ?? '-'}"),
-                SizedBox(height: 8),
-                Text(
-                  "Status       : $status",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                if (pendaftaran['note'] != null &&
-                    pendaftaran['note'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: Text(
-                      "Note          : ${pendaftaran['note']}",
-                      style: TextStyle(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.bold,
+                  SizedBox(height: 8),
+                  Text("Email         : ${pendaftaran['email'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () => _launchWhatsApp(phone),
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, color: Colors.black87),
+                        children: [
+                          TextSpan(text: "No. Telp     : "),
+                          TextSpan(
+                            text: phone,
+                            style: TextStyle(color: Colors.blue),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                SizedBox(height: 16),
-                if (status.toLowerCase() == 'pending' &&
-                    _currentStatus != 'trash')
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () => _showRejectConfirmation(key),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF0E5C36),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.cancel, size: 16, color: Colors.white),
-                              SizedBox(height: 4),
-                              Text(
-                                'Reject',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: 6),
-                        ElevatedButton(
-                          onPressed: () => _showApproveConfirmation(key),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF0E5C36),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.check_circle,
-                                size: 16,
-                                color: Colors.white,
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Approve',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                  SizedBox(height: 4),
+                  Text("Alamat      : ${pendaftaran['address'] ?? '-'}"),
+                  SizedBox(height: 4),
+                  Text("Kode Pos  : ${pendaftaran['postalCode'] ?? '-'}"),
+                  SizedBox(height: 8),
+                  Text(
+                    "Status       : $status",
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-              ],
+                  if (pendaftaran['note'] != null &&
+                      pendaftaran['note'].toString().isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        "Note          : ${pendaftaran['note']}",
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  SizedBox(height: 16),
+                  if (status.toLowerCase() == 'pending' &&
+                      _currentStatus != 'trash')
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _showRejectConfirmation(key),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.cancel,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Reject',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 6),
+                          ElevatedButton(
+                            onPressed: () => _showApproveConfirmation(key),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Color(0xFF0E5C36),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Approve',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          if (isLead)
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: EdgeInsets.only(top: 8, right: 8),
-                child: Transform.scale(
-                  scaleY: 1.3,
-                  scaleX: 1.0,
-                  child: Icon(
-                    Icons.bookmark,
-                    size: 24,
-                    color: Color(0xFF0E5C36),
+            if (isLead)
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 8, right: 8),
+                  child: Transform.scale(
+                    scaleY: 1.3,
+                    scaleX: 1.0,
+                    child: Icon(
+                      Icons.bookmark,
+                      size: 24,
+                      color: Color(0xFF0E5C36),
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1299,7 +1317,7 @@ class _StatusSupervisorPendaftaranState
       for (int i = 0; i < agentsToExport.length; i++) {
         final agent = Map<String, dynamic>.from(agentsToExport[i]);
         final row = i + 2;
-        _setExportDialogState?.call(() {
+        _setExportDialogState.call(() {
           _exportProgress = (i + 1) / agentsToExport.length;
         });
 
