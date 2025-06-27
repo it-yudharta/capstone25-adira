@@ -13,6 +13,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'circular_loading_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart';
 
 class StatusSupervisorPengajuan extends StatefulWidget {
   final String status;
@@ -175,8 +177,13 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
         });
   }
 
-  void _logout() {
-    Navigator.pop(context);
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
   }
 
   Map<String, List<Map<String, dynamic>>> _groupOrdersByDate(List orders) {

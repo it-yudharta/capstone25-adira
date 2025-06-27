@@ -245,6 +245,19 @@ class PendaftaranDetailScreen extends StatelessWidget {
                       "Status: ${agentData['status'] ?? '-'}",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
+
+                    if (agentData['note'] != null &&
+                        agentData['note'].toString().trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          "Note: ${agentData['note']}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

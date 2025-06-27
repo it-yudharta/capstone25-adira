@@ -16,6 +16,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'circular_loading_indicator.dart';
 import 'pendaftaran_detail_screen.dart';
+import 'login_screen.dart';
 
 class StatusSupervisorPendaftaran extends StatefulWidget {
   final String status;
@@ -76,7 +77,7 @@ class _StatusSupervisorPendaftaranState
 
         setState(() {
           _pendaftarans = items;
-          _applyGrouping();
+          _applySearch();
           _isLoading = false;
         });
       } else {
@@ -110,18 +111,43 @@ class _StatusSupervisorPendaftaranState
   }
 
   void _applySearch() {
-    if (_searchQuery.isEmpty) {
-      _filteredPendaftarans = _pendaftarans;
+    final query = _searchQuery.trim().toLowerCase();
+    final statusField = '${_currentStatus.toLowerCase()}UpdatedAt';
+
+    if (query.isEmpty) {
+      _filteredPendaftarans = List.from(_pendaftarans);
     } else {
       _filteredPendaftarans =
           _pendaftarans.where((item) {
-            final name = (item['fullName'] ?? '').toString().toLowerCase();
-            final email = (item['email'] ?? '').toString().toLowerCase();
-            return name.contains(_searchQuery.toLowerCase()) ||
-                email.contains(_searchQuery.toLowerCase());
+            final fullName = (item['fullName'] ?? '').toString().toLowerCase();
+            final phone = (item['phone'] ?? '').toString().toLowerCase();
+            final tanggal = (item[statusField] ?? '').toString().toLowerCase();
+
+            return fullName.contains(query) ||
+                phone.contains(query) ||
+                tanggal.contains(query);
           }).toList();
     }
-    _applyGrouping();
+
+    _groupFilteredByDate();
+  }
+
+  void _groupFilteredByDate() {
+    groupedPendaftarans.clear();
+
+    for (var item in _filteredPendaftarans) {
+      final statusField = '${_currentStatus.toLowerCase()}UpdatedAt';
+      final date = formatTanggal(item[statusField]);
+
+      if (!groupedPendaftarans.containsKey(date)) {
+        groupedPendaftarans[date] = [];
+      }
+      groupedPendaftarans[date]!.add(item);
+    }
+
+    orderedDates =
+        groupedPendaftarans.keys.toList()
+          ..sort((a, b) => _parseDate(b).compareTo(_parseDate(a)));
   }
 
   String formatTanggal(dynamic tanggal) {
@@ -151,7 +177,11 @@ class _StatusSupervisorPendaftaranState
 
   void _logout() async {
     await FirebaseAuth.instance.signOut();
-    Navigator.of(context).pushReplacementNamed('/login');
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
   }
 
   void _changeStatus(String newStatus) {
@@ -919,7 +949,7 @@ class _StatusSupervisorPendaftaranState
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'Tidak ada hasil pencarian ditemukan',
+                              'No data pendaftaran found',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
@@ -1445,7 +1475,12 @@ class _StatusSupervisorPendaftaranState
             ),
             Spacer(),
             IconButton(
-              icon: Icon(Icons.logout, color: Colors.black),
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+              ),
               onPressed: _logout,
             ),
           ],

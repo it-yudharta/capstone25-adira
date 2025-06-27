@@ -135,11 +135,11 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
             .where((agent) {
               final fullName =
                   (agent['fullName'] ?? '').toString().toLowerCase();
-              final email = (agent['email'] ?? '').toString().toLowerCase();
               final phone = (agent['phone'] ?? '').toString().toLowerCase();
+              final tanggal = (agent['tanggal'] ?? '').toString().toLowerCase();
               return fullName.contains(query) ||
-                  email.contains(query) ||
-                  phone.contains(query);
+                  phone.contains(query) ||
+                  tanggal.contains(query);
             })
             .toList();
   }
@@ -499,45 +499,15 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
           child:
               _isLoading
                   ? Center(child: CircularProgressIndicator())
+                  : _agents.isEmpty
+                  ? _buildEmptyState(
+                    title: 'No Data Found',
+                    subtitle: 'No data pendaftaran found',
+                  )
                   : _filteredAgents.isEmpty
-                  ? IgnorePointer(
-                    ignoring: true,
-                    child: SingleChildScrollView(
-                      physics: NeverScrollableScrollPhysics(),
-                      child: Container(
-                        height: MediaQuery.of(context).size.height * 0.6,
-                        alignment: Alignment.center,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/images/EmptyState.png',
-                              width: 300,
-                              height: 200,
-                              fit: BoxFit.contain,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'No Data Found',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'No data pendaftaran found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  ? _buildEmptyState(
+                    title: 'No Search Results',
+                    subtitle: 'No data pendaftaran found',
                   )
                   : ListView.builder(
                     itemCount: orderedDates.fold<int>(
@@ -574,6 +544,48 @@ class _PendaftaranSupervisorState extends State<PendaftaranSupervisor> {
                   ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyState({required String title, required String subtitle}) {
+    return IgnorePointer(
+      ignoring: true,
+      child: SingleChildScrollView(
+        physics: NeverScrollableScrollPhysics(),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/EmptyState.png',
+                width: 300,
+                height: 200,
+                fit: BoxFit.contain,
+              ),
+              SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
