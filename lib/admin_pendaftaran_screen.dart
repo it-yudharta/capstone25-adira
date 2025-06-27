@@ -1,3 +1,5 @@
+// ignore_for_file: use_super_parameters, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,7 +8,7 @@ import 'login_screen.dart';
 import 'pendaftaran_screen.dart';
 import 'generate_qr_screen.dart';
 import 'saved_pendaftaran_screen.dart';
-import 'bottom_nav_bar_pendaftaran.dart'; // <- ganti importnya
+import 'bottom_nav_bar_pendaftaran.dart';
 
 class AdminPendaftaranScreen extends StatefulWidget {
   final int initialPage;
