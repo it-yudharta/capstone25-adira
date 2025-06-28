@@ -1,9 +1,14 @@
+// ignore_for_file: use_super_parameters, library_private_types_in_public_api, use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'custom_bottom_nav_bar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class NotePengajuanScreen extends StatefulWidget {
   final Map orderData;
@@ -105,6 +110,15 @@ class _NotePengajuanScreenState extends State<NotePengajuanScreen> {
     );
   }
 
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final o = widget.orderData;
@@ -138,8 +152,13 @@ class _NotePengajuanScreenState extends State<NotePengajuanScreen> {
             ),
             const Spacer(),
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.black),
-              onPressed: () {},
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+              ),
+              onPressed: _logout,
             ),
           ],
         ),

@@ -6,6 +6,9 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'bottom_nav_bar_pendaftaran.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class NotePendaftaranScreen extends StatefulWidget {
   final Map pendaftaran;
@@ -98,6 +101,15 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
     }
   }
 
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
+  }
+
   Future<void> _launchWhatsApp(String phone) async {
     final normalized = normalizePhone(phone);
     final uri = Uri.parse('https://wa.me/$normalized');
@@ -143,8 +155,13 @@ class _NotePendaftaranScreenState extends State<NotePendaftaranScreen> {
             ),
             Spacer(),
             IconButton(
-              icon: Icon(Icons.logout, color: Colors.black),
-              onPressed: () {},
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+              ),
+              onPressed: _logout,
             ),
           ],
         ),
