@@ -1,3 +1,5 @@
+// ignore_for_file: duplicate_import, unused_field, unnecessary_import, use_key_in_widget_constructors, use_build_context_synchronously, deprecated_member_use, sized_box_for_whitespace, avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
@@ -13,6 +15,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'circular_loading_indicator.dart';
 import 'note_pendaftaran.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart';
 
 class StatusSavedPendaftaranScreen extends StatefulWidget {
   const StatusSavedPendaftaranScreen({required this.status});
@@ -155,16 +159,19 @@ class _StatusSavedPendaftaranScreenState
   }
 
   List<Map> get _filteredPendaftarans {
-    if (_searchQuery.isEmpty) {
-      return _pendaftarans;
-    }
+    if (_searchQuery.isEmpty) return _pendaftarans;
+
+    final query = _searchQuery.toLowerCase();
 
     return _pendaftarans.where((item) {
-      final query = _searchQuery.toLowerCase();
-      return (item['fullName']?.toString().toLowerCase().contains(query) ??
-              false) ||
-          (item['email']?.toString().toLowerCase().contains(query) ?? false) ||
-          (item['phone']?.toString().toLowerCase().contains(query) ?? false);
+      final name = item['fullName']?.toString().toLowerCase() ?? '';
+      final phone = item['phone']?.toString().toLowerCase() ?? '';
+      final dateField = '${currentStatus.toLowerCase()}UpdatedAt';
+      final formattedDate = formatTanggal(item[dateField]).toLowerCase();
+
+      return name.contains(query) ||
+          phone.contains(query) ||
+          formattedDate.contains(query);
     }).toList();
   }
 
@@ -180,8 +187,13 @@ class _StatusSavedPendaftaranScreenState
     return 'Tanggal Kosong';
   }
 
-  void _logout() {
-    Navigator.pop(context);
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
   }
 
   String normalizePhoneNumber(String phone) {
@@ -1534,8 +1546,10 @@ class _StatusSavedPendaftaranScreenState
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : (orderedDates.isEmpty || groupedPendaftarans.isEmpty)
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
+                  : (_pendaftarans.isEmpty)
                   ? IgnorePointer(
                     ignoring: true,
                     child: SingleChildScrollView(
@@ -1575,8 +1589,46 @@ class _StatusSavedPendaftaranScreenState
                       ),
                     ),
                   )
-                  : _filteredPendaftarans.isEmpty
-                  ? Center(child: Text("Tidak ada hasil pencarian"))
+                  : (_filteredPendaftarans.isEmpty)
+                  ? IgnorePointer(
+                    ignoring: true,
+                    child: SingleChildScrollView(
+                      physics: NeverScrollableScrollPhysics(),
+                      child: Container(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        alignment: Alignment.center,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              'assets/images/EmptyState.png',
+                              width: 300,
+                              height: 200,
+                              fit: BoxFit.contain,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Search Not Found',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              'No data lead pendaftaran found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
                   : ListView.builder(
                     itemCount: orderedDates.fold<int>(
                       0,
@@ -1652,7 +1704,12 @@ class _StatusSavedPendaftaranScreenState
             ),
             Spacer(),
             IconButton(
-              icon: Icon(Icons.logout, color: Colors.black),
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+              ),
               onPressed: _logout,
             ),
           ],

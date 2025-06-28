@@ -86,15 +86,24 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
       return;
     }
 
+    final lowerQuery = _searchQuery.toLowerCase();
+
     setState(() {
       _leadAgents =
           _leadAgents.where((group) {
+            final groupDate = group['date']?.toString().toLowerCase() ?? '';
             final List agents = group['agents'] ?? [];
-            return agents.any((agent) {
+
+            final matchDate = groupDate.contains(lowerQuery);
+            final matchAgents = agents.any((agent) {
               final fullName =
                   (agent['fullName'] ?? '').toString().toLowerCase();
-              return fullName.contains(_searchQuery.toLowerCase());
+              final phone = (agent['phone'] ?? '').toString().toLowerCase();
+              return fullName.contains(lowerQuery) ||
+                  phone.contains(lowerQuery);
             });
+
+            return matchDate || matchAgents;
           }).toList();
     });
   }
@@ -893,47 +902,19 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : _leadAgents.isEmpty
-                  ? IgnorePointer(
-                    ignoring: true,
-                    child: SingleChildScrollView(
-                      physics: NeverScrollableScrollPhysics(),
-                      child: Container(
-                        height: MediaQuery.of(context).size.height * 0.6,
-                        alignment: Alignment.center,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/images/EmptyState.png',
-                              width: 300,
-                              height: 200,
-                              fit: BoxFit.contain,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'No Data Found',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'No data lead pendaftaran found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
                   )
+                  : _leadAgents.isEmpty
+                  ? (_searchQuery.isNotEmpty
+                      ? _buildEmptyState(
+                        title: 'No Search Result',
+                        subtitle: 'No data lead pendaftaran found',
+                      )
+                      : _buildEmptyState(
+                        title: 'No Data Found',
+                        subtitle: 'No data lead pendaftaran found',
+                      ))
                   : ListView.builder(
                     itemCount: _leadAgents.length,
                     itemBuilder: (ctx, idx) {
@@ -961,6 +942,48 @@ class _SavedPendaftaranScreenState extends State<SavedPendaftaranScreen> {
                   ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyState({required String title, required String subtitle}) {
+    return IgnorePointer(
+      ignoring: true,
+      child: SingleChildScrollView(
+        physics: NeverScrollableScrollPhysics(),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/EmptyState.png',
+                width: 300,
+                height: 200,
+                fit: BoxFit.contain,
+              ),
+              SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
