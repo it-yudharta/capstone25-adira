@@ -101,24 +101,52 @@ class _AdminPengajuanScreenState extends State<AdminPengajuanScreen> {
           ],
         ),
       ),
-      body: PageView.builder(
-        controller: _pageController,
-        physics: const BouncingScrollPhysics(),
-        itemCount: _routes.length,
-        onPageChanged: (index) {
-          setState(() => _currentPage = index);
-        },
-        itemBuilder: (context, index) {
-          switch (index) {
-            case 0:
-              return PengajuanScreen();
-            case 1:
-              return SavedOrdersScreen();
-            default:
-              return const SizedBox();
-          }
-        },
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(),
+            itemCount: _routes.length,
+            onPageChanged: (index) {
+              setState(() => _currentPage = index);
+            },
+            itemBuilder: (context, index) {
+              switch (index) {
+                case 0:
+                  return PengajuanScreen();
+                case 1:
+                  return SavedOrdersScreen();
+                default:
+                  return const SizedBox();
+              }
+            },
+          ),
+
+          if (_currentPage == 0)
+            Align(
+              alignment: Alignment.bottomLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 24.0, bottom: 40.0),
+                child: FloatingActionButton(
+                  onPressed: () {
+                    // TODO: taruh sini loh ya nanti aksi nya loh ya
+                  },
+                  backgroundColor: const Color(0xFF0E5C36),
+                  child: SvgPicture.asset(
+                    'assets/icon/Ai.svg',
+                    width: 20,
+                    height: 20,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
+
       bottomNavigationBar: CustomBottomNavBar(
         currentRoute: _routes[_currentPage],
         onTapIndex: (index) {
