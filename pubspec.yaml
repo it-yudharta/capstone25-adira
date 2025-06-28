@@ -104,6 +104,7 @@ flutter:
     - assets/icon/agent.svg
     - assets/icon/reset_password.svg
     - assets/icon/logout.svg
+    - assets/icon/Ai.svg
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

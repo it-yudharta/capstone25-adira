@@ -16,6 +16,8 @@ import 'generate_qr_pengajuan.dart';
 import 'circular_loading_indicator.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'note_pendaftaran.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_screen.dart';
 
 class StatusPendaftaranScreen extends StatefulWidget {
   String status;
@@ -143,16 +145,23 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     _filteredPendaftarans =
         _pendaftarans.where((item) {
           final name = (item['fullName'] ?? '').toString().toLowerCase();
+          final phone = (item['phone'] ?? '').toString().toLowerCase();
           final status = (item['status'] ?? '').toString().toLowerCase();
+          final statusField = '${widget.status.toLowerCase()}UpdatedAt';
+          final date = formatTanggal(item[statusField]).toLowerCase();
+
           final isTrash = item['trash'] == true || item['trash'] == 'true';
 
+          final isMatch =
+              name.contains(query) ||
+              phone.contains(query) ||
+              date.contains(query);
+
           if (widget.status == 'trash') {
-            return isTrash && name.contains(query);
+            return isTrash && isMatch;
           }
 
-          return !isTrash &&
-              status == widget.status.toLowerCase() &&
-              name.contains(query);
+          return !isTrash && status == widget.status.toLowerCase() && isMatch;
         }).toList();
 
     groupedPendaftarans.clear();
@@ -197,8 +206,13 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
     return 'Tanggal Kosong';
   }
 
-  void _logout() {
-    Navigator.pop(context);
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => LoginScreen()),
+      (route) => false,
+    );
   }
 
   void _changeStatus(String newStatus) {
@@ -1787,49 +1801,19 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
                   : _pendaftarans.isEmpty
-                  ? IgnorePointer(
-                    ignoring: true,
-                    child: SingleChildScrollView(
-                      physics: NeverScrollableScrollPhysics(),
-                      child: Container(
-                        height: MediaQuery.of(context).size.height * 0.6,
-                        alignment: Alignment.center,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/images/EmptyState.png',
-                              width: 300,
-                              height: 200,
-                              fit: BoxFit.contain,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'No Data Found',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'No data pendaftaran found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  ? _buildEmptyState(
+                    title: 'No Data Found',
+                    subtitle: 'No data pendaftaran found',
                   )
                   : _filteredPendaftarans.isEmpty
-                  ? Center(child: Text("Tidak ada hasil pencarian"))
+                  ? _buildEmptyState(
+                    title: 'No Search Results',
+                    subtitle: 'No data pendaftaran found',
+                  )
                   : ListView.builder(
                     itemCount: orderedDates.fold<int>(
                       0,
@@ -1868,6 +1852,48 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
                   ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyState({required String title, required String subtitle}) {
+    return IgnorePointer(
+      ignoring: true,
+      child: SingleChildScrollView(
+        physics: NeverScrollableScrollPhysics(),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/EmptyState.png',
+                width: 300,
+                height: 200,
+                fit: BoxFit.contain,
+              ),
+              SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -2026,7 +2052,12 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
             ),
             Spacer(),
             IconButton(
-              icon: Icon(Icons.logout, color: Colors.black),
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+              ),
               onPressed: _logout,
             ),
           ],

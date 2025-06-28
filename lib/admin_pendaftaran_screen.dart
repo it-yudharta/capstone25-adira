@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:flutter_svg/flutter_svg.dart';
 import 'login_screen.dart';
 import 'pendaftaran_screen.dart';
 import 'generate_qr_screen.dart';
@@ -91,31 +91,63 @@ class _AdminPendaftaranScreenState extends State<AdminPendaftaranScreen> {
             ),
             const Spacer(),
             IconButton(
-              icon: const Icon(Icons.logout, color: Colors.black),
+              icon: SvgPicture.asset(
+                'assets/icon/logout.svg',
+                width: 20,
+                height: 20,
+                colorFilter: ColorFilter.mode(Colors.black, BlendMode.srcIn),
+              ),
               onPressed: _logout,
             ),
           ],
         ),
       ),
-      body: PageView.builder(
-        controller: _pageController,
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        itemCount: _routes.length,
-        onPageChanged: (index) => setState(() => _currentPage = index),
-        itemBuilder: (context, index) {
-          switch (index) {
-            case 0:
-              return PendaftaranScreen();
-            case 1:
-              return GenerateQRScreen();
-            case 2:
-              return SavedPendaftaranScreen();
-            default:
-              return const SizedBox();
-          }
-        },
+      body: Stack(
+        children: [
+          PageView.builder(
+            controller: _pageController,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            itemCount: _routes.length,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            itemBuilder: (context, index) {
+              switch (index) {
+                case 0:
+                  return PendaftaranScreen();
+                case 1:
+                  return GenerateQRScreen();
+                case 2:
+                  return SavedPendaftaranScreen();
+                default:
+                  return const SizedBox();
+              }
+            },
+          ),
+
+          if (_currentPage == 0)
+            Align(
+              alignment: Alignment.bottomLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 24.0, bottom: 40.0),
+                child: FloatingActionButton(
+                  onPressed: () {
+                    // TODO: taruh sini loh ya nanti aksi nya loh ya
+                  },
+                  backgroundColor: const Color(0xFF0E5C36),
+                  child: SvgPicture.asset(
+                    'assets/icon/Ai.svg',
+                    width: 20,
+                    height: 20,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       bottomNavigationBar: BottomNavBarPendaftaran(
         currentRoute: _routes[_currentPage],

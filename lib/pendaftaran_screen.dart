@@ -32,6 +32,8 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
   String? _selectedExportDate;
   double _exportProgress = 0.0;
   late void Function(void Function()) _setExportDialogState;
+  List<Map<dynamic, dynamic>> _originalAgents = [];
+  List<Map<dynamic, dynamic>> _filteredAgents = [];
 
   @override
   void initState() {
@@ -72,10 +74,12 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
       });
 
       setState(() {
-        _agents =
+        _originalAgents =
             groupedAgents.entries.map((entry) {
               return {'date': entry.key, 'agents': entry.value};
             }).toList();
+
+        _filteredAgents = List.from(_originalAgents);
         _isLoading = false;
       });
     } else {
@@ -87,18 +91,37 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
   }
 
   void _applySearch() {
-    _agents =
-        _agents.where((group) {
-          return group['agents'].any((agent) {
-            final query = _searchQuery.toLowerCase();
-            final fullName = (agent['fullName'] ?? '').toString().toLowerCase();
-            final email = (agent['email'] ?? '').toString().toLowerCase();
-            final phone = (agent['phone'] ?? '').toString().toLowerCase();
-            return fullName.contains(query) ||
-                email.contains(query) ||
-                phone.contains(query);
-          });
-        }).toList();
+    final query = _searchQuery.toLowerCase();
+
+    if (query.isEmpty) {
+      setState(() {
+        _filteredAgents = List.from(_originalAgents);
+      });
+      return;
+    }
+
+    setState(() {
+      _filteredAgents =
+          _originalAgents
+              .map((group) {
+                final agents =
+                    (group['agents'] as List).where((agent) {
+                      final fullName =
+                          (agent['fullName'] ?? '').toString().toLowerCase();
+                      final phone =
+                          (agent['phone'] ?? '').toString().toLowerCase();
+                      final date =
+                          (group['date'] ?? '').toString().toLowerCase();
+                      return fullName.contains(query) ||
+                          phone.contains(query) ||
+                          date.contains(query);
+                    }).toList();
+
+                return {'date': group['date'], 'agents': agents};
+              })
+              .where((group) => group['agents'].isNotEmpty)
+              .toList();
+    });
   }
 
   String normalizePhoneNumber(String phone) {
@@ -929,51 +952,23 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
         Expanded(
           child:
               _isLoading
-                  ? Center(child: CircularProgressIndicator())
-                  : _agents.isEmpty
-                  ? IgnorePointer(
-                    ignoring: true,
-                    child: SingleChildScrollView(
-                      physics: NeverScrollableScrollPhysics(),
-                      child: Container(
-                        height: MediaQuery.of(context).size.height * 0.6,
-                        alignment: Alignment.center,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/images/EmptyState.png',
-                              width: 300,
-                              height: 200,
-                              fit: BoxFit.contain,
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'No Data Found',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'No data pendaftaran found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  ? Center(
+                    child: CircularProgressIndicator(color: Color(0xFF0E5C36)),
+                  )
+                  : _originalAgents.isEmpty
+                  ? _buildEmptyState(
+                    'No data found',
+                    'No data pendaftaran found',
+                  )
+                  : _filteredAgents.isEmpty
+                  ? _buildEmptyState(
+                    'No search result',
+                    'No data pendaftaran found',
                   )
                   : ListView.builder(
-                    itemCount: _agents.length,
+                    itemCount: _filteredAgents.length,
                     itemBuilder: (ctx, idx) {
-                      final group = _agents[idx];
+                      final group = _filteredAgents[idx];
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -997,6 +992,48 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                   ),
         ),
       ],
+    );
+  }
+
+  Widget _buildEmptyState(String titleMessage, String bottomMessage) {
+    return IgnorePointer(
+      ignoring: true,
+      child: SingleChildScrollView(
+        physics: NeverScrollableScrollPhysics(),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'assets/images/EmptyState.png',
+                width: 300,
+                height: 200,
+                fit: BoxFit.contain,
+              ),
+              SizedBox(height: 8),
+              Text(
+                titleMessage,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                bottomMessage,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
