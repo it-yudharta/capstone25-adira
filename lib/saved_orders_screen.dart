@@ -1531,7 +1531,7 @@ class _SavedOrdersScreenState extends State<SavedOrdersScreen> {
                   SizedBox(height: 4),
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
                   SizedBox(height: 4),
-                  Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                  Text("Pengajuan : ${order['item'] ?? '-'}"),
                   SizedBox(height: 8),
                   if (!(isLead && order['status'] == 'lead'))
                     Text(

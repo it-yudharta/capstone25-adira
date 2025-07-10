@@ -1,3 +1,5 @@
+// ignore_for_file: must_be_immutable, unused_field, unused_element, use_super_parameters, library_private_types_in_public_api, use_build_context_synchronously, deprecated_member_use, no_leading_underscores_for_local_identifiers, sized_box_for_whitespace, avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -1451,7 +1453,7 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                   SizedBox(height: 4),
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
                   SizedBox(height: 4),
-                  Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                  Text("Pengajuan : ${order['item'] ?? '-'}"),
                   SizedBox(height: 8),
                   if (!(isLead && (order['status'] == 'lead')))
                     Text(

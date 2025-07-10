@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_import, use_key_in_widget_constructors, library_private_types_in_public_api, use_build_context_synchronously, avoid_print, sort_child_properties_last
+
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';

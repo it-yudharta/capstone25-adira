@@ -1461,7 +1461,7 @@ class _StatusSupervisorPengajuanState extends State<StatusSupervisorPengajuan> {
                   SizedBox(height: 4),
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
                   SizedBox(height: 4),
-                  Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                  Text("Pengajuan : ${order['item'] ?? '-'}"),
                   const SizedBox(height: 8),
                   Text(
                     "Status        : $status",

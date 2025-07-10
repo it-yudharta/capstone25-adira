@@ -228,7 +228,7 @@ class _PengajuanSupervisorState extends State<PengajuanSupervisor> {
                   SizedBox(height: 4),
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
                   SizedBox(height: 4),
-                  Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                  Text("Pengajuan : ${order['item'] ?? '-'}"),
                   SizedBox(height: 8),
                   Text(
                     "Status        : ${order['status'] ?? 'Belum diproses'}",

@@ -720,7 +720,7 @@ class _StatusSupervisorLeadState extends State<StatusSupervisorLead> {
                   const SizedBox(height: 4),
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
                   const SizedBox(height: 4),
-                  Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                  Text("Pengajuan : ${order['item'] ?? '-'}"),
                   const SizedBox(height: 8),
                   Text(
                     "Status        : $status",

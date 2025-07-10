@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'main_supervisor.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,6 +9,7 @@ class BottomNavBarSupervisor extends StatelessWidget {
   final Function(int)? onTapIndex;
   final double pageOffset;
 
+  // ignore: use_super_parameters
   const BottomNavBarSupervisor({
     required this.currentRoute,
     this.onTapIndex,
