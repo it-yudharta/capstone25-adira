@@ -390,15 +390,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
 
-                    TextButton(
-                      onPressed: () {
-                        emailController.text = 'demo@appkamu.com';
-                        passwordController.text = 'Demo1234';
-                        login();
-                      },
-                      child: Text('Gunakan akun demo'),
-                    ),
-
                     if (errorMessage != null) ...[
                       SizedBox(height: 10),
                       Text(errorMessage!, style: TextStyle(color: Colors.red)),

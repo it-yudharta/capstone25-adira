@@ -8,6 +8,8 @@ import 'pengajuan_screen.dart';
 import 'saved_orders_screen.dart';
 import 'custom_bottom_nav_bar.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'notification_templates_screen.dart';
+
 
 class AdminPengajuanScreen extends StatefulWidget {
   final int initialPage;
@@ -129,7 +131,12 @@ class _AdminPengajuanScreenState extends State<AdminPengajuanScreen> {
                 padding: const EdgeInsets.only(left: 24.0, bottom: 40.0),
                 child: FloatingActionButton(
                   onPressed: () {
-                    // TODO: taruh sini loh ya nanti aksi nya loh ya
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NotificationTemplatesScreen(role: 'pengajuan'),
+                       ),
+                     );
                   },
                   backgroundColor: const Color(0xFF0E5C36),
                   child: SvgPicture.asset(

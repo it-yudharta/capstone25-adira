@@ -1,8 +1,7 @@
-// ignore_for_file: prefer_const_constructors_in_immutables, use_key_in_widget_constructors, prefer_interpolation_to_compose_strings, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OrderDetailScreen extends StatelessWidget {
   final Map orderData;
@@ -88,6 +87,23 @@ class OrderDetailScreen extends StatelessWidget {
     );
   }
 
+  Future<Map<String, dynamic>?> fetchHasilPrediksi(String orderKey) async {
+    try {
+      final doc =
+          await FirebaseFirestore.instance
+              .collection('hasil_prediksi')
+              .doc(orderKey)
+              .get();
+
+      if (doc.exists) {
+        return doc.data();
+      }
+    } catch (e) {
+      print("Error saat mengambil hasil prediksi: $e");
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -125,7 +141,6 @@ class OrderDetailScreen extends StatelessWidget {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 16),
-
             Card(
               color: Colors.white,
               shape: RoundedRectangleBorder(
@@ -180,9 +195,7 @@ class OrderDetailScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-
                     SizedBox(height: 16),
-
                     Text(
                       "Pengaju",
                       style: TextStyle(
@@ -224,32 +237,33 @@ class OrderDetailScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-
                     Text("E-mail: ${orderData['email'] ?? '-'}"),
                     Text("Alamat: ${orderData['domicile'] ?? '-'}"),
                     Text("Kode Pos: ${orderData['postalCode'] ?? '-'}"),
                     Text("Pekerjaan: ${orderData['job'] ?? '-'}"),
                     Text("Pendapatan: ${orderData['income'] ?? '-'}"),
                     Text("Pengajuan: ${orderData['item'] ?? '-'}"),
+                    if (!(orderData['item']?.toString().toLowerCase().contains(
+                          'amanah',
+                        ) ??
+                        false))
+                      Text("Merk: ${orderData['merk'] ?? '-'}"),
+                    Text("Nominal: ${orderData['nominal'] ?? '-'}"),
+                    Text("DP: ${orderData['dp'] ?? '-'}"),
                     Text("Angsuran Lain: ${orderData['installment'] ?? '-'}"),
-
                     SizedBox(height: 16),
                     if (orderData['ktp'] != null)
                       buildImageRow(context, "Foto KTP", orderData['ktp']),
-
                     if (orderData['kk'] != null)
                       buildImageRow(context, "Foto KK", orderData['kk']),
-
                     if (orderData['slipgaji'] != null)
                       buildImageRow(
                         context,
                         "Slip Gaji",
                         orderData['slipgaji'],
                       ),
-
                     if (orderData['npwp'] != null)
                       buildImageRow(context, "NPWP", orderData['npwp']),
-
                     if ((orderData['item'] ?? '')
                         .toString()
                         .toLowerCase()
@@ -259,12 +273,9 @@ class OrderDetailScreen extends StatelessWidget {
                       if (orderData['bpkb'] != null)
                         buildImageRow(context, "BPKB", orderData['bpkb']),
                     ],
-
                     SizedBox(height: 16),
                     Text("Tanggal Pengajuan: ${orderData['tanggal'] ?? '-'}"),
-
                     ..._buildStatusTimestamps(orderData),
-
                     SizedBox(height: 16),
                     Text(
                       "Status: ${orderData['status'] ?? '-'}",
@@ -282,6 +293,66 @@ class OrderDetailScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+                    FutureBuilder<Map<String, dynamic>?>(
+                      future: fetchHasilPrediksi(orderKey),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.only(top: 16),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        } else if (snapshot.hasError) {
+                          return const Padding(
+                            padding: EdgeInsets.only(top: 16),
+                            child: Text('Gagal memuat hasil prediksi.'),
+                          );
+                        } else if (!snapshot.hasData) {
+                          return const Padding(
+                            padding: EdgeInsets.only(top: 16),
+                            child: Text('Belum ada hasil prediksi.'),
+                          );
+                        }
+
+                        final hasil = snapshot.data!;
+                        final status = hasil['status'] ?? '-';
+                        final skorFuzzy = hasil['skor_fuzzy'] ?? '-';
+                        final risiko = hasil['risiko'] ?? '-';
+                        final alasanList = hasil['alasan'] as List? ?? [];
+                        final saran = hasil['saran'];
+
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Hasil Evaluasi Pembiayaan",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text("Status: $status"),
+                              Text("Skor Fuzzy: $skorFuzzy"),
+                              Text("Risiko: $risiko"),
+                              const SizedBox(height: 8),
+                              if (alasanList.isNotEmpty) ...[
+                                Text("Alasan:"),
+                                ...alasanList.map((a) => Text("- $a")),
+                              ],
+                              if (saran != null &&
+                                  saran.toString().trim().isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text("Saran: $saran"),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),

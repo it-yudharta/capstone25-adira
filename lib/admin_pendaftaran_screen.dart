@@ -9,6 +9,7 @@ import 'pendaftaran_screen.dart';
 import 'generate_qr_screen.dart';
 import 'saved_pendaftaran_screen.dart';
 import 'bottom_nav_bar_pendaftaran.dart';
+import 'notification_templates_screen.dart';
 
 class AdminPendaftaranScreen extends StatefulWidget {
   final int initialPage;
@@ -132,7 +133,12 @@ class _AdminPendaftaranScreenState extends State<AdminPendaftaranScreen> {
                 padding: const EdgeInsets.only(left: 24.0, bottom: 40.0),
                 child: FloatingActionButton(
                   onPressed: () {
-                    // TODO: taruh sini loh ya nanti aksi nya loh ya
+                    Navigator.push(
+                     context,
+                     MaterialPageRoute(
+                      builder: (context) => NotificationTemplatesScreen(role: 'pendaftaran'),
+                         ),
+                      );
                   },
                   backgroundColor: const Color(0xFF0E5C36),
                   child: SvgPicture.asset(
