@@ -193,7 +193,7 @@ class _AgentScreenState extends State<AgentScreen> {
                   ),
 
                   Text("Pekerjaan  : ${order['job'] ?? '-'}"),
-                  Text("Pengajuan : ${order['installment'] ?? '-'}"),
+                  Text("Pengajuan : ${order['item'] ?? '-'}"),
                   SizedBox(height: 8),
                   Text(
                     "Status        : ${order['status'] ?? 'Belum diproses'}",
