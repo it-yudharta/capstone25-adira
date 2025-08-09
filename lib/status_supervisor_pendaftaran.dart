@@ -66,7 +66,7 @@ class _StatusSupervisorPendaftaranState
           final status = (item['status'] ?? '').toString().toLowerCase();
           final trash = item['trash'] == true || item['trash'] == 'true';
 
-          if (trash && widget.status == 'trash') {
+          if (trash && _currentStatus == 'trash') {
             item['key'] = key;
             items.add(item);
           } else if (!trash && status == _currentStatus.toLowerCase()) {

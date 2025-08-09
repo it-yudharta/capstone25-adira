@@ -882,7 +882,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
               Row(
                 children: [
                   ElevatedButton(
-                    onPressed: _confirmDeleteAllRegistrationsToTrash,
+                    onPressed: _confirmDeleteAllAgentsToTrash,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF0E5C36),
                       shape: RoundedRectangleBorder(
@@ -1462,7 +1462,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
     }
   }
 
-  void _confirmDeleteAllRegistrationsToTrash() {
+  void _confirmDeleteAllAgentsToTrash() {
     showDialog(
       context: context,
       builder:
@@ -1486,7 +1486,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Delete All Data Pengajuan?',
+                    'Delete All Data Pendaftaran?',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1525,7 +1525,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
                         child: TextButton(
                           onPressed: () {
                             Navigator.pop(context);
-                            _markAllRegistrationsAsTrashed();
+                            _markAllNonLeadAgentsAsTrashed();
                           },
                           style: TextButton.styleFrom(
                             backgroundColor: Color(0xFF0E5C36),
@@ -1552,19 +1552,22 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
     );
   }
 
-  void _markAllRegistrationsAsTrashed() async {
+  void _markAllNonLeadAgentsAsTrashed() async {
     final now = DateTime.now();
     final formattedDate = DateFormat('dd-MM-yyyy').format(now);
 
     int trashedCount = 0;
 
-    for (final group in _agents) {
+    for (final group in _filteredAgents) {
       final agents = group['agents'];
       for (final agent in agents) {
-        final isLead = agent['lead'] == true;
+        final leadValue = agent['lead'];
+        final isLead =
+            leadValue == true || leadValue?.toString().toLowerCase() == 'true';
+        final isTrashed = agent['trash'] == true;
         final key = agent['key'];
 
-        if (!isLead && key != null) {
+        if (!isLead && !isTrashed && key != null) {
           try {
             await _database.child(key).update({
               'trash': true,
@@ -1584,7 +1587,7 @@ class _PendaftaranScreenState extends State<PendaftaranScreen> {
           content: Text('Berhasil menandai $trashedCount data sebagai trash'),
         ),
       );
-      _fetchAgents();
+      _fetchAgents(); // atau _fetchFilteredAgents() jika kamu pakai filter
     }
   }
 

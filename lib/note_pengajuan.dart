@@ -9,6 +9,9 @@ import 'custom_bottom_nav_bar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io'; // untuk Image.file()
 
 class NotePengajuanScreen extends StatefulWidget {
   final Map orderData;
@@ -28,6 +31,9 @@ class _NotePengajuanScreenState extends State<NotePengajuanScreen> {
   late TextEditingController _controller;
   bool _isSaving = false;
   bool _showError = false;
+  List<XFile> _pickedImages = [];
+  List<String> _uploadedImageUrls = [];
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -43,6 +49,35 @@ class _NotePengajuanScreenState extends State<NotePengajuanScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImages() async {
+    try {
+      final List<XFile>? images = await _picker.pickMultiImage();
+      if (images != null && images.isNotEmpty) {
+        setState(() {
+          _pickedImages.addAll(images);
+        });
+      }
+    } catch (e) {
+      print('Error picking images: $e');
+    }
+  }
+
+  Future<void> _uploadImages() async {
+    _uploadedImageUrls.clear();
+    for (var image in _pickedImages) {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('note_images')
+          .child(widget.orderKey)
+          .child('${DateTime.now().millisecondsSinceEpoch}_${image.name}');
+      final uploadTask = ref.putData(await image.readAsBytes());
+
+      final snapshot = await uploadTask;
+      final url = await snapshot.ref.getDownloadURL();
+      _uploadedImageUrls.add(url);
+    }
+  }
+
   Future<void> _saveNote() async {
     final note = _controller.text.trim();
     if (note.isEmpty) {
@@ -55,6 +90,10 @@ class _NotePengajuanScreenState extends State<NotePengajuanScreen> {
       _showError = false;
     });
 
+    if (_pickedImages.isNotEmpty) {
+      await _uploadImages();
+    }
+
     final dbRef = FirebaseDatabase.instance
         .ref()
         .child('orders')
@@ -62,6 +101,7 @@ class _NotePengajuanScreenState extends State<NotePengajuanScreen> {
 
     await dbRef.update({
       'note': note,
+      'noteImages': _uploadedImageUrls,
       'status': 'pending',
       'pendingUpdatedAt': DateFormat('dd-MM-yyyy').format(DateTime.now()),
     });
@@ -122,8 +162,11 @@ class _NotePengajuanScreenState extends State<NotePengajuanScreen> {
   @override
   Widget build(BuildContext context) {
     final o = widget.orderData;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F5),
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         automaticallyImplyLeading: true,
         backgroundColor: const Color(0xFFF0F4F5),
@@ -163,195 +206,329 @@ class _NotePengajuanScreenState extends State<NotePengajuanScreen> {
           ],
         ),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Center(
-                  child: Text(
-                    'Add Note',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 8),
-                Center(
-                  child: Text(
-                    'Data Pengajuan',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: SingleChildScrollView(
-              child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 4,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _detailRow("Agent", o['agentName']?.toString()),
-                    _detailRow("Nama", o['name']?.toString()),
-                    _detailRow("Alamat", o['domicile']?.toString()),
-                    if (o['phone'] != null)
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.only(bottom: bottomInset),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: GestureDetector(
-                          onTap: () => _launchWhatsApp(o['phone'].toString()),
-                          child: RichText(
-                            text: TextSpan(
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.black87,
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Center(
+                              child: Text(
+                                'Add Note',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
                               ),
+                            ),
+                            SizedBox(height: 8),
+                            Center(
+                              child: Text(
+                                'Data Pengajuan',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Card detail pengajuan
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _detailRow("Agent", o['agentName']?.toString()),
+                            _detailRow("Nama", o['name']?.toString()),
+                            _detailRow("Alamat", o['domicile']?.toString()),
+                            if (o['phone'] != null)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                ),
+                                child: GestureDetector(
+                                  onTap:
+                                      () => _launchWhatsApp(
+                                        o['phone'].toString(),
+                                      ),
+                                  child: RichText(
+                                    text: TextSpan(
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                      ),
+                                      children: [
+                                        const TextSpan(text: "No. Telp : "),
+                                        TextSpan(
+                                          text: o['phone'].toString(),
+                                          style: const TextStyle(
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            _detailRow("Pekerjaan", o['job']?.toString()),
+                            _detailRow("Pengajuan", o['item']?.toString()),
+                            _detailRow("Status", o['status']?.toString()),
+                            if (o['note'] != null &&
+                                o['note'].toString().isNotEmpty)
+                              _detailRow(
+                                "Existing Note",
+                                o['note']?.toString(),
+                              ),
+                          ],
+                        ),
+                      ),
+
+                      // Spacer untuk dorong ke bawah
+                      Spacer(),
+
+                      // Input dan tombol bawah
+                      Container(
+                        color: const Color(0xFFF0F4F5),
+                        padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
                               children: [
-                                const TextSpan(text: "No. Telp : "),
-                                TextSpan(
-                                  text: o['phone'].toString(),
-                                  style: const TextStyle(color: Colors.blue),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF0E5C36),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.attachment,
+                                      color: Colors.white,
+                                    ),
+                                    onPressed: _pickImages,
+                                    tooltip: 'Attach Images',
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 80,
+                                    child:
+                                        _pickedImages.isEmpty
+                                            ? const SizedBox.shrink()
+                                            : ListView.builder(
+                                              scrollDirection: Axis.horizontal,
+                                              itemCount: _pickedImages.length,
+                                              itemBuilder: (context, index) {
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 4,
+                                                      ),
+                                                  child: Stack(
+                                                    children: [
+                                                      ClipRRect(
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              8,
+                                                            ),
+                                                        child: Image.file(
+                                                          File(
+                                                            _pickedImages[index]
+                                                                .path,
+                                                          ),
+                                                          width: 70,
+                                                          height: 70,
+                                                          fit: BoxFit.cover,
+                                                        ),
+                                                      ),
+                                                      Positioned(
+                                                        top: 0,
+                                                        right: 0,
+                                                        child: GestureDetector(
+                                                          onTap: () {
+                                                            setState(() {
+                                                              _pickedImages
+                                                                  .removeAt(
+                                                                    index,
+                                                                  );
+                                                            });
+                                                          },
+                                                          child: Container(
+                                                            decoration:
+                                                                const BoxDecoration(
+                                                                  color:
+                                                                      Colors
+                                                                          .black54,
+                                                                  shape:
+                                                                      BoxShape
+                                                                          .circle,
+                                                                ),
+                                                            child: const Icon(
+                                                              Icons.close,
+                                                              size: 16,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                        ),
-                      ),
-                    _detailRow("Pekerjaan", o['job']?.toString()),
-                    _detailRow("Pengajuan", o['installment']?.toString()),
-                    _detailRow("Status", o['status']?.toString()),
-                    if (o['note'] != null && o['note'].toString().isNotEmpty)
-                      _detailRow("Existing Note", o['note']?.toString()),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          Expanded(
-            child: Container(
-              color: const Color(0xFFF0F4F5),
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                        hintText: 'Tulis catatan...',
-                        hintStyle: TextStyle(
-                          color: _showError ? Colors.red : Colors.grey,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color:
-                                _showError ? Colors.red : Colors.grey.shade400,
-                            width: 1.5,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color:
-                                _showError ? Colors.red : Colors.grey.shade400,
-                            width: 1.5,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color:
-                                _showError
-                                    ? Colors.red
-                                    : const Color(0xFF0E5C36),
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                      maxLines: null,
-                      expands: true,
-                      textAlignVertical: TextAlignVertical.top,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: TextButton.styleFrom(
-                            backgroundColor: const Color(0xFFE67D13),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child: const Text(
-                            'Cancel',
-                            style: TextStyle(fontSize: 16, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _isSaving ? null : _saveNote,
-                          style: TextButton.styleFrom(
-                            backgroundColor: const Color(0xFF0E5C36),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          child:
-                              _isSaving
-                                  ? const CircularProgressIndicator(
-                                    color: Colors.white,
-                                  )
-                                  : const Text(
-                                    'Confirm',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white,
+                            const SizedBox(height: 8),
+                            ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: 100,
+                                maxHeight: 180,
+                              ),
+                              child: TextField(
+                                controller: _controller,
+                                decoration: InputDecoration(
+                                  hintText: 'Tulis catatan...',
+                                  hintStyle: TextStyle(
+                                    color:
+                                        _showError ? Colors.red : Colors.grey,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color:
+                                          _showError
+                                              ? Colors.red
+                                              : Colors.grey.shade400,
+                                      width: 1.5,
                                     ),
                                   ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color:
+                                          _showError
+                                              ? Colors.red
+                                              : Colors.grey.shade400,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color:
+                                          _showError
+                                              ? Colors.red
+                                              : const Color(0xFF0E5C36),
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                                maxLines: null,
+                                textAlignVertical: TextAlignVertical.top,
+                                keyboardType: TextInputType.text,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: const Color(0xFFE67D13),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Cancel',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: _isSaving ? null : _saveNote,
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: const Color(0xFF0E5C36),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 14,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child:
+                                        _isSaving
+                                            ? const CircularProgressIndicator(
+                                              color: Colors.white,
+                                            )
+                                            : const Text(
+                                              'Confirm',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
+
       bottomNavigationBar: const CustomBottomNavBar(currentRoute: 'other'),
     );
   }

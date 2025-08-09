@@ -14,6 +14,7 @@ import 'bottom_nav_bar_pendaftaran.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:convert';
 
 class GenerateQRPengajuan extends StatefulWidget {
   final String? fullName;
@@ -179,8 +180,16 @@ class _GenerateQRPengajuanState extends State<GenerateQRPengajuan> {
 
       setState(() {
         generatedPassword = password;
+
+        String encodedEmail = base64Url.encode(utf8.encode(email));
+        String encodedPhone = base64Url.encode(utf8.encode(phone));
+
         currentAgentData =
-            "https://rionasari.github.io/reseller-form/?agentName=$name&agentEmail=$email&agentPhone=$phone&agentPass=$password";
+            "https://rionasari.github.io/reseller-form/"
+            "?agentName=$name"
+            "&agentEmail=$encodedEmail"
+            "&agentPhone=$encodedPhone";
+
         isAccountCreated = true;
       });
 

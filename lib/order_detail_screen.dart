@@ -239,6 +239,10 @@ class OrderDetailScreen extends StatelessWidget {
                     ),
                     Text("E-mail: ${orderData['email'] ?? '-'}"),
                     Text("Alamat: ${orderData['domicile'] ?? '-'}"),
+                    Text("Kecamatan: ${orderData['kecamatan'] ?? '-'}"),
+                    Text("Kelurahan: ${orderData['kelurahan'] ?? '-'}"),
+                    Text("RT: ${orderData['rt'] ?? '-'}"),
+                    Text("RW: ${orderData['rw'] ?? '-'}"),
                     Text("Kode Pos: ${orderData['postalCode'] ?? '-'}"),
                     Text("Pekerjaan: ${orderData['job'] ?? '-'}"),
                     Text("Pendapatan: ${orderData['income'] ?? '-'}"),
@@ -281,6 +285,7 @@ class OrderDetailScreen extends StatelessWidget {
                       "Status: ${orderData['status'] ?? '-'}",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
+
                     if (orderData['note'] != null &&
                         orderData['note'].toString().trim().isNotEmpty)
                       Padding(
@@ -293,6 +298,23 @@ class OrderDetailScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+
+                    if (orderData['noteImages'] != null &&
+                        orderData['noteImages'] is List)
+                      ...List<Widget>.from(
+                        (orderData['noteImages'] as List).asMap().entries.map((
+                          entry,
+                        ) {
+                          final index = entry.key;
+                          final url = entry.value.toString();
+                          return buildImageRow(
+                            context,
+                            "Bukti ${index + 1}",
+                            url,
+                          );
+                        }),
+                      ),
+
                     FutureBuilder<Map<String, dynamic>?>(
                       future: fetchHasilPrediksi(orderKey),
                       builder: (context, snapshot) {

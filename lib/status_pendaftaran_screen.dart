@@ -338,9 +338,7 @@ class _StatusPendaftaranScreenState extends State<StatusPendaftaranScreen> {
 
   void _updateAgentStatus(String agentKey, String newStatus) async {
     final now = DateFormat('dd-MM-yyyy').format(DateTime.now());
-    final dbRef = FirebaseDatabase.instance.ref().child(
-      'pendaftaran/$agentKey',
-    );
+    final dbRef = FirebaseDatabase.instance.ref().child('agent-form/$agentKey');
 
     String updatedFieldName = '${newStatus}UpdatedAt';
 
