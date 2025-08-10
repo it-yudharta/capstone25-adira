@@ -16,6 +16,7 @@ import 'note_pengajuan.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class StatusPengajuanScreen extends StatefulWidget {
   String status;
@@ -186,17 +187,69 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
     _fetchOrders();
   }
 
-  void updateStatus(String key, String newStatus) async {
+  Future<String> _getAdminName() async {
+    String adminName = 'Unknown';
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final doc =
+            await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        if (doc.exists) {
+          final data = doc.data();
+          if (data != null &&
+              data['name'] != null &&
+              data['name'].toString().trim().isNotEmpty) {
+            return data['name'].toString();
+          }
+        }
+      }
+      return FirebaseAuth.instance.currentUser?.displayName ??
+          FirebaseAuth.instance.currentUser?.email ??
+          'Unknown';
+    } catch (e) {
+      print('Failed to fetch admin name from Firestore: $e');
+      return FirebaseAuth.instance.currentUser?.displayName ??
+          FirebaseAuth.instance.currentUser?.email ??
+          'Unknown';
+    }
+  }
+
+  Future<void> updateStatus(String key, String newStatus) async {
     final now = DateFormat('dd-MM-yyyy').format(DateTime.now());
-    final dbRef = FirebaseDatabase.instance.ref().child('orders/$key');
+    final dbRef = _database.child(key);
+    final updatedFieldName = '${newStatus}UpdatedAt';
 
-    String updatedFieldName = '${newStatus}UpdatedAt';
+    try {
+      final adminName = await _getAdminName();
 
-    await dbRef.update({'status': newStatus, updatedFieldName: now});
+      Map<String, dynamic> updates = {
+        'status': newStatus,
+        updatedFieldName: now,
+      };
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Status berhasil diubah menjadi $newStatus')),
-    );
+      if (newStatus == 'process') {
+        updates['processBy'] = adminName;
+      } else if (newStatus == 'cancel') {
+        updates['cancelBy'] = adminName;
+      }
+
+      await dbRef.update(updates);
+
+      _fetchOrders();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Status berhasil diubah menjadi $newStatus oleh: $adminName',
+          ),
+        ),
+      );
+    } catch (e) {
+      print('Gagal update status: $e');
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal memperbarui status: $e')));
+    }
   }
 
   void _logout() async {
@@ -1526,21 +1579,46 @@ class _StatusPengajuanScreenState extends State<StatusPengajuanScreen> {
                                         orderKey: orderKey,
                                       ),
                                 ),
-                              ).then((newNote) {
+                              ).then((newNote) async {
                                 if (newNote != null && newNote.isNotEmpty) {
-                                  setState(() {
-                                    order['note'] = newNote;
-                                    order['status'] = 'pending';
-                                    order['pendingUpdatedAt'] = DateFormat(
-                                      'dd-MM-yyyy',
-                                    ).format(DateTime.now());
-                                    _applySearch();
-                                  });
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Catatan disimpan'),
-                                    ),
-                                  );
+                                  final adminName = await _getAdminName();
+                                  final now = DateFormat(
+                                    'dd-MM-yyyy',
+                                  ).format(DateTime.now());
+
+                                  try {
+                                    await _database.child(orderKey).update({
+                                      'note': newNote,
+                                      'status': 'pending',
+                                      'pendingUpdatedAt': now,
+                                      'pendingBy': adminName,
+                                    });
+
+                                    setState(() {
+                                      order['note'] = newNote;
+                                      order['status'] = 'pending';
+                                      order['pendingUpdatedAt'] = now;
+                                      order['pendingBy'] = adminName;
+                                      _applySearch();
+                                    });
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Catatan disimpan oleh: $adminName',
+                                        ),
+                                      ),
+                                    );
+                                  } catch (e) {
+                                    print('Gagal menyimpan note: $e');
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Gagal menyimpan catatan: $e',
+                                        ),
+                                      ),
+                                    );
+                                  }
                                 }
                               });
                             },

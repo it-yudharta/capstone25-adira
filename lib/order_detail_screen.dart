@@ -386,40 +386,63 @@ class OrderDetailScreen extends StatelessWidget {
   }
 
   List<Widget> _buildStatusTimestamps(Map orderData) {
-    final statusLabels = {
-      'process': 'Tanggal Process',
-      'cancel': 'Tanggal Cancel',
-      'pending': 'Tanggal Pending',
-      'approved': 'Tanggal Approve',
-      'rejected': 'Tanggal Reject',
-    };
+    final statusInfo = [
+      {
+        'tanggalKey': 'processUpdatedAt',
+        'tanggalLabel': 'Tanggal Process',
+        'byKey': 'processBy',
+        'byLabel': 'Diproses oleh',
+      },
+      {
+        'tanggalKey': 'cancelUpdatedAt',
+        'tanggalLabel': 'Tanggal Cancel',
+        'byKey': 'cancelBy',
+        'byLabel': 'Dicancel oleh',
+      },
+      {
+        'tanggalKey': 'pendingUpdatedAt',
+        'tanggalLabel': 'Tanggal Pending',
+        'byKey': 'pendingBy',
+        'byLabel': 'Dipending oleh',
+      },
+      {
+        'tanggalKey': 'approveUpdatedAt',
+        'tanggalLabel': 'Tanggal Approve',
+        'byKey': 'approveBy',
+        'byLabel': 'Diapprove oleh',
+      },
+      {
+        'tanggalKey': 'rejectUpdatedAt',
+        'tanggalLabel': 'Tanggal Reject',
+        'byKey': 'rejectBy',
+        'byLabel': 'Direject oleh',
+      },
+    ];
 
     List<Widget> widgets = [];
 
-    statusLabels.forEach((statusKey, label) {
-      String tanggalStatus = '-';
-      switch (statusKey) {
-        case 'process':
-          tanggalStatus = orderData['processUpdatedAt'] ?? '-';
-          break;
-        case 'approved':
-          tanggalStatus = orderData['approveUpdatedAt'] ?? '-';
-          break;
-        case 'rejected':
-          tanggalStatus = orderData['rejectUpdatedAt'] ?? '-';
-          break;
-        case 'cancel':
-          tanggalStatus = orderData['cancelUpdatedAt'] ?? '-';
-          break;
-        case 'pending':
-          tanggalStatus = orderData['pendingUpdatedAt'] ?? '-';
-          break;
-      }
+    for (var info in statusInfo) {
+      final tanggal = orderData[info['tanggalKey']] ?? '-';
+      final byName = orderData[info['byKey']] ?? '-';
 
-      if (tanggalStatus != '-') {
-        widgets.add(Text("$label: $tanggalStatus"));
+      if (tanggal != '-' || byName != '-') {
+        widgets.add(Text("${info['tanggalLabel']}: $tanggal"));
+        widgets.add(
+          Text(
+            "${info['byLabel']}: $byName",
+            style: TextStyle(
+              fontWeight:
+                  (info['byLabel'] == 'Diproses oleh' ||
+                          info['byLabel'] == 'Dicancel oleh' ||
+                          info['byLabel'] == 'Dipending oleh')
+                      ? FontWeight.bold
+                      : FontWeight.normal,
+            ),
+          ),
+        );
+        widgets.add(SizedBox(height: 4));
       }
-    });
+    }
 
     return widgets;
   }

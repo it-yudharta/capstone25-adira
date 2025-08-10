@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'circular_loading_indicator.dart';
 import 'package:flutter/gestures.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 const platform = MethodChannel('com.fundrain.adiraapp/download');
 
@@ -200,14 +201,55 @@ class _PengajuanScreenState extends State<PengajuanScreen> {
     final now = DateTime.now();
     final formattedDate = DateFormat('dd-MM-yyyy').format(now);
 
+    String adminName = 'Unknown';
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final doc =
+            await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        if (doc.exists) {
+          final data = doc.data();
+          if (data != null &&
+              data['name'] != null &&
+              data['name'].toString().trim().isNotEmpty) {
+            adminName = data['name'].toString();
+          } else if (FirebaseAuth.instance.currentUser?.displayName != null) {
+            adminName = FirebaseAuth.instance.currentUser!.displayName!;
+          } else {
+            adminName = FirebaseAuth.instance.currentUser?.email ?? 'Unknown';
+          }
+        } else {
+          adminName =
+              FirebaseAuth.instance.currentUser?.displayName ??
+              FirebaseAuth.instance.currentUser?.email ??
+              'Unknown';
+        }
+      }
+    } catch (e) {
+      print('Failed to fetch admin name from Firestore: $e');
+      adminName =
+          FirebaseAuth.instance.currentUser?.displayName ??
+          FirebaseAuth.instance.currentUser?.email ??
+          'Unknown';
+    }
+
     Map<String, dynamic> updates = {
       'status': newStatus,
       '${newStatus}UpdatedAt': formattedDate,
     };
 
+    if (newStatus == 'process') {
+      updates['processBy'] = adminName;
+    } else if (newStatus == 'cancel') {
+      updates['cancelBy'] = adminName;
+    }
+
     try {
       await _database.child(orderKey).update(updates);
       _fetchOrders();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Status diperbarui oleh: $adminName')),
+      );
     } catch (e) {
       print("Gagal memperbarui status: $e");
       ScaffoldMessenger.of(
